@@ -138,7 +138,12 @@ export class SessionService {
         }
     }
 
-    async addSessionFromRom(rom: Uint8Array, device: DeviceId, settings: SessionSettings): Promise<Session> {
+    async addSessionFromRom(
+        rom: Uint8Array,
+        device: DeviceId,
+        settings: SessionSettings,
+        nand?: Uint8Array,
+    ): Promise<Session> {
         const eng = engine(device);
         if (eng !== Engine.cloudpilot) throw new Error(`FIXME: unsupported engine ${eng}`);
         if (eng !== settings.engine) throw new Error('settings do not match engine');
@@ -151,6 +156,7 @@ export class SessionService {
             ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
             rom: '',
             wasResetForcefully: false,
+            nand: nand?.length,
         };
 
         const loader = await this.loadingController.create({ message: 'Importing...' });

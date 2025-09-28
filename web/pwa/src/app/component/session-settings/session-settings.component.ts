@@ -4,6 +4,7 @@ import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { Engine } from '@common/model/Engine';
+import { LoadingController } from '@ionic/angular';
 
 import { memoize } from '@pwa/helper/memoize';
 import {
@@ -13,6 +14,7 @@ import {
     WARN_SLOWDOWN_THRESHOLD_DEFAULT,
 } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
+import { FileService } from '@pwa/service/file.service';
 import { SessionService } from '@pwa/service/session.service';
 
 @Component({
@@ -25,6 +27,8 @@ export class SessionSettingsComponent implements OnInit {
     constructor(
         private sessionService: SessionService,
         private alertService: AlertService,
+        private fileService: FileService,
+        private loadingController: LoadingController,
     ) {}
 
     get formControlName(): AbstractControl {
@@ -67,6 +71,10 @@ export class SessionSettingsComponent implements OnInit {
         return this.formGroup.get('disableAudioEmulation')!;
     }
 
+    get formControlNand(): AbstractControl {
+        return this.formGroup.get('nand')!;
+    }
+
     get showHotsyncNameInput(): boolean {
         return this.formControlManageHotsyncName.value;
     }
@@ -100,7 +108,7 @@ export class SessionSettingsComponent implements OnInit {
         this.saveCloudpilot();
         this.saveUarm();
 
-        this.onSave(this.formControlDevice.value);
+        this.onSave(this.formControlDevice.value, this.nand);
     }
 
     onEnter(): void {
@@ -170,6 +178,39 @@ export class SessionSettingsComponent implements OnInit {
         this.maxHostLoadTransient = e.detail?.value;
     }
 
+    onNandClick(): void {
+        this.fileService.openFile(async (file) => {
+            const loader = await this.loadingController.create();
+
+            let content: Uint8Array;
+            await loader.present();
+
+            try {
+                content = await file.getContent();
+            } catch (e) {
+                console.warn(e);
+
+                await this.alertService.errorMessage(`Unable to open ${file.name}.`);
+                return;
+            } finally {
+                void loader.dismiss();
+            }
+
+            if (content.length !== this.selectNandSize) {
+                void this.alertService.errorMessage(`${file.name} is not a valid NAND image.`);
+                return;
+            }
+
+            this.nand = content;
+            this.formControlNand.setValue(file.name);
+        });
+    }
+
+    onNandClearClick(): void {
+        this.nand = undefined;
+        this.formControlNand.setValue(undefined);
+    }
+
     private createFormGroup() {
         this.formGroup = new UntypedFormGroup({
             name: new UntypedFormControl(this.settings.name, {
@@ -203,6 +244,7 @@ export class SessionSettingsComponent implements OnInit {
             disableAudioEmulation: new UntypedFormControl(
                 this.settings.engine === Engine.uarm ? this.settings.disableAudio : false,
             ),
+            nand: new UntypedFormControl(),
         });
     }
 
@@ -245,7 +287,7 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     @Input()
-    onSave: (device: DeviceId) => void = () => undefined;
+    onSave: (device: DeviceId, nand?: Uint8Array) => void = () => undefined;
 
     @Input()
     onCancel: () => void = () => undefined;
@@ -259,12 +301,17 @@ export class SessionSettingsComponent implements OnInit {
     @Input()
     device!: DeviceId;
 
+    @Input()
+    selectNandSize: number | undefined;
+
     formGroup!: UntypedFormGroup;
 
     speedTransient: number | undefined;
     targetMipsTransient: number | undefined;
     warnSlowdownThresholdTransient: number | undefined;
     maxHostLoadTransient: number | undefined;
+
+    nand: Uint8Array | undefined;
 
     readonly orientations = [
         [DeviceOrientation.portrait, 'Portrait'],

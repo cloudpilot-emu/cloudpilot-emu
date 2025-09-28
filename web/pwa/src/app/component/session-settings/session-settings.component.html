@@ -43,6 +43,23 @@
             </ion-select>
         </ion-item>
 
+        @if (isUarm && selectNandSize !== undefined) {
+            <ion-item lines="none">
+                <div class="nand-container">
+                    <ion-input
+                        label="NAND flash contents"
+                        labelPlacement="stacked"
+                        placeholder="blank"
+                        formControlName="nand"
+                        [readonly]="true"
+                        tabindex="-1"
+                        (click)="onNandClick()"
+                    ></ion-input>
+                    <ion-button (click)="onNandClearClick()" [disabled]="!formControlNand.value"> Clear </ion-button>
+                </div>
+            </ion-item>
+        }
+
         @if (isUarm) {
             <h1>Performance</h1>
 

@@ -341,6 +341,7 @@ export function engine(deviceId: DeviceId): Engine {
     }
 }
 
-export function hasNand(deviceId: DeviceId): boolean {
-    return engine(deviceId) === Engine.uarm;
+export function nandSize(deviceId: DeviceId): number | undefined {
+    // blocks * [pages / block] + [bytes / page]
+    return engine(deviceId) === Engine.uarm ? 2048 * (2 << 4) * 528 : undefined;
 }

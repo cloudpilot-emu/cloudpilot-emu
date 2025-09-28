@@ -373,6 +373,21 @@ export class SubpageCardsComponent implements OnInit {
             return;
         }
 
+        let content: Uint8Array | undefined;
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            content = await file.getContent();
+        } catch (e) {
+            console.warn(e);
+
+            await this.alertService.errorMessage(`Unable to open ${file.name}".`);
+            return;
+        } finally {
+            void loader.dismiss();
+        }
+
         if (file.name.endsWith('.zip')) {
             let install = false;
             await this.alertService.message(
@@ -387,21 +402,11 @@ export class SubpageCardsComponent implements OnInit {
                 'Cancel',
             );
 
-            if (install) await this.storageCardService.addAllCardsFromArchive(await file.getContent());
+            if (install) await this.storageCardService.addAllCardsFromArchive(content);
             return;
         }
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;
-        let content: Uint8Array | undefined;
-
-        try {
-            content = await file.getContent();
-        } catch (e) {
-            console.warn(e);
-
-            await this.alertService.errorMessage(`Unable to open ${file.name}".`);
-            return;
-        }
 
         if (/\.gz$/.test(file.name)) {
             const loader = await this.loadingController.create({ message: 'Unpacking...' });

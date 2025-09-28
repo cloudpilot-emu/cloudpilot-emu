@@ -9,7 +9,6 @@ import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
 import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
-import { StorageService } from './storage.service';
 
 export interface FileDescriptor {
     name: string;
@@ -21,7 +20,6 @@ export interface FileDescriptor {
 })
 export class FileService {
     constructor(
-        private storageService: StorageService,
         private loadingController: LoadingController,
         private actionSheetController: ActionSheetController,
         private kvsService: KvsService,

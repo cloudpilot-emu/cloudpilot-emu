@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit, Signal } from '@angular/core';
 import helpUrl from '@assets/doc/card-browser.md';
 import { FileEntry } from '@common/bridge/Vfs';
-import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
+import { ActionSheetController, Config, LoadingController, ModalController, PopoverController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 
 import { HelpComponent } from '@pwa/component/help/help.component';
@@ -44,6 +44,7 @@ export class SubpageDirectoryComponent implements OnDestroy, OnInit {
         private actionSheetController: ActionSheetController,
         private modalController: ModalController,
         private fileService: FileService,
+        private loadingController: LoadingController,
         private cd: ChangeDetectorRef,
     ) {
         vfsService.change.subscribe(
@@ -374,7 +375,22 @@ export class SubpageDirectoryComponent implements OnDestroy, OnInit {
             return;
         }
 
-        void this.vfsService.unpackArchive(await file.getContent(), this.path || '/');
+        let content: Uint8Array;
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            content = await file.getContent();
+        } catch (e) {
+            console.warn(e);
+
+            await this.alertService.errorMessage(`Unable to open ${file.name}.`);
+            return;
+        } finally {
+            void loader.dismiss();
+        }
+
+        void this.vfsService.unpackArchive(content, this.path || '/');
     }
 
     @Input()

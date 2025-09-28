@@ -11,6 +11,7 @@ import {
 import { Router } from '@angular/router';
 import helpUrl from '@assets/doc/sessions.md';
 import { isIOS, isIOSNative } from '@common/helper/browser';
+import { nandSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
@@ -331,6 +332,9 @@ export class SessionsPage implements DragDropClient, OnInit {
         }
 
         let content: Uint8Array;
+        const loader = await this.loadingController.create();
+        await loader.present();
+
         try {
             content = await file.getContent();
         } catch (e) {
@@ -338,6 +342,8 @@ export class SessionsPage implements DragDropClient, OnInit {
 
             await this.alertService.errorMessage(`Unable to open ${file.name}.`);
             return;
+        } finally {
+            void loader.dismiss();
         }
 
         if (file.name.endsWith('.zip')) {
@@ -390,9 +396,16 @@ export class SessionsPage implements DragDropClient, OnInit {
                 name: this.disambiguateSessionName(file.name),
             };
 
-            const device = await this.editSettings(settings, romInfo.supportedDevices[0], romInfo.supportedDevices);
+            const [device, nand] =
+                (await this.editSettings(
+                    settings,
+                    romInfo.supportedDevices[0],
+                    romInfo.supportedDevices,
+                    nandSize(romInfo.supportedDevices[0]),
+                )) ?? [];
+
             if (device !== undefined) {
-                const session = await this.sessionService.addSessionFromRom(content, device, settings);
+                const session = await this.sessionService.addSessionFromRom(content, device, settings, nand);
 
                 this.lastSessionTouched = session.id;
             }
@@ -403,7 +416,8 @@ export class SessionsPage implements DragDropClient, OnInit {
         settings: SessionSettings,
         device: DeviceId,
         availableDevices = [device],
-    ): Promise<DeviceId | undefined> {
+        selectNandSize?: number,
+    ): Promise<[DeviceId, Uint8Array | undefined] | undefined> {
         return new Promise((resolve) => {
             let modal: HTMLIonModalElement;
 
@@ -415,9 +429,10 @@ export class SessionsPage implements DragDropClient, OnInit {
                         settings,
                         availableDevices,
                         device,
-                        onSave: (device: DeviceId) => {
+                        selectNandSize,
+                        onSave: (device: DeviceId, nand: Uint8Array | undefined) => {
                             void modal.dismiss();
-                            resolve(device);
+                            resolve([device, nand]);
                         },
                         onCancel: () => {
                             void modal.dismiss();
