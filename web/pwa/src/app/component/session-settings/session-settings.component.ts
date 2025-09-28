@@ -127,7 +127,7 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     get targetMipsLabel(): string {
-        return `Target speed: (${this.targetMipsValue} MIPS)`;
+        return `Target speed: ${this.targetMipsValue} MIPS`;
     }
 
     get warnSlowdownThresholdValue(): number {
@@ -139,7 +139,7 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     get warnSlowdownThresholdLabel(): string {
-        return `Slowdown threshold: (${this.warnSlowdownThresholdValue}%)`;
+        return `Minimum speed: ${this.warnSlowdownThresholdValue}%`;
     }
 
     get maxHostLoadValue(): number {
@@ -147,7 +147,7 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     get maxHostLoadLabel(): string {
-        return `Load limit: (${this.maxHostLoadValue}%)`;
+        return `Load limit: ${this.maxHostLoadValue}%`;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -195,7 +195,7 @@ export class SessionSettingsComponent implements OnInit {
             ),
             targetMips: new UntypedFormControl(this.settings.engine === Engine.uarm ? this.settings.targetMips : 0),
             warnSlowdownThreshold: new UntypedFormControl(
-                this.settings.engine === Engine.uarm ? this.settings.warnSlowdownThreshold : 0,
+                this.settings.engine === Engine.uarm ? Math.round(this.settings.warnSlowdownThreshold * 100) : 0,
             ),
             maxHostLoad: new UntypedFormControl(
                 this.settings.engine === Engine.uarm ? Math.round(100 * this.settings.maxHostLoad) : 0,
@@ -240,7 +240,7 @@ export class SessionSettingsComponent implements OnInit {
 
         this.settings.targetMips = this.targetMipsValue;
         this.settings.warnSlowdownThreshold = this.warnSlowdownThresholdValue / 100;
-        this.settings.maxHostLoad = this.maxHostLoadValue;
+        this.settings.maxHostLoad = this.maxHostLoadValue / 100;
         this.settings.disableAudio = this.formControlDisableAudioEmulation.value;
     }
 
