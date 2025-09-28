@@ -1,3 +1,7 @@
+# Version 1.10.16
+
+-   Minor styling fixes.
+
 # Version 1.10.15
 
 -   Minor styling fixes.
