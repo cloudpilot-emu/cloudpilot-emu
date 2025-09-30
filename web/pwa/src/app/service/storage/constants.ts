@@ -9,5 +9,6 @@ export const OBJECT_STORE_MEMORY_META = 'memory-meta';
 export const OBJECT_STORE_STORAGE = 'storage';
 export const OBJECT_STORE_STORAGE_CARD = 'storage-card';
 export const OBJECT_STORE_LOCK = 'lock';
+export const OBJECT_STORE_NAND = 'nand';
 
 export const INDEX_CARD_STORAGE_ID = 'storageId';

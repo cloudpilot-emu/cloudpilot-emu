@@ -1,6 +1,6 @@
 import { Injectable, Signal, signal } from '@angular/core';
 import { SessionImage } from '@common/bridge/Cloudpilot';
-import { engine } from '@common/helper/deviceProperties';
+import { engine, nandSize, ramSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { Engine } from '@common/model/Engine';
 import { SessionMetadata } from '@common/model/SessionMetadata';
@@ -11,7 +11,7 @@ import { Mutex } from 'async-mutex';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameForSession, filenameForSessions } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
-import { Session, SessionCloudpilot, SessionSettings, settingsFromMetadata } from '@pwa/model/Session';
+import { Session, SessionSettings, settingsFromMetadata } from '@pwa/model/Session';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
@@ -51,7 +51,7 @@ export class SessionService {
         await loader.present();
 
         try {
-            return this.doAddSessionFromImage(image, settings);
+            return await this.doAddSessionFromImage(image, settings);
         } finally {
             await loader.dismiss();
         }
@@ -145,29 +145,34 @@ export class SessionService {
         nand?: Uint8Array,
     ): Promise<Session> {
         const eng = engine(device);
-        if (eng !== Engine.cloudpilot) throw new Error(`FIXME: unsupported engine ${eng}`);
-        if (eng !== settings.engine) throw new Error('settings do not match engine');
 
-        const session: SessionCloudpilot = {
+        if (eng !== settings.engine) throw new Error('settings do not match engine');
+        if (nand && nand?.length !== nandSize(device)) throw new Error('NAND size mismatch');
+
+        const session: Session = {
             ...settings,
-            engine: eng,
             id: -1,
             device,
-            ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
+            ram:
+                eng === Engine.cloudpilot
+                    ? (await this.cloudpilotService.cloudpilot).minRamForDevice(device) >>> 20
+                    : ramSize(device) >>> 20,
             rom: '',
             wasResetForcefully: false,
-            nand: nand?.length,
+            nand: nandSize(device),
         };
 
         const loader = await this.loadingController.create({ message: 'Importing...' });
         await loader.present();
 
-        const savedSession = await this.storageService.addSession(session, rom);
+        try {
+            const savedSession = await this.storageService.addSession(session, { rom, nand });
+            await this.updateSessionsFromStorage();
 
-        await this.updateSessionsFromStorage();
-        await loader.dismiss();
-
-        return savedSession;
+            return savedSession;
+        } finally {
+            void loader.dismiss();
+        }
     }
 
     get sessions(): Signal<Array<Session>> {
@@ -308,25 +313,40 @@ export class SessionService {
         image: SessionImage<SessionMetadata>,
         settings: SessionSettings,
     ): Promise<Session> {
-        if (image.engine !== Engine.cloudpilot) throw new Error(`FIXME: unsupported engine ${image.engine}`);
         if (settings.engine !== image.engine) throw new Error('settings do not match session type');
 
         const session: Session = {
             ...settings,
-            engine: image.engine,
             id: -1,
             device: image.deviceId,
-            ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(image.deviceId) / 1024 / 1024,
+            ram: await this.getRamSizeForSession(image),
             rom: '',
             osVersion: image?.metadata?.osVersion,
             wasResetForcefully: false,
         };
 
-        const savedSession = await this.storageService.addSession(session, image.rom, image.memory, image.savestate);
+        const savedSession = await this.storageService.addSession(session, {
+            rom: image.rom,
+            memory: image.memory,
+            state: image.savestate,
+            nand: image.nand,
+        });
 
         await this.updateSessionsFromStorage();
 
         return savedSession;
+    }
+
+    private async getRamSizeForSession(image: SessionImage<unknown>): Promise<number> {
+        if (image.engine === Engine.cloudpilot) {
+            return (await this.cloudpilotService.cloudpilot).minRamForDevice(image.deviceId) >>> 20;
+        }
+
+        if (image.memory) {
+            return image.memory?.length >= 32 << 20 ? 32 : 16;
+        }
+
+        return ramSize(image.deviceId) >>> 20;
     }
 
     readonly _sessions = signal<Array<Session>>([]);

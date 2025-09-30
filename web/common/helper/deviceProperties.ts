@@ -345,3 +345,16 @@ export function nandSize(deviceId: DeviceId): number | undefined {
     // blocks * [pages / block] + [bytes / page]
     return engine(deviceId) === Engine.uarm ? 2048 * (2 << 4) * 528 : undefined;
 }
+
+export function ramSize(deviceId: DeviceId): number {
+    switch (deviceId) {
+        case DeviceId.te2:
+            return 16 << 20;
+
+        case DeviceId.frankene2:
+            return 32 << 20;
+
+        default:
+            return -1;
+    }
+}

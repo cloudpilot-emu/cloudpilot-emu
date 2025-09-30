@@ -26,7 +26,7 @@ import {
     OBJECT_STORE_STORAGE,
     OBJECT_STORE_STORAGE_CARD,
 } from './storage/constants';
-import { complete, compressPage } from './storage/util';
+import { complete, compressPage8 } from './storage/util';
 
 declare global {
     interface IDBDatabase {
@@ -300,7 +300,7 @@ export class SnapshotService {
                 if (iPage >= this.pages.length) break;
 
                 if (this.dirtyPages[i] & mask) {
-                    const compressedPage = compressPage(memory.subarray(iPage * 256, (iPage + 1) * 256));
+                    const compressedPage = compressPage8(memory.subarray(iPage * 256, (iPage + 1) * 256));
 
                     if (typeof compressedPage === 'number') {
                         objectStore.put(compressedPage, [this.sessionId, iPage]);

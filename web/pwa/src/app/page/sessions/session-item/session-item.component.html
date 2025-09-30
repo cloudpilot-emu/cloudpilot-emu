@@ -28,8 +28,8 @@
         <ion-label [class.in-item-color]="selected" [class.selecting]="selecting">
             <h2>{{ session?.name }}</h2>
             <p>
-                {{ device }}, {{ session?.ram }}MB RAM<span *ngIf="session?.osVersion"
-                    >, OS {{ decodeVersion(session?.osVersion) }}</span
+                {{ device }}, {{ session?.ram }}MB RAM<span *ngIf="session?.osVersion || session?.engine === 'uarm'"
+                    >, OS {{ session?.engine === 'cloudpilot' ? decodeVersion(session?.osVersion) : '5' }}</span
                 >
             </p>
         </ion-label>

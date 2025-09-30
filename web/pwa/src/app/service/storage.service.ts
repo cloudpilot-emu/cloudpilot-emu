@@ -22,6 +22,7 @@ import {
     OBJECT_STORE_LOCK,
     OBJECT_STORE_MEMORY,
     OBJECT_STORE_MEMORY_META,
+    OBJECT_STORE_NAND,
     OBJECT_STORE_ROM,
     OBJECT_STORE_SESSION,
     OBJECT_STORE_STATE,
@@ -39,7 +40,7 @@ import {
     migrate8to9,
     migrate9to10,
 } from './storage/migrations';
-import { complete, compressPage, compressStoragePage } from './storage/util';
+import { complete, compressPage, compressPage8 } from './storage/util';
 
 export const E_LOCK_LOST = new Error('page lock lost');
 const E_VERSION_MISMATCH = new Error('version mismatch');
@@ -94,9 +95,10 @@ export class StorageService {
     }
 
     @guard()
-    async addSession(session: Session, rom: Uint8Array, memory?: Uint8Array, state?: Uint8Array): Promise<Session> {
-        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
-
+    async addSession(
+        session: Session,
+        { rom, memory, nand, state }: { rom: Uint8Array; memory?: Uint8Array; nand?: Uint8Array; state?: Uint8Array },
+    ): Promise<Session> {
         const hash = md5(rom);
 
         const tx = await this.newTransaction(
@@ -105,6 +107,7 @@ export class StorageService {
             OBJECT_STORE_STATE,
             OBJECT_STORE_MEMORY,
             OBJECT_STORE_MEMORY_META,
+            OBJECT_STORE_NAND,
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
@@ -119,13 +122,9 @@ export class StorageService {
 
         const storedSession = await complete<Session>(objectStoreSession.get(key));
 
-        if (memory) {
-            this.saveMemory(tx, storedSession.id, memory);
-        }
-
-        if (state) {
-            this.saveState(tx, storedSession.id, state);
-        }
+        this.saveMemory(tx, session.engine, storedSession.id, memory);
+        this.saveNand(tx, storedSession.id, nand);
+        this.saveState(tx, storedSession.id, state);
 
         await complete(tx);
 
@@ -148,14 +147,13 @@ export class StorageService {
 
     @guard()
     async deleteSession(session: Session): Promise<void> {
-        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
-
         const tx = await this.newTransaction(
             OBJECT_STORE_SESSION,
             OBJECT_STORE_ROM,
             OBJECT_STORE_STATE,
             OBJECT_STORE_MEMORY,
             OBJECT_STORE_MEMORY_META,
+            OBJECT_STORE_NAND,
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
@@ -171,6 +169,7 @@ export class StorageService {
 
         this.deleteMemory(tx, session.id);
         this.deleteState(tx, session.id);
+        this.deleteNand(tx, session.id);
 
         await complete(tx);
 
@@ -180,7 +179,7 @@ export class StorageService {
     @guard()
     updateSessionPartial(id: number, update: Partial<Session>): Promise<void> {
         return this.sessionUpdateMutex.runExclusive(async () => {
-            const { id: _id, rom, ram, device, engine, ...rest } = update;
+            const { id: _id, rom, ram, device, engine, nand, ...rest } = update;
             const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
             const session = await complete<Session>(objectStore.get(id));
@@ -207,6 +206,7 @@ export class StorageService {
             if (persistentSession.rom !== session.rom) throw new Error('attempt to change ROM reference');
             if (persistentSession.ram !== session.ram) throw new Error('attempt to change RAM size');
             if (persistentSession.device !== session.device) throw new Error('attempt to change device type');
+            if (persistentSession.nand !== session.nand) throw new Error('attempt to change NAND size');
 
             objectStore.put(session);
 
@@ -275,7 +275,7 @@ export class StorageService {
                 const page = data.subarray(iPage * 2048, (iPage + 1) * 2048);
                 if (iPage === pageCount - 1) paddedPage.set(page);
 
-                const compressedPage = compressStoragePage(iPage === pageCount - 1 ? paddedPage : page);
+                const compressedPage = compressPage(iPage === pageCount - 1 ? paddedPage : page);
                 if (compressedPage === 0) continue;
 
                 objectStoreStorage.put(typeof compressedPage === 'number' ? compressedPage : compressedPage?.slice(), [
@@ -517,44 +517,67 @@ export class StorageService {
         return complete(objectStore.get(sessionId));
     }
 
-    private saveMemory = (tx: IDBTransaction, sessionId: number, memory8: Uint8Array): void =>
-        this.ngZone.runOutsideAngular(() => {
-            const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
-            const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
+    private saveMemory(tx: IDBTransaction, engine: Engine, sessionId: number, memory8: Uint8Array | undefined): void {
+        const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
+        const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
 
-            const page32 = new Uint32Array(256);
-            const page8 = new Uint8Array(page32.buffer);
+        objectStoreMemoryMeta.delete(sessionId);
 
-            objectStoreMemory.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
-
+        if (memory8) {
             const metadata: MemoryMetadata = {
                 sessionId,
                 totalSize: memory8.length,
             };
             objectStoreMemoryMeta.put(metadata);
+        }
 
-            const pageCount = memory8.length >>> 10;
-            for (let i = 0; i < pageCount; i++) {
-                page8.set(memory8.subarray(i * 1024, (i + 1) * 1024));
-                const compressedPage = compressPage(page32);
+        this.savePagedData(
+            objectStoreMemory,
+            1024,
+            engine === Engine.cloudpilot ? compressPage8 : compressPage,
+            sessionId,
+            memory8,
+        );
+    }
 
-                if (typeof compressedPage === 'number') {
-                    objectStoreMemory.put(compressedPage, [sessionId, i]);
-                } else {
-                    const page = new Uint32Array(256);
-                    page.set(compressedPage);
-
-                    objectStoreMemory.put(page, [sessionId, i]);
-                }
-            }
-        });
+    private saveNand(tx: IDBTransaction, sessionId: number, nand8: Uint8Array | undefined): void {
+        this.savePagedData(tx.objectStore(OBJECT_STORE_NAND), 4228, compressPage, sessionId, nand8);
+    }
 
     private deleteMemory(tx: IDBTransaction, sessionId: number): void {
         const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
         const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
 
-        objectStoreMemory.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+        this.deletePagedData(objectStoreMemory, sessionId);
         objectStoreMemoryMeta.delete(sessionId);
+    }
+
+    private deleteNand(tx: IDBTransaction, sessionId: number): void {
+        this.deletePagedData(tx.objectStore(OBJECT_STORE_NAND), sessionId);
+    }
+
+    private savePagedData(
+        store: IDBObjectStore,
+        pageSize: number,
+        compress: (page: Uint32Array) => number | Uint32Array,
+        sessionId: number,
+        data: Uint8Array | undefined,
+    ): void {
+        store.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+        if (!data) return;
+
+        const data32 = new Uint32Array(data.buffer);
+        const pageSize4 = pageSize >>> 2;
+
+        const pageCount = (data.length / pageSize) | 0;
+        for (let i = 0; i < pageCount; i++) {
+            const compressedPage = compress(data32.subarray(i * pageSize4, (i + 1) * pageSize4));
+            store.put(typeof compressedPage === 'number' ? compressedPage : compressedPage.slice(), [sessionId, i]);
+        }
+    }
+
+    private deletePagedData(store: IDBObjectStore, sessionId: number): void {
+        store.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
     }
 
     private loadMemory = (tx: IDBTransaction, sessionId: number, checkCrc: boolean): Promise<Uint8Array | undefined> =>
