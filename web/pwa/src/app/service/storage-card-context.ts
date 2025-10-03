@@ -32,7 +32,7 @@ export class StorageCardContext {
 
         const message =
             owner === CardOwner.none
-                ? `Card alread claimed for ${this.getOwner(cardId)}.`
+                ? `Card already claimed for ${this.getOwner(cardId)}.`
                 : `Expected card ownership to be ${owner}, but is ${this.getOwner(cardId)}.`;
 
         this.errorService.fatalBug(message);

@@ -16,19 +16,19 @@ export class NavWrapperComponent {
     async ionViewDidLeave(): Promise<void> {
         const currentView = await this.nav?.getActive();
 
-        currentView?.params?.selfReference?.ref?.ionViewDidLeave?.();
+        currentView?.params?.selfReference?.ref?.ionViewDidLeave();
     }
 
     async ionViewWillLeave(): Promise<void> {
         const currentView = await this.nav?.getActive();
 
-        currentView?.params?.selfReference?.ref?.ionViewWillLeave?.();
+        currentView?.params?.selfReference?.ref?.ionViewWillLeave();
     }
 
     async ionViewDidEnter(): Promise<void> {
         const currentView = await this.nav?.getActive();
 
-        currentView?.params?.selfReference?.ref?.ionViewDidEnter_?.();
+        currentView?.params?.selfReference?.ref?.ionViewDidEnter_();
     }
 
     @ViewChild('nav')

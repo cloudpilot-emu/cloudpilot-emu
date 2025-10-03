@@ -29,7 +29,7 @@ export class StoragePage implements OnInit, DragDropClient {
     async ionViewDidLeave(): Promise<void> {
         const currentView = await this.nav?.getActive();
 
-        currentView?.params?.selfReference?.ref?.ionViewDidLeave?.();
+        currentView?.params?.selfReference?.ref?.ionViewDidLeave();
     }
 
     ionViewDidEnter(): void {
@@ -45,7 +45,7 @@ export class StoragePage implements OnInit, DragDropClient {
     async handleDragDropEvent(e: DragEvent): Promise<void> {
         const currentView = await this.nav?.getActive();
 
-        await currentView?.params?.selfReference?.ref?.handleDragDropEvent?.(e);
+        await currentView?.params?.selfReference?.ref?.handleDragDropEvent(e);
     }
 
     readonly navRootProps = {

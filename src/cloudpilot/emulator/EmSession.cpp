@@ -164,19 +164,21 @@ bool EmSession::LoadImage(SessionImage& image) {
     void* memoryImage = image.GetMemoryImage();
     uint32 version = image.GetVersion();
 
-    if (version >= 4) {
-        if (!EmMemory::LoadMemoryV4(memoryImage, memorySize)) {
-            logPrintf("failed to restore memory (V4)");
+    if (memorySize > 0) {
+        if (version >= 4) {
+            if (!EmMemory::LoadMemoryV4(memoryImage, memorySize)) {
+                logPrintf("failed to restore memory (V4)");
+                return false;
+            }
+        } else if (version >= 2) {
+            if (!EmMemory::LoadMemoryV2(memoryImage, memorySize)) {
+                logPrintf("failed to restore memory (V2)");
+                return false;
+            }
+        } else if (!EmMemory::LoadMemoryV1(memoryImage, memorySize)) {
+            logPrintf("failed to restore memory (V1)");
             return false;
         }
-    } else if (version >= 2) {
-        if (!EmMemory::LoadMemoryV2(memoryImage, memorySize)) {
-            logPrintf("failed to restore memory (V2)");
-            return false;
-        }
-    } else if (!EmMemory::LoadMemoryV1(memoryImage, memorySize)) {
-        logPrintf("failed to restore memory (V1)");
-        return false;
     }
 
     size_t savestateSize = image.GetSavestateSize();

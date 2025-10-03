@@ -30,6 +30,11 @@ h1 {
         align-self: end;
     }
 }
+
 ion-toggle {
     padding-right: 0;
+}
+
+.input-nand ::ng-deep * {
+    cursor: pointer !important;
 }

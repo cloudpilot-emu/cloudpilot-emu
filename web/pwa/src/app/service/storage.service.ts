@@ -1,6 +1,8 @@
 import { Injectable, NgZone } from '@angular/core';
 import { isIOS } from '@common/helper/browser';
 import { crc32 } from '@common/helper/crc';
+import { nandSize } from '@common/helper/deviceProperties';
+import { DeviceId } from '@common/model/DeviceId';
 import { Engine } from '@common/model/Engine';
 import { Mutex } from 'async-mutex';
 import md5 from 'md5';
@@ -9,7 +11,7 @@ import { v4 as uuid } from 'uuid';
 
 import { Kvs } from '@pwa/model/Kvs';
 import { MemoryMetadata } from '@pwa/model/MemoryMetadata';
-import { Session, fixmeAssertSessionHasEngine } from '@pwa/model/Session';
+import { Session } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
 
 import { environment } from '../../environments/environment';
@@ -50,8 +52,8 @@ function guard(): MethodDecorator {
     return (target: unknown, propertyKey: string | symbol, desc: PropertyDescriptor) => {
         const oldMethod = desc.value;
 
-        desc.value = async function (this: StorageService, ...args: Array<unknown>) {
-            const errorService: ErrorService = this.errorService;
+        desc.value = async function (this: Partial<StorageService>, ...args: Array<unknown>) {
+            const errorService = this.errorService;
 
             try {
                 return await oldMethod.apply(this, args);
@@ -59,15 +61,15 @@ function guard(): MethodDecorator {
                 console.error(e);
 
                 if (e instanceof StorageError) {
-                    errorService.fatalIDBDead();
+                    errorService?.fatalIDBDead();
                 } else if (e === E_VERSION_MISMATCH) {
-                    errorService.fatalVersionMismatch();
+                    errorService?.fatalVersionMismatch();
                 } else if (e === E_LOCK_LOST) {
-                    errorService.fatalPageLockLost();
+                    errorService?.fatalPageLockLost();
                 } else if (e instanceof Error) {
-                    errorService.fatalBug(e?.message);
+                    errorService?.fatalBug(e?.message);
                 } else {
-                    errorService.fatalBug('unknown reason');
+                    errorService?.fatalBug('unknown reason');
                 }
 
                 throw e;
@@ -95,40 +97,42 @@ export class StorageService {
     }
 
     @guard()
-    async addSession(
+    addSession(
         session: Session,
         { rom, memory, nand, state }: { rom: Uint8Array; memory?: Uint8Array; nand?: Uint8Array; state?: Uint8Array },
     ): Promise<Session> {
-        const hash = md5(rom);
+        return this.ngZone.runOutsideAngular(async () => {
+            const hash = md5(rom);
 
-        const tx = await this.newTransaction(
-            OBJECT_STORE_SESSION,
-            OBJECT_STORE_ROM,
-            OBJECT_STORE_STATE,
-            OBJECT_STORE_MEMORY,
-            OBJECT_STORE_MEMORY_META,
-            OBJECT_STORE_NAND,
-        );
-        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
-        const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
+            const tx = await this.newTransaction(
+                OBJECT_STORE_SESSION,
+                OBJECT_STORE_ROM,
+                OBJECT_STORE_STATE,
+                OBJECT_STORE_MEMORY,
+                OBJECT_STORE_MEMORY_META,
+                OBJECT_STORE_NAND,
+            );
+            const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+            const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
-        const recordRom = await complete(objectStoreRom.get(hash));
-        if (!recordRom) {
-            objectStoreRom.put(rom, hash);
-        }
+            const recordRom = await complete(objectStoreRom.get(hash));
+            if (!recordRom) {
+                objectStoreRom.put(rom, hash);
+            }
 
-        const { id, ...sessionSansId } = session;
-        const key = await complete(objectStoreSession.add({ ...sessionSansId, rom: hash }));
+            const { id, ...sessionSansId } = session;
+            const key = await complete(objectStoreSession.add({ ...sessionSansId, rom: hash }));
 
-        const storedSession = await complete<Session>(objectStoreSession.get(key));
+            const storedSession = await complete<Session>(objectStoreSession.get(key));
 
-        this.saveMemory(tx, session.engine, storedSession.id, memory);
-        this.saveNand(tx, storedSession.id, nand);
-        this.saveState(tx, storedSession.id, state);
+            this.saveMemory(tx, session.engine, storedSession.id, memory);
+            this.saveNand(tx, storedSession.id, nand);
+            this.saveState(tx, storedSession.id, state);
 
-        await complete(tx);
+            await complete(tx);
 
-        return storedSession;
+            return storedSession;
+        });
     }
 
     @guard()
@@ -185,12 +189,12 @@ export class StorageService {
             const session = await complete<Session>(objectStore.get(id));
             if (!session) throw new Error(`no session with id ${id}`);
 
-            const updatedSesion = { ...session, ...rest };
-            objectStore.put(updatedSesion);
+            const updatedSession = { ...session, ...rest };
+            objectStore.put(updatedSession);
 
             await complete(tx);
 
-            this.sessionChangeEvent.dispatch([session.id, updatedSesion]);
+            this.sessionChangeEvent.dispatch([session.id, updatedSession]);
         });
     }
 
@@ -217,25 +221,32 @@ export class StorageService {
     }
 
     @guard()
-    async loadSession(
+    loadSession(
         session: Session,
         checkCrc: boolean,
-    ): Promise<[Uint8Array | undefined, Uint8Array | undefined, Uint8Array | undefined]> {
-        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+    ): Promise<{
+        rom: Uint8Array;
+        memory?: Uint8Array;
+        nand?: Uint8Array;
+        savestate?: Uint8Array;
+    }> {
+        return this.ngZone.runOutsideAngular(async () => {
+            const tx = await this.newTransaction(
+                OBJECT_STORE_ROM,
+                OBJECT_STORE_STATE,
+                OBJECT_STORE_MEMORY,
+                OBJECT_STORE_MEMORY_META,
+                OBJECT_STORE_NAND,
+            );
+            const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
-        const tx = await this.newTransaction(
-            OBJECT_STORE_ROM,
-            OBJECT_STORE_STATE,
-            OBJECT_STORE_MEMORY,
-            OBJECT_STORE_MEMORY_META,
-        );
-        const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
-
-        return [
-            await complete<Uint8Array>(objectStoreRom.get(session.rom)),
-            await this.loadMemory(tx, session.id, checkCrc),
-            await this.loadState(tx, session.id),
-        ];
+            return {
+                rom: await complete<Uint8Array>(objectStoreRom.get(session.rom)),
+                memory: await this.loadMemory(tx, session.id, checkCrc),
+                savestate: await this.loadState(tx, session.id),
+                nand: await this.loadNand(tx, session.id, session.device),
+            };
+        });
     }
 
     @guard()
@@ -260,29 +271,23 @@ export class StorageService {
     }
 
     @guard()
-    async importStorageCard(card: Omit<StorageCard, 'id'>, data: Uint32Array): Promise<StorageCard> {
+    importStorageCard(card: Omit<StorageCard, 'id'>, data: Uint32Array): Promise<StorageCard> {
         return this.ngZone.runOutsideAngular(async () => {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
             const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
             const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
 
             const key = await complete(objectStoreStorageCard.add(card));
-            const pageCount = (card.size >>> 13) + (data.length % 8192 === 0 ? 0 : 1);
+            if (typeof key !== 'number') throw new Error('invalid key');
 
-            const paddedPage = new Uint32Array(2048);
-
-            for (let iPage = 0; iPage < pageCount; iPage++) {
-                const page = data.subarray(iPage * 2048, (iPage + 1) * 2048);
-                if (iPage === pageCount - 1) paddedPage.set(page);
-
-                const compressedPage = compressPage(iPage === pageCount - 1 ? paddedPage : page);
-                if (compressedPage === 0) continue;
-
-                objectStoreStorage.put(typeof compressedPage === 'number' ? compressedPage : compressedPage?.slice(), [
-                    key,
-                    iPage,
-                ]);
-            }
+            this.savePagedData(
+                objectStoreStorage,
+                8192,
+                compressPage,
+                key,
+                0,
+                new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+            );
 
             const updatedCard = await complete(objectStoreStorageCard.get(key));
             await complete(tx);
@@ -332,7 +337,7 @@ export class StorageService {
         const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
 
         objectStoreStorageCard.delete(id);
-        objectStoreStorage.delete(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
+        this.deletePagedData(objectStoreStorage, id);
 
         await complete(tx);
 
@@ -342,43 +347,16 @@ export class StorageService {
     @guard()
     loadCardData(id: number, target: Uint32Array, owner: CardOwner): Promise<void> {
         return this.ngZone.runOutsideAngular(async () => {
-            target.fill(0);
-
-            const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+            const tx = await this.newTransaction(OBJECT_STORE_STORAGE);
             this.storageCardContext.assertOwnership(id, owner);
 
             const objectStore = tx.objectStore(OBJECT_STORE_STORAGE);
 
-            // eslint-disable-next-line no-async-promise-executor
-            await new Promise<void>(async (resolve, reject) => {
-                const request = objectStore.openCursor(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
-
-                request.onsuccess = () => {
-                    const cursor = request.result;
-
-                    if (!cursor) return resolve();
-
-                    let compressedPage: number | Uint32Array = cursor.value;
-                    const [, iPage] = cursor.key as [number, number];
-
-                    if (typeof compressedPage === 'number') {
-                        target.subarray(iPage * 2048, (iPage + 1) * 2048).fill(compressedPage);
-                    } else {
-                        if ((iPage + 1) * 2048 > target.length) {
-                            compressedPage = compressedPage.subarray(0, 2048 - (iPage + 1) * 2048 + target.length);
-                        }
-
-                        target.subarray(iPage * 2048, (iPage + 1) * 2048).set(compressedPage);
-                    }
-
-                    cursor.continue();
-                };
-
-                request.onerror = () => reject(new StorageError(request.error?.message));
-            });
+            await this.loadPagedData(id, objectStore, 8192, 0, target);
         });
     }
 
+    @guard()
     updateCardData(id: number, data: Uint32Array, dirtyPages: Uint8Array, owner: CardOwner): Promise<void> {
         return this.ngZone.runOutsideAngular(async () => {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
@@ -435,6 +413,7 @@ export class StorageService {
         await complete(tx);
     }
 
+    @guard()
     async kvsLoad(): Promise<Partial<Kvs>> {
         const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
@@ -495,6 +474,11 @@ export class StorageService {
         return [objectStore, tx];
     }
 
+    private loadState(tx: IDBTransaction, sessionId: number): Promise<Uint8Array | undefined> {
+        const objectStore = tx.objectStore(OBJECT_STORE_STATE);
+
+        return complete(objectStore.get(sessionId));
+    }
     private saveState(tx: IDBTransaction, sessionId: number, state: Uint8Array | undefined): void {
         const objectStore = tx.objectStore(OBJECT_STORE_STATE);
 
@@ -511,10 +495,56 @@ export class StorageService {
         objectStore.delete(sessionId);
     }
 
-    private loadState(tx: IDBTransaction, sessionId: number): Promise<Uint8Array | undefined> {
-        const objectStore = tx.objectStore(OBJECT_STORE_STATE);
+    private async loadMemory(
+        tx: IDBTransaction,
+        sessionId: number,
+        checkCrc: boolean,
+    ): Promise<Uint8Array | undefined> {
+        const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
+        const metadata: MemoryMetadata = await complete(objectStoreMemoryMeta.get(sessionId));
+        if (!metadata) return;
 
-        return complete(objectStore.get(sessionId));
+        // eslint-disable-next-line no-async-promise-executor
+        const memory = await new Promise<Uint8Array>(async (resolve, reject) => {
+            const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
+
+            const memory = new Uint32Array(metadata.totalSize >>> 2);
+
+            const request = objectStoreMemory.openCursor(
+                IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true),
+            );
+
+            request.onsuccess = () => {
+                const cursor = request.result;
+
+                if (!cursor) return resolve(new Uint8Array(memory.buffer));
+
+                const compressedPage: number | Uint8Array | Uint32Array = cursor.value;
+                const [, iPage] = cursor.key as [number, number];
+
+                if (typeof compressedPage === 'number') {
+                    memory
+                        .subarray(iPage * 256, (iPage + 1) * 256)
+                        .fill(compressedPage | (compressedPage << 8) | (compressedPage << 16) | (compressedPage << 24));
+                } else {
+                    memory
+                        .subarray(iPage * 256, (iPage + 1) * 256)
+                        .set(compressedPage.length === 1024 ? new Uint32Array(compressedPage.buffer) : compressedPage);
+                }
+
+                cursor.continue();
+            };
+
+            request.onerror = () => reject(new StorageError(request.error?.message));
+        });
+
+        if (metadata.crc32 !== undefined && checkCrc && environment.debug) {
+            if (metadata.crc32 !== crc32(memory)) {
+                throw new Error('snapshot CRC mismatch');
+            }
+        }
+
+        return memory;
     }
 
     private saveMemory(tx: IDBTransaction, engine: Engine, sessionId: number, memory8: Uint8Array | undefined): void {
@@ -536,12 +566,9 @@ export class StorageService {
             1024,
             engine === Engine.cloudpilot ? compressPage8 : compressPage,
             sessionId,
+            0,
             memory8,
         );
-    }
-
-    private saveNand(tx: IDBTransaction, sessionId: number, nand8: Uint8Array | undefined): void {
-        this.savePagedData(tx.objectStore(OBJECT_STORE_NAND), 4228, compressPage, sessionId, nand8);
     }
 
     private deleteMemory(tx: IDBTransaction, sessionId: number): void {
@@ -552,6 +579,23 @@ export class StorageService {
         objectStoreMemoryMeta.delete(sessionId);
     }
 
+    private saveNand(tx: IDBTransaction, sessionId: number, nand8: Uint8Array | undefined): void {
+        this.savePagedData(tx.objectStore(OBJECT_STORE_NAND), 4224, compressPage, sessionId, 0xff, nand8);
+    }
+
+    private async loadNand(tx: IDBTransaction, sessionId: number, deviceId: DeviceId): Promise<Uint8Array | undefined> {
+        const size = nandSize(deviceId);
+        if (size === undefined) return undefined;
+
+        const data = new Uint8Array(size);
+        const data32 = new Uint32Array(data.buffer);
+        const objectStore = tx.objectStore(OBJECT_STORE_NAND);
+
+        await this.loadPagedData(sessionId, objectStore, 4224, 0xff, data32);
+
+        return data;
+    }
+
     private deleteNand(tx: IDBTransaction, sessionId: number): void {
         this.deletePagedData(tx.objectStore(OBJECT_STORE_NAND), sessionId);
     }
@@ -560,83 +604,82 @@ export class StorageService {
         store: IDBObjectStore,
         pageSize: number,
         compress: (page: Uint32Array) => number | Uint32Array,
-        sessionId: number,
+        id: number,
+        blankValue: number,
         data: Uint8Array | undefined,
     ): void {
-        store.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+        blankValue = blankValue | (blankValue << 8) | (blankValue << 16) | (blankValue << 24);
+
+        store.delete(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
         if (!data) return;
 
-        const data32 = new Uint32Array(data.buffer);
+        const data32 = new Uint32Array(data.buffer, data.byteOffset, data.byteLength >>> 2);
         const pageSize4 = pageSize >>> 2;
+        const pageCount = ((data.length / pageSize) | 0) + (data.length % pageSize === 0 ? 0 : 1);
+        const paddedPage = new Uint32Array(pageSize4);
 
-        const pageCount = (data.length / pageSize) | 0;
         for (let i = 0; i < pageCount; i++) {
-            const compressedPage = compress(data32.subarray(i * pageSize4, (i + 1) * pageSize4));
-            store.put(typeof compressedPage === 'number' ? compressedPage : compressedPage.slice(), [sessionId, i]);
+            let page = data32.subarray(i * pageSize4, (i + 1) * pageSize4);
+            if (i === pageCount - 1) {
+                paddedPage.set(page);
+                page = paddedPage;
+            }
+
+            const compressedPage = compress(page);
+            if (typeof compressedPage === 'number' && (compressedPage | 0) === blankValue) continue;
+
+            store.put(typeof compressedPage === 'number' ? compressedPage : compressedPage.slice(), [id, i]);
         }
     }
 
-    private deletePagedData(store: IDBObjectStore, sessionId: number): void {
-        store.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
-    }
+    private loadPagedData(
+        id: number,
+        store: IDBObjectStore,
+        pageSize: number,
+        blankValue: number,
+        target: Uint32Array,
+    ): Promise<void> {
+        blankValue = blankValue | (blankValue << 8) | (blankValue << 16) | (blankValue << 24);
 
-    private loadMemory = (tx: IDBTransaction, sessionId: number, checkCrc: boolean): Promise<Uint8Array | undefined> =>
-        this.ngZone.runOutsideAngular(async () => {
-            const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
-            const metadata: MemoryMetadata = await complete(objectStoreMemoryMeta.get(sessionId));
-            if (!metadata) return;
+        const pageSize4 = pageSize >>> 2;
+        target.fill(blankValue);
 
-            // eslint-disable-next-line no-async-promise-executor
-            const memory = await new Promise<Uint8Array>(async (resolve, reject) => {
-                const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
+        return new Promise<void>((resolve, reject) => {
+            const request = store.openCursor(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
 
-                const memory = new Uint32Array(metadata.totalSize >>> 2);
+            request.onsuccess = () => {
+                const cursor = request.result;
 
-                const request = objectStoreMemory.openCursor(
-                    IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true),
-                );
+                if (!cursor) return resolve();
 
-                request.onsuccess = () => {
-                    const cursor = request.result;
+                let compressedPage: number | Uint32Array = cursor.value;
+                const [, iPage] = cursor.key as [number, number];
 
-                    if (!cursor) return resolve(new Uint8Array(memory.buffer));
+                if (typeof compressedPage === 'number') {
+                    target.subarray(iPage * pageSize4, (iPage + 1) * pageSize4).fill(compressedPage);
+                } else {
+                    if ((iPage + 1) * pageSize4 > target.length) {
+                        if ((iPage + 1) * pageSize4 > target.length + pageSize4) throw new Error('bad page index');
 
-                    const compressedPage: number | Uint8Array | Uint32Array = cursor.value;
-                    const [, iPage] = cursor.key as [number, number];
-
-                    if (typeof compressedPage === 'number') {
-                        memory
-                            .subarray(iPage * 256, (iPage + 1) * 256)
-                            .fill(
-                                compressedPage |
-                                    (compressedPage << 8) |
-                                    (compressedPage << 16) |
-                                    (compressedPage << 24),
-                            );
-                    } else {
-                        memory
-                            .subarray(iPage * 256, (iPage + 1) * 256)
-                            .set(
-                                compressedPage.length === 1024
-                                    ? new Uint32Array(compressedPage.buffer)
-                                    : compressedPage,
-                            );
+                        compressedPage = compressedPage.subarray(
+                            0,
+                            pageSize4 - (iPage + 1) * pageSize4 + target.length,
+                        );
                     }
 
-                    cursor.continue();
-                };
-
-                request.onerror = () => reject(new StorageError(request.error?.message));
-            });
-
-            if (metadata.crc32 !== undefined && checkCrc && environment.debug) {
-                if (metadata.crc32 !== crc32(memory)) {
-                    throw new Error('snapshot CRC mismatch');
+                    target.subarray(iPage * pageSize4, (iPage + 1) * pageSize4).set(compressedPage);
                 }
-            }
 
-            return memory;
+                cursor.continue();
+            };
+
+            request.onerror = () => reject(new StorageError(request.error?.message));
         });
+    }
+
+    private deletePagedData(store: IDBObjectStore, id: number): void {
+        store.delete(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
+    }
 
     @guard()
     private async initializeLock(db: IDBDatabase): Promise<void> {

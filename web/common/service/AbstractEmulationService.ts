@@ -54,7 +54,7 @@ class SerialPortImpl implements SerialPort {
     }
 
     getModeSync(): boolean {
-        return this.transport?.GetModeSync?.() ?? false;
+        return this.transport?.GetModeSync() ?? false;
     }
 
     dispatch(): void {

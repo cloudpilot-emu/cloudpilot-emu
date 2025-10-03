@@ -3,7 +3,6 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-import { engine } from '@common/helper/deviceProperties';
 import { identifySessionEngine } from '@common/helper/sessionfile';
 import { InstantiateFunction } from '@common/helper/wasm';
 import { Engine } from '@common/model/Engine';
@@ -171,6 +170,19 @@ function deviceTypeUarmToDeviceId(deviceType: DeviceType5): DeviceId | undefined
 
         default:
             return undefined;
+    }
+}
+
+function deviceTypeUarmFromDeviceId(deviceId: DeviceId): DeviceType5 {
+    switch (deviceId) {
+        case DeviceId.te2:
+            return DeviceType5.deviceTypeE2;
+
+        case DeviceId.frankene2:
+            return DeviceType5.deviceTypeFrankenE2;
+
+        default:
+            return DeviceType5.deviceTypeInvalid;
     }
 }
 export class Cloudpilot {
@@ -561,8 +573,8 @@ export class Cloudpilot {
     }
 
     @guard()
-    freeBuffer(ptr: VoidPtr): void {
-        this.cloudpilot.Free(ptr);
+    freeBuffer(ptr?: VoidPtr): void {
+        if (ptr) this.cloudpilot.Free(ptr);
     }
 
     @guard()
@@ -623,38 +635,58 @@ export class Cloudpilot {
 
     @guard()
     serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Uint8Array | undefined {
-        if (sessionImage.engine !== Engine.cloudpilot) throw new Error(`FIXME: unsupported engine ${engine}`);
+        if (sessionImage.engine === Engine.cloudpilot && sessionImage.nand) {
+            throw new Error('cloudpilot image cannot have nand');
+        }
 
-        const nativeImage = new this.module.SessionImage();
-        const nullptr = this.cloudpilot.Nullptr();
+        const rom = this.copyIn(sessionImage.rom);
+        const memory = sessionImage.memory && this.copyIn(sessionImage.memory);
+        const savestate = sessionImage.savestate && this.copyIn(sessionImage.savestate);
+        const nand = sessionImage.nand && this.copyIn(sessionImage.nand);
 
-        const romImage = this.copyIn(sessionImage.rom);
-        const memoryImage = sessionImage.memory ? this.copyIn(sessionImage.memory) : nullptr;
-        const savestate = sessionImage.savestate !== undefined ? this.copyIn(sessionImage.savestate) : nullptr;
-
-        let metadata = nullptr;
-        let metadataLenght = 0;
+        let metadata = undefined;
+        let metadataLength = undefined;
         if (sessionImage.metadata !== undefined) {
             const serializedMetadata = new TextEncoder().encode(JSON.stringify(sessionImage.metadata));
 
-            metadataLenght = serializedMetadata.length;
+            metadataLength = serializedMetadata.length;
             metadata = this.copyIn(serializedMetadata);
         }
 
-        nativeImage.SetRomImage(romImage, sessionImage.rom.length);
-        nativeImage.SetMemoryImage(memoryImage, sessionImage.memory?.length || 0);
-        nativeImage.SetDeviceId(sessionImage.deviceId);
-        nativeImage.SetSavestate(savestate, sessionImage.savestate?.length || 0);
-        nativeImage.SetMetadata(metadata, metadataLenght);
+        try {
+            switch (sessionImage.engine) {
+                case Engine.cloudpilot:
+                    return this.serializeSessionImageCloudpilot(sessionImage.deviceId, {
+                        rom,
+                        romLength: sessionImage.rom.length,
+                        memory,
+                        memoryLength: sessionImage.memory?.length,
+                        savestate,
+                        savestateLength: sessionImage.savestate?.length,
+                        metadata,
+                        metadataLength,
+                    });
 
-        const result = nativeImage.Serialize()
-            ? this.copyOut(nativeImage.GetSerializedImage(), nativeImage.GetSerializedImageSize())
-            : undefined;
+                case Engine.uarm:
+                    return this.serializeSessionImageUarm(sessionImage.deviceId, {
+                        rom,
+                        romLength: sessionImage.rom.length,
+                        nand,
+                        nandLength: sessionImage.nand?.length,
+                        memory,
+                        memoryLength: sessionImage.memory?.length,
+                        savestate,
+                        savestateLength: sessionImage.savestate?.length,
+                        metadata,
+                        metadataLength,
+                    });
 
-        this.module.destroy(nativeImage);
-        [romImage, memoryImage, savestate, metadata].forEach((buffer) => this.cloudpilot.Free(buffer));
-
-        return result;
+                default:
+                    throw new Error('unreachable');
+            }
+        } finally {
+            [rom, nand, memory, savestate, metadata].forEach((buffer) => this.freeBuffer(buffer));
+        }
     }
 
     @guard()
@@ -884,7 +916,7 @@ export class Cloudpilot {
             const memory = this.copyOut(nativeImage.GetMemoryImage(), nativeImage.GetMemoryImageSize());
             const savestate = this.copyOut(nativeImage.GetSavestate(), nativeImage.GetSavestateSize());
 
-            if (!rom || !memory) throw new Error(`invalid session image: no ROM or memory`);
+            if (!rom) throw new Error(`invalid session image: no ROM or memory`);
 
             let metadata: T | undefined;
             const serializedMetadata = this.copyOut(nativeImage.GetMetadata(), nativeImage.GetMetadataSize());
@@ -930,7 +962,7 @@ export class Cloudpilot {
             const nand = this.copyOut(nativeSession.GetNand(), nativeSession.GetNandSize());
             const savestate = this.copyOut(nativeSession.GetSavestate(), nativeSession.GetSavestateSize());
 
-            if (!rom || !memory) throw new Error(`invalid session image: no ROM or memory`);
+            if (!rom) throw new Error(`invalid session image: no ROM or memory`);
 
             const serializedMetadata = this.copyOut(nativeSession.GetMetadata(), nativeSession.GetMetadataSize());
 
@@ -955,6 +987,89 @@ export class Cloudpilot {
             };
         } finally {
             this.module.destroy(nativeSession);
+        }
+    }
+
+    private serializeSessionImageCloudpilot(
+        deviceId: DeviceId,
+        {
+            rom,
+            romLength,
+            memory,
+            memoryLength,
+            savestate,
+            savestateLength,
+            metadata,
+            metadataLength,
+        }: {
+            rom: VoidPtr;
+            romLength: number;
+            memory?: VoidPtr;
+            memoryLength?: number;
+            savestate?: VoidPtr;
+            savestateLength?: number;
+            metadata?: VoidPtr;
+            metadataLength?: number;
+        },
+    ) {
+        const nativeImage = new this.module.SessionImage();
+
+        try {
+            nativeImage.SetDeviceId(deviceId);
+            nativeImage.SetRomImage(rom, romLength);
+            if (memory) nativeImage.SetMemoryImage(memory, memoryLength ?? 0);
+            if (savestate) nativeImage.SetSavestate(savestate, savestateLength ?? 0);
+            if (metadata) nativeImage.SetMetadata(metadata, metadataLength ?? 0);
+
+            return nativeImage.Serialize()
+                ? this.copyOut(nativeImage.GetSerializedImage(), nativeImage.GetSerializedImageSize())
+                : undefined;
+        } finally {
+            this.module.destroy(nativeImage);
+        }
+    }
+
+    private serializeSessionImageUarm(
+        deviceId: DeviceId,
+        {
+            rom,
+            romLength,
+            memory,
+            memoryLength,
+            nand,
+            nandLength,
+            savestate,
+            savestateLength,
+            metadata,
+            metadataLength,
+        }: {
+            rom: VoidPtr;
+            romLength: number;
+            memory?: VoidPtr;
+            memoryLength?: number;
+            nand?: VoidPtr;
+            nandLength?: number;
+            savestate?: VoidPtr;
+            savestateLength?: number;
+            metadata?: VoidPtr;
+            metadataLength?: number;
+        },
+    ) {
+        const nativeImage = new this.module.SessionFile5();
+
+        try {
+            nativeImage.SetDeviceId(deviceTypeUarmFromDeviceId(deviceId));
+            nativeImage.SetNor(romLength, rom);
+            if (memory) nativeImage.SetMemory(memoryLength ?? 0, memory);
+            if (nand) nativeImage.SetNand(nandLength ?? 0, nand);
+            if (savestate) nativeImage.SetSavestate(savestateLength ?? 0, savestate);
+            if (metadata) nativeImage.SetMetadata(metadataLength ?? 0, metadata);
+
+            return nativeImage.Serialize()
+                ? this.copyOut(nativeImage.GetSerializedSession(), nativeImage.GetSerializedSessionSize())
+                : undefined;
+        } finally {
+            this.module.destroy(nativeImage);
         }
     }
 

@@ -283,7 +283,7 @@ export class SessionService {
     }
 
     private async serializeSession(session: Session): Promise<Uint8Array | undefined> {
-        const [rom, memory, savestate] = await this.storageService.loadSession(session, false);
+        const { rom, memory, savestate, nand } = await this.storageService.loadSession(session, false);
 
         if (!rom) {
             throw new Error(`invalid ROM ${session.rom}`);
@@ -296,6 +296,7 @@ export class SessionService {
             rom,
             memory,
             savestate,
+            nand,
         };
 
         return (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);

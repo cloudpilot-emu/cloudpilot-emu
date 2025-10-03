@@ -297,7 +297,7 @@ Sorry for the inconvenience.`,
     }
 
     private async restoreSession(session: Session, cloudpilot: Cloudpilot): Promise<boolean> {
-        const [rom, memory, state] = await this.storageService.loadSession(
+        const { rom, memory, savestate } = await this.storageService.loadSession(
             session,
             this.kvsService.kvs.snapshotIntegrityCheck,
         );
@@ -311,7 +311,7 @@ Sorry for the inconvenience.`,
             await this.storageCardService.loadCardInEmulator(session.mountedCard);
         }
 
-        if (!this.openSession(cloudpilot, rom, session.device, memory, state)) {
+        if (!this.openSession(cloudpilot, rom, session.device, memory, savestate)) {
             return false;
         }
 
