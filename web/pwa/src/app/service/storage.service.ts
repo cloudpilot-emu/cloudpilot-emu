@@ -370,6 +370,7 @@ export class StorageService {
         });
     }
 
+    @guard()
     updateCardData(id: number, data: Uint32Array, dirtyPages: Uint8Array, owner: CardOwner): Promise<void> {
         return this.ngZone.runOutsideAngular(async () => {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
