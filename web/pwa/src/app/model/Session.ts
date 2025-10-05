@@ -1,6 +1,6 @@
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { Engine } from '@common/model/Engine';
+import { EngineType } from '@common/model/Engine';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 
 export const TARGET_MIPS_DEFAULT = 100;
@@ -26,7 +26,7 @@ export interface SessionSettingsCommon {
 }
 
 export interface SessionSettingsCloudpilot extends SessionSettingsCommon {
-    engine: Engine.cloudpilot;
+    engine: EngineType.cloudpilot;
 
     hotsyncName: string;
     dontManageHotsyncName: boolean;
@@ -34,7 +34,7 @@ export interface SessionSettingsCloudpilot extends SessionSettingsCommon {
 }
 
 export interface SessionSettingsUarm extends SessionSettingsCommon {
-    engine: Engine.uarm;
+    engine: EngineType.uarm;
 
     disableAudio: boolean;
     targetMips: number;
@@ -48,25 +48,27 @@ export type SessionUarm = SessionSettingsUarm & SessionState;
 export type Session = SessionCloudpilot | SessionUarm;
 export type SessionSettings = SessionSettingsCloudpilot | SessionSettingsUarm;
 
-type SessionForEngine<E extends Engine> = E extends Engine.cloudpilot ? SessionCloudpilot : SessionUarm;
+type SessionForEngine<E extends EngineType> = E extends EngineType.cloudpilot ? SessionCloudpilot : SessionUarm;
 
-export function fixmeAssertSessionHasEngine<E extends Engine>(
+export function fixmeAssertSessionHasEngine<E extends EngineType>(
     session: Session | undefined,
     engine: E,
 ): asserts session is SessionForEngine<E> | undefined {
     if (!session) return undefined;
 
-    if (session.engine !== Engine.cloudpilot) throw new Error(`FIXME: unsupported session engine ${engine}`);
+    if (session.engine !== EngineType.cloudpilot) throw new Error(`FIXME: unsupported session engine ${engine}`);
 }
 
 export function buildSettings(
-    settings: Partial<SessionSettingsCloudpilot> & { engine: Engine.cloudpilot },
+    settings: Partial<SessionSettingsCloudpilot> & { engine: EngineType.cloudpilot },
 ): SessionSettingsCloudpilot;
-export function buildSettings(settings: Partial<SessionSettingsUarm> & { engine: Engine.uarm }): SessionSettingsUarm;
-export function buildSettings(settings: Partial<SessionSettings> & { engine: Engine }): SessionSettings;
-export function buildSettings(settings: Partial<SessionSettings> & { engine: Engine }): SessionSettings {
+export function buildSettings(
+    settings: Partial<SessionSettingsUarm> & { engine: EngineType.uarm },
+): SessionSettingsUarm;
+export function buildSettings(settings: Partial<SessionSettings> & { engine: EngineType }): SessionSettings;
+export function buildSettings(settings: Partial<SessionSettings> & { engine: EngineType }): SessionSettings {
     switch (settings.engine) {
-        case Engine.cloudpilot:
+        case EngineType.cloudpilot:
             return {
                 name: '',
                 deviceOrientation: DeviceOrientation.portrait,
@@ -76,7 +78,7 @@ export function buildSettings(settings: Partial<SessionSettings> & { engine: Eng
                 ...settings,
             };
 
-        case Engine.uarm:
+        case EngineType.uarm:
             return {
                 name: '',
                 deviceOrientation: DeviceOrientation.portrait,
@@ -97,13 +99,13 @@ export function settingsFromSession(session: SessionUarm): SessionSettingsUarm;
 export function settingsFromSession(session: Session): SessionSettings;
 export function settingsFromSession(session: Session): SessionSettings {
     switch (session.engine) {
-        case Engine.cloudpilot: {
+        case EngineType.cloudpilot: {
             const { engine, name, deviceOrientation, hotsyncName, dontManageHotsyncName, speed } = session;
 
             return { engine, name, deviceOrientation, hotsyncName, dontManageHotsyncName, speed };
         }
 
-        case Engine.uarm: {
+        case EngineType.uarm: {
             const { engine, name, deviceOrientation, targetMips, disableAudio, warnSlowdownThreshold, maxHostLoad } =
                 session;
 
@@ -133,14 +135,17 @@ export function mergeSettings(sesstion: Session, settings: SessionSettings): Ses
 }
 
 export function settingsFromMetadata(
-    engine: Engine.cloudpilot,
+    engine: EngineType.cloudpilot,
     metadata: SessionMetadata | undefined,
 ): SessionSettingsCloudpilot;
-export function settingsFromMetadata(engine: Engine.uarm, metadata: SessionMetadata | undefined): SessionSettingsUarm;
-export function settingsFromMetadata(engine: Engine, metadata: SessionMetadata | undefined): SessionSettings;
-export function settingsFromMetadata(engine: Engine, metadata: SessionMetadata | undefined): SessionSettings {
+export function settingsFromMetadata(
+    engine: EngineType.uarm,
+    metadata: SessionMetadata | undefined,
+): SessionSettingsUarm;
+export function settingsFromMetadata(engine: EngineType, metadata: SessionMetadata | undefined): SessionSettings;
+export function settingsFromMetadata(engine: EngineType, metadata: SessionMetadata | undefined): SessionSettings {
     switch (engine) {
-        case Engine.cloudpilot:
+        case EngineType.cloudpilot:
             return {
                 engine,
                 name: metadata?.name ?? '',
@@ -150,7 +155,7 @@ export function settingsFromMetadata(engine: Engine, metadata: SessionMetadata |
                 speed: metadata?.speed ?? 1,
             };
 
-        case Engine.uarm:
+        case EngineType.uarm:
             return {
                 engine,
                 name: metadata?.name ?? '',

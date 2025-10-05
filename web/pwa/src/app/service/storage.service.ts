@@ -3,7 +3,7 @@ import { isIOS } from '@common/helper/browser';
 import { crc32 } from '@common/helper/crc';
 import { nandSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
-import { Engine } from '@common/model/Engine';
+import { EngineType } from '@common/model/Engine';
 import { Mutex } from 'async-mutex';
 import md5 from 'md5';
 import { Event } from 'microevent.ts';
@@ -547,7 +547,12 @@ export class StorageService {
         return memory;
     }
 
-    private saveMemory(tx: IDBTransaction, engine: Engine, sessionId: number, memory8: Uint8Array | undefined): void {
+    private saveMemory(
+        tx: IDBTransaction,
+        engine: EngineType,
+        sessionId: number,
+        memory8: Uint8Array | undefined,
+    ): void {
         const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
         const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
 
@@ -564,7 +569,7 @@ export class StorageService {
         this.savePagedData(
             objectStoreMemory,
             1024,
-            engine === Engine.cloudpilot ? compressPage8 : compressPage,
+            engine === EngineType.cloudpilot ? compressPage8 : compressPage,
             sessionId,
             0,
             memory8,

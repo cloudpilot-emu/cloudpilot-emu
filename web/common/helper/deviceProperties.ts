@@ -1,6 +1,6 @@
 import { DeviceId } from '@common/model/DeviceId';
 import { Dimensions, ScreenSize } from '@common/model/Dimensions';
-import { Engine } from '@common/model/Engine';
+import { EngineType } from '@common/model/Engine';
 
 import { SlotType } from '../model/SlotType';
 
@@ -330,20 +330,20 @@ export function slotType(deviceId: DeviceId) {
     }
 }
 
-export function engine(deviceId: DeviceId): Engine {
+export function engine(deviceId: DeviceId): EngineType {
     switch (deviceId) {
         case DeviceId.te2:
         case DeviceId.frankene2:
-            return Engine.uarm;
+            return EngineType.uarm;
 
         default:
-            return Engine.cloudpilot;
+            return EngineType.cloudpilot;
     }
 }
 
 export function nandSize(deviceId: DeviceId): number | undefined {
     // blocks * [pages / block] + [bytes / page]
-    return engine(deviceId) === Engine.uarm ? 2048 * (2 << 4) * 528 : undefined;
+    return engine(deviceId) === EngineType.uarm ? 2048 * (2 << 4) * 528 : undefined;
 }
 
 export function ramSize(deviceId: DeviceId): number {

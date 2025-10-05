@@ -1,9 +1,9 @@
-import { Engine } from '@common/model/Engine';
+import { EngineType } from '@common/model/Engine';
 
 const MAGIC_CLOUDPILOT = 0x20150103;
 const MAGIC_UARM = 0x19800819;
 
-export function identifySessionEngine(data: Uint8Array): Engine | undefined {
+export function identifySessionEngine(data: Uint8Array): EngineType | undefined {
     if (data.length < 4) return undefined;
 
     const view = new DataView(data.buffer, data.byteOffset);
@@ -11,10 +11,10 @@ export function identifySessionEngine(data: Uint8Array): Engine | undefined {
 
     switch (magic) {
         case MAGIC_CLOUDPILOT:
-            return Engine.cloudpilot;
+            return EngineType.cloudpilot;
 
         case MAGIC_UARM:
-            return Engine.uarm;
+            return EngineType.uarm;
 
         default:
             return undefined;

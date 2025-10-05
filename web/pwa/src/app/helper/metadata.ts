@@ -1,16 +1,16 @@
-import { Engine } from '@common/model/Engine';
+import { EngineType } from '@common/model/Engine';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 
 import { Session, fixmeAssertSessionHasEngine } from '@pwa/model/Session';
 
 export function metadataForSession(session: Session): SessionMetadata {
     switch (session.engine) {
-        case Engine.cloudpilot: {
+        case EngineType.cloudpilot: {
             const { name, hotsyncName, osVersion, dontManageHotsyncName, speed, deviceOrientation } = session;
             return { name, hotsyncName, osVersion, dontManageHotsyncName, speed, deviceOrientation };
         }
 
-        case Engine.uarm: {
+        case EngineType.uarm: {
             const { name, osVersion, deviceOrientation, disableAudio, targetMips, warnSlowdownThreshold, maxHostLoad } =
                 session;
 
@@ -20,5 +20,5 @@ export function metadataForSession(session: Session): SessionMetadata {
         default:
             throw new Error('unreachable');
     }
-    fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+    fixmeAssertSessionHasEngine(session, EngineType.cloudpilot);
 }

@@ -1,4 +1,4 @@
-export const enum Engine {
+export const enum EngineType {
     cloudpilot = 'cloudpilot',
     uarm = 'uarm',
 }

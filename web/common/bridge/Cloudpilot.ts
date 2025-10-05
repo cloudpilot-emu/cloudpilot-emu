@@ -5,7 +5,7 @@
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { identifySessionEngine } from '@common/helper/sessionfile';
 import { InstantiateFunction } from '@common/helper/wasm';
-import { Engine } from '@common/model/Engine';
+import { EngineType } from '@common/model/Engine';
 import { DeviceType5 } from '@native-common/index';
 import createModule, {
     CardSupportLevel,
@@ -45,7 +45,7 @@ export {
 } from '@native/index';
 
 export interface RomInfoCloudpilot {
-    engine: Engine.cloudpilot;
+    engine: EngineType.cloudpilot;
     cardVersion: number;
     cardName: string;
     romVersion: number;
@@ -55,7 +55,7 @@ export interface RomInfoCloudpilot {
 }
 
 export interface RomInfoUarm {
-    engine: Engine.uarm;
+    engine: EngineType.uarm;
     cardName: string;
     romName: string;
     manufacturer: string;
@@ -93,7 +93,7 @@ export interface PwmUpdate {
 }
 
 export interface SessionImage<T> {
-    engine: Engine;
+    engine: EngineType;
     metadata?: T;
     deviceId: DeviceId;
     rom: Uint8Array;
@@ -635,7 +635,7 @@ export class Cloudpilot {
 
     @guard()
     serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Uint8Array | undefined {
-        if (sessionImage.engine === Engine.cloudpilot && sessionImage.nand) {
+        if (sessionImage.engine === EngineType.cloudpilot && sessionImage.nand) {
             throw new Error('cloudpilot image cannot have nand');
         }
 
@@ -655,7 +655,7 @@ export class Cloudpilot {
 
         try {
             switch (sessionImage.engine) {
-                case Engine.cloudpilot:
+                case EngineType.cloudpilot:
                     return this.serializeSessionImageCloudpilot(sessionImage.deviceId, {
                         rom,
                         romLength: sessionImage.rom.length,
@@ -667,7 +667,7 @@ export class Cloudpilot {
                         metadataLength,
                     });
 
-                case Engine.uarm:
+                case EngineType.uarm:
                     return this.serializeSessionImageUarm(sessionImage.deviceId, {
                         rom,
                         romLength: sessionImage.rom.length,
@@ -699,10 +699,10 @@ export class Cloudpilot {
         const bufferPtr = this.copyIn(buffer);
         try {
             switch (engine) {
-                case Engine.cloudpilot:
+                case EngineType.cloudpilot:
                     return this.deserializeSessionImageCloudpilot(bufferPtr, buffer.length);
 
-                case Engine.uarm:
+                case EngineType.uarm:
                     return this.deserializeSessionImageUarm(bufferPtr, buffer.length);
 
                 default:
@@ -863,7 +863,7 @@ export class Cloudpilot {
         try {
             return romInfoNative.IsValid()
                 ? {
-                      engine: Engine.cloudpilot,
+                      engine: EngineType.cloudpilot,
                       cardVersion: romInfoNative.CardVersion(),
                       cardName: romInfoNative.CardName(),
                       romVersion: romInfoNative.RomVersion(),
@@ -888,7 +888,7 @@ export class Cloudpilot {
         try {
             return romInfoNative.IsValid()
                 ? {
-                      engine: Engine.uarm,
+                      engine: EngineType.uarm,
                       romName: romInfoNative.GetRomName(),
                       cardName: romInfoNative.GetCardName(),
                       manufacturer: romInfoNative.GetManufacturer(),
@@ -924,7 +924,7 @@ export class Cloudpilot {
             if (serializedMetadata) {
                 try {
                     metadata = {
-                        engine: Engine.cloudpilot,
+                        engine: EngineType.cloudpilot,
                         ...JSON.parse(new TextDecoder().decode(serializedMetadata)),
                     };
                 } catch (e) {
@@ -933,7 +933,7 @@ export class Cloudpilot {
             }
 
             return {
-                engine: Engine.cloudpilot,
+                engine: EngineType.cloudpilot,
                 deviceId,
                 rom,
                 memory,
@@ -969,14 +969,14 @@ export class Cloudpilot {
             let metadata: T | undefined;
             if (serializedMetadata) {
                 try {
-                    metadata = { engine: Engine.uarm, ...JSON.parse(new TextDecoder().decode(serializedMetadata)) };
+                    metadata = { engine: EngineType.uarm, ...JSON.parse(new TextDecoder().decode(serializedMetadata)) };
                 } catch (e) {
                     console.warn('invalid metadata', e);
                 }
             }
 
             return {
-                engine: Engine.uarm,
+                engine: EngineType.uarm,
                 deviceId,
                 rom,
                 memory,
