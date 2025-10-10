@@ -3,7 +3,6 @@ import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { EngineType } from '@common/model/Engine';
 import { LoadingController } from '@ionic/angular';
 
 import { memoize } from '@pwa/helper/memoize';
@@ -80,11 +79,11 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     get isCloudpilot(): boolean {
-        return this.settings.engine === EngineType.cloudpilot;
+        return this.settings.engine === 'cloudpilot';
     }
 
     get isUarm(): boolean {
-        return this.settings.engine === EngineType.uarm;
+        return this.settings.engine === 'uarm';
     }
 
     private memoizedDevicelist = memoize<Array<DeviceId>, Array<[DeviceId, string]>>((x) =>
@@ -222,27 +221,25 @@ export class SessionSettingsComponent implements OnInit {
             }),
             orientation: new UntypedFormControl(this.settings.deviceOrientation),
             manageHotsyncName: new UntypedFormControl(
-                this.settings.engine === EngineType.cloudpilot ? !this.settings.dontManageHotsyncName : false,
+                this.settings.engine === 'cloudpilot' ? !this.settings.dontManageHotsyncName : false,
             ),
-            hotsyncName: new UntypedFormControl(
-                this.settings.engine === EngineType.cloudpilot ? this.settings.hotsyncName : '',
-            ),
+            hotsyncName: new UntypedFormControl(this.settings.engine === 'cloudpilot' ? this.settings.hotsyncName : ''),
             speed: new UntypedFormControl(
-                this.settings.engine === EngineType.cloudpilot
+                this.settings.engine === 'cloudpilot'
                     ? this.settings.speed >= 1
                         ? this.settings.speed - 1
                         : 1 - 1 / this.settings.speed
                     : 0,
             ),
-            targetMips: new UntypedFormControl(this.settings.engine === EngineType.uarm ? this.settings.targetMips : 0),
+            targetMips: new UntypedFormControl(this.settings.engine === 'uarm' ? this.settings.targetMips : 0),
             warnSlowdownThreshold: new UntypedFormControl(
-                this.settings.engine === EngineType.uarm ? Math.round(this.settings.warnSlowdownThreshold * 100) : 0,
+                this.settings.engine === 'uarm' ? Math.round(this.settings.warnSlowdownThreshold * 100) : 0,
             ),
             maxHostLoad: new UntypedFormControl(
-                this.settings.engine === EngineType.uarm ? Math.round(100 * this.settings.maxHostLoad) : 0,
+                this.settings.engine === 'uarm' ? Math.round(100 * this.settings.maxHostLoad) : 0,
             ),
             disableAudioEmulation: new UntypedFormControl(
-                this.settings.engine === EngineType.uarm ? this.settings.disableAudio : false,
+                this.settings.engine === 'uarm' ? this.settings.disableAudio : false,
             ),
             nand: new UntypedFormControl(),
         });
@@ -256,7 +253,7 @@ export class SessionSettingsComponent implements OnInit {
     };
 
     private saveCloudpilot(): void {
-        if (this.settings.engine !== EngineType.cloudpilot) return;
+        if (this.settings.engine !== 'cloudpilot') return;
 
         if (this.formControlManageHotsyncName.value) {
             if (this.settings.dontManageHotsyncName) {
@@ -278,7 +275,7 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     private saveUarm(): void {
-        if (this.settings.engine !== EngineType.uarm) return;
+        if (this.settings.engine !== 'uarm') return;
 
         this.settings.targetMips = this.targetMipsValue;
         this.settings.warnSlowdownThreshold = this.warnSlowdownThresholdValue / 100;

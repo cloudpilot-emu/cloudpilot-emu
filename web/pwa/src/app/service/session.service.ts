@@ -2,7 +2,6 @@ import { Injectable, Signal, signal } from '@angular/core';
 import { SessionImage } from '@common/bridge/Cloudpilot';
 import { engine, nandSize, ramSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
-import { EngineType } from '@common/model/Engine';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { LoadingController } from '@ionic/angular';
 import { ZipfileWalkerState } from '@native/cloudpilot_web';
@@ -154,7 +153,7 @@ export class SessionService {
             id: -1,
             device,
             ram:
-                eng === EngineType.cloudpilot
+                eng === 'cloudpilot'
                     ? (await this.cloudpilotService.cloudpilot).minRamForDevice(device) >>> 20
                     : ramSize(device) >>> 20,
             rom: '',
@@ -339,7 +338,7 @@ export class SessionService {
     }
 
     private async getRamSizeForSession(image: SessionImage<unknown>): Promise<number> {
-        if (image.engine === EngineType.cloudpilot) {
+        if (image.engine === 'cloudpilot') {
             return (await this.cloudpilotService.cloudpilot).minRamForDevice(image.deviceId) >>> 20;
         }
 

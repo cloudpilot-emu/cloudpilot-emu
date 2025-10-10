@@ -1,4 +1,4 @@
-import { EngineType } from '@common/model/Engine';
+import { EngineType } from '@common/model/EngineType';
 
 const MAGIC_CLOUDPILOT = 0x20150103;
 const MAGIC_UARM = 0x19800819;
@@ -11,10 +11,10 @@ export function identifySessionEngine(data: Uint8Array): EngineType | undefined 
 
     switch (magic) {
         case MAGIC_CLOUDPILOT:
-            return EngineType.cloudpilot;
+            return 'cloudpilot';
 
         case MAGIC_UARM:
-            return EngineType.uarm;
+            return 'uarm';
 
         default:
             return undefined;

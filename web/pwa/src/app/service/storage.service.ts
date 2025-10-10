@@ -3,7 +3,7 @@ import { isIOS } from '@common/helper/browser';
 import { crc32 } from '@common/helper/crc';
 import { nandSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
-import { EngineType } from '@common/model/Engine';
+import { EngineType } from '@common/model/EngineType';
 import { Mutex } from 'async-mutex';
 import md5 from 'md5';
 import { Event } from 'microevent.ts';
@@ -569,7 +569,7 @@ export class StorageService {
         this.savePagedData(
             objectStoreMemory,
             1024,
-            engine === EngineType.cloudpilot ? compressPage8 : compressPage,
+            engine === 'cloudpilot' ? compressPage8 : compressPage,
             sessionId,
             0,
             memory8,

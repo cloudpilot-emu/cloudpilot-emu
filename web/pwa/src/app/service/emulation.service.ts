@@ -2,7 +2,6 @@ import { ApplicationRef, Injectable, NgZone } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { isIOS } from '@common/helper/browser';
 import { SchedulerKind } from '@common/helper/scheduler';
-import { EngineType } from '@common/model/Engine';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
@@ -102,7 +101,7 @@ export class EmulationService extends AbstractEmulationService {
                     throw new Error(`invalid session ${id}`);
                 }
 
-                fixmeAssertSessionHasEngine(session, EngineType.cloudpilot);
+                fixmeAssertSessionHasEngine(session, 'cloudpilot');
 
                 this.emulationState.setCurrentSession(undefined);
 
@@ -157,21 +156,21 @@ export class EmulationService extends AbstractEmulationService {
 
     protected getConfiguredSpeed(): number {
         const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, EngineType.cloudpilot);
+        fixmeAssertSessionHasEngine(session, 'cloudpilot');
 
         return session?.speed || 1;
     }
 
     protected manageHotsyncName(): boolean {
         const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, EngineType.cloudpilot);
+        fixmeAssertSessionHasEngine(session, 'cloudpilot');
 
         return !session?.dontManageHotsyncName;
     }
 
     protected getConfiguredHotsyncName(): string | undefined {
         const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, EngineType.cloudpilot);
+        fixmeAssertSessionHasEngine(session, 'cloudpilot');
 
         return session?.hotsyncName;
     }
@@ -244,7 +243,7 @@ export class EmulationService extends AbstractEmulationService {
 
     private updateFeatures(): void {
         const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, EngineType.cloudpilot);
+        fixmeAssertSessionHasEngine(session, 'cloudpilot');
 
         if (!this.cloudpilotInstance) return;
 

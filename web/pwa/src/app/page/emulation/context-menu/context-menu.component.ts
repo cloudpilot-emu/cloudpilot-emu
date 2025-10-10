@@ -2,7 +2,6 @@ import { Component, Input } from '@angular/core';
 import { PalmButton } from '@common/bridge/Cloudpilot';
 import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { EngineType } from '@common/model/Engine';
 import { SlotType } from '@common/model/SlotType';
 import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 
@@ -199,7 +198,7 @@ export class ContextMenuComponent {
 
     async editSettings(): Promise<void> {
         const session = this.emulationStateService.currentSession();
-        fixmeAssertSessionHasEngine(session, EngineType.cloudpilot);
+        fixmeAssertSessionHasEngine(session, 'cloudpilot');
         if (!session) {
             return;
         }
