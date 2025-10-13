@@ -4,7 +4,7 @@ import { Event } from 'microevent.ts';
 
 import { debounce } from '@pwa/helper/debounce';
 
-import { EmulationStateService } from './emulation-state.service';
+import { EmulationContextService } from './emulation-context.service';
 
 class Verbatim {
     constructor(public markup: string) {}
@@ -16,7 +16,7 @@ class Verbatim {
 export class AlertService {
     constructor(
         private alertController: AlertController,
-        private emulationState: EmulationStateService,
+        private emulationContext: EmulationContextService,
     ) {}
 
     verbatim(markup: string): Verbatim {
@@ -121,7 +121,7 @@ export class AlertService {
 
     @debounce()
     async fatalError(reason: string, emergencySave = true) {
-        const haveCurrentSession = !!this.emulationState.currentSession();
+        const haveCurrentSession = !!this.emulationContext.session();
 
         const alert = await this.alertController.create({
             header: 'Error',

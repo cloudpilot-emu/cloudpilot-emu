@@ -35,7 +35,7 @@ export class PerformanceWatchdogService implements OnDestroy {
     }
 
     private onInterval = () => {
-        if (this.emulationService.getEmulationSpeed() < 1) {
+        if (this.emulationService.isSlowdown()) {
             if (this.level < TRIPPOINT) this.level++;
             if (this.level === TRIPPOINT) this.ngZone.run(() => (this.slowdownDetected = true));
         } else {

@@ -1,13 +1,16 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
+import { StorageCardProvider } from '@common/engine/Engine';
+import { EngineSettings } from '@common/engine/EngineSettings';
+import { SnapshotContainer } from '@common/engine/Snapshot';
 import { isIOS } from '@common/helper/browser';
 import { SchedulerKind } from '@common/helper/scheduler';
-import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
+import { AbstractEmulationService, Executor } from '@common/service/AbstractEmulationService';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
-import { Session, fixmeAssertSessionHasEngine } from '@pwa/model/Session';
+import { Session } from '@pwa/model/Session';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 
 import { AlertService } from './alert.service';
@@ -15,7 +18,7 @@ import { BootstrapService } from './bootstrap-service';
 import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
 import { CloudpilotService } from './cloudpilot.service';
-import { EmulationStateService } from './emulation-state.service';
+import { EmulationContextService } from './emulation-context.service';
 import { ErrorService } from './error.service';
 import { FeatureService } from './feature.service';
 import { KvsService } from './kvs.service';
@@ -27,7 +30,10 @@ import { SnapshotService } from './snapshot.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageService } from './storage.service';
 
-const SNAPSHOT_INTERVAL = 1000;
+// TODO: Snapshots
+// TODO: ModalWatcher
+// TODO: Insert / Eject storage (badly broken atm)
+// TODO: Get rid of cloudpilot service
 
 @Injectable({ providedIn: 'root' })
 export class EmulationService extends AbstractEmulationService {
@@ -35,7 +41,7 @@ export class EmulationService extends AbstractEmulationService {
         private storageService: StorageService,
         private ngZone: NgZone,
         private loadingController: LoadingController,
-        private emulationState: EmulationStateService,
+        private emulationContext: EmulationContextService,
         private snapshotService: SnapshotService,
         private errorService: ErrorService,
         private alertService: AlertService,
@@ -45,25 +51,31 @@ export class EmulationService extends AbstractEmulationService {
         private networkService: NetworkService,
         private buttonService: ButtonService,
         private bootstrapService: BootstrapService,
-        private cloudpilotService: CloudpilotService,
         private storageCardService: StorageCardService,
         private storageCardContext: StorageCardContext,
         private sessionsService: SessionService,
         private featureService: FeatureService,
+        private cloudpilotService: CloudpilotService,
         private app: ApplicationRef,
     ) {
         super();
 
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
-        errorService.fatalErrorEvent.addHandler(this.pause);
+        errorService.fatalErrorEvent.addHandler(this.stop);
         this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
 
-        void this.cloudpilotService.cloudpilot.then((instance) => {
-            instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode);
+        void this.getCloudpilotInstance().then((instance) => {
+            this.cloudpilotInstance = instance;
 
             this.networkService.initialize(instance);
-            this.networkService.resumeEvent.addHandler(() => this.running && this.advanceEmulation(performance.now()));
+            this.networkService.resumeEvent.addHandler(() => this.processTimesliceNow());
         });
+
+        this.snapshotService.snapshotRequestEvent.addHandler((cb) =>
+            this.snapshotNow()
+                .then(() => cb())
+                .catch(cb),
+        );
 
         const storedSession = getStoredSession();
         this.bootstrapCompletePromise = Promise.resolve();
@@ -81,10 +93,9 @@ export class EmulationService extends AbstractEmulationService {
 
     switchSession = (id: number, options: { showLoader?: boolean } = {}): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
-            if (id === this.emulationState.currentSession()?.id) return true;
+            if (id === this.emulationContext.session()?.id) return true;
 
             await this.stopUnchecked();
-
             await this.bootstrapService.hasRendered();
 
             let loader: HTMLIonLoadingElement | undefined;
@@ -101,20 +112,18 @@ export class EmulationService extends AbstractEmulationService {
                     throw new Error(`invalid session ${id}`);
                 }
 
-                fixmeAssertSessionHasEngine(session, 'cloudpilot');
+                this.emulationContext.clearContext();
 
-                this.emulationState.setCurrentSession(undefined);
-
-                const cloudpilot = await this.cloudpilotService.cloudpilot;
-
-                if (!(await this.restoreSession(session, cloudpilot))) {
+                if (!(await this.restoreSession(session))) {
                     void this.alertService.errorMessage(
                         'Failed to launch session. This may be the result of a bad ROM file.',
                     );
                     return false;
                 }
 
-                this.emulationState.setCurrentSession(session);
+                if (!this.engine) throw new Error('engine failed to initialize');
+
+                this.emulationContext.setContext(session, this.engine);
                 await this.sessionsService.updateSession({ ...session, lastLaunch: Date.now() });
 
                 setStoredSession(id);
@@ -127,95 +136,55 @@ export class EmulationService extends AbstractEmulationService {
 
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            if (
-                !this.emulationState.currentSession() ||
-                this.running ||
-                this.errorService.hasFatalError() ||
-                !this.cloudpilotInstance
-            ) {
+            if (!this.emulationContext.session() || this.errorService.hasFatalError()) {
                 return;
             }
-            await this.kvsService.mutex.runExclusive(() => this.updateFeatures());
+            await this.kvsService.mutex.runExclusive(() => this.updateSettings());
 
-            this.doResume();
-
-            this.lastSnapshotAt = performance.now();
+            await this.doResume();
         });
 
     pause = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            this.doPause();
+            await this.doStop();
 
-            if (!this.errorService.hasFatalError() && this.emulationState.currentSession()) {
-                await this.snapshotService.waitForPendingSnapshot();
-                await this.snapshotService.triggerSnapshot();
+            if (!this.errorService.hasFatalError() && this.emulationContext.session()) {
+                await this.snapshotNow();
             }
         });
 
     stop = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 
-    protected getConfiguredSpeed(): number {
-        const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, 'cloudpilot');
-
-        return session?.speed || 1;
-    }
-
-    protected manageHotsyncName(): boolean {
-        const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, 'cloudpilot');
-
-        return !session?.dontManageHotsyncName;
-    }
-
-    protected getConfiguredHotsyncName(): string | undefined {
-        const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, 'cloudpilot');
-
-        return session?.hotsyncName;
-    }
-
-    protected updateConfiguredHotsyncName(hotsyncName: string): void {
-        const session = this.emulationState.currentSession();
+    protected override updateConfiguredHotsyncName(hotsyncName: string): void {
+        const session = this.emulationContext.session();
         if (!session) return;
 
         void this.storageService.updateSessionPartial(session.id, { hotsyncName });
     }
 
-    protected getConfiguredSchdedulerKind(): SchedulerKind {
-        return this.kvsService.kvs.runHidden && this.featureService.runHidden
-            ? SchedulerKind.timeout
-            : SchedulerKind.animationFrame;
+    protected override handleFatalInNativeCode(error: Error): void {
+        this.errorService.fatalInNativeCode(error);
     }
 
-    protected hasFatalError(): boolean {
-        return this.errorService.hasFatalError();
+    protected override handlePalmosStateChange(): void {
+        this.isDirty = true;
     }
 
-    protected skipEmulationUpdate(): boolean {
-        return this.modalWatcher.isModalActive() && this.frameCounter !== 0;
-    }
+    protected override onAfterAdvanceEmulation(sliceSizeSeconds: number): void {
+        const session = this.emulationContext.session();
 
-    protected override onAfterAdvanceEmulation(timestamp: number, cycles: number): void {
-        if (!this.cloudpilotInstance) return;
-
-        const session = this.emulationState.currentSession();
-
-        if (this.uiInitialized && session && session.osVersion === undefined) {
+        if (this.isUiInitialized() && session && session.osVersion === undefined) {
             void this.storageService.updateSessionPartial(session.id, {
-                osVersion: this.cloudpilotInstance.getOSVersion(),
+                osVersion: this.getOSVersion(),
             });
         }
 
-        this.buttonService.tick(cycles / this.cloudpilotInstance.cyclesPerSecond());
+        this.buttonService.tick(sliceSizeSeconds);
 
-        if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL && !this.cloudpilotInstance.isSuspended()) {
-            void this.snapshotService.triggerSnapshot();
-
-            this.lastSnapshotAt = timestamp;
+        if (this.isDirty) {
+            this.app.tick();
+            this.isDirty = false;
         }
-
-        if (this.isDirty) this.app.tick();
     }
 
     protected override handleSuspend(): void {
@@ -225,42 +194,68 @@ export class EmulationService extends AbstractEmulationService {
         this.networkService.handleSuspend();
     }
 
-    protected override callScheduler(): void {
-        this.ngZone.runOutsideAngular(() => this.scheduler.schedule());
+    protected override handleSnapshot(snapshot: SnapshotContainer): void {
+        void this.snapshotService.storeSnapshot(snapshot);
+    }
+
+    protected override getCloudpilotInstance(): Promise<Cloudpilot> {
+        return this.cloudpilotService.cloudpilot;
+    }
+
+    private async snapshotNow(): Promise<void> {
+        if (!this.engine) return;
+
+        await this.snapshotService.waitForPendingSnapshot();
+
+        const snapshot = await this.requestSnapshot();
+        if (!snapshot) {
+            console.warn('failed to take snapshot');
+            return;
+        }
+
+        await this.snapshotService.storeSnapshot(snapshot);
     }
 
     private async stopUnchecked(): Promise<void> {
-        if (!this.emulationState.currentSession()) return;
+        if (!this.emulationContext.session()) return;
 
-        this.doStop();
-
-        await this.snapshotService.waitForPendingSnapshot();
-        await this.snapshotService.triggerSnapshot();
+        await this.doStop();
+        await this.snapshotNow();
 
         this.storageCardService.onEmulatorStop();
-        this.emulationState.setCurrentSession(undefined);
+        this.emulationContext.clearContext();
     }
 
-    private updateFeatures(): void {
-        const session = this.emulationState.currentSession();
-        fixmeAssertSessionHasEngine(session, 'cloudpilot');
+    private updateSettings(): void {
+        const session = this.emulationContext.session();
+        if (!session) return;
 
-        if (!this.cloudpilotInstance) return;
+        const clipboardIntegration = this.kvsService.kvs.clipboardIntegration && this.clipboardService.isSupported();
 
-        const clipboardIntegrationEnabled =
-            this.kvsService.kvs.clipboardIntegration && this.clipboardService.isSupported();
+        const schedulerKind =
+            this.kvsService.kvs.runHidden && this.featureService.runHidden
+                ? SchedulerKind.timeout
+                : SchedulerKind.animationFrame;
 
-        if (this.cloudpilotInstance.getClipboardIntegration() !== clipboardIntegrationEnabled) {
-            this.cloudpilotInstance.setClipboardIntegration(clipboardIntegrationEnabled);
-        }
+        const settings: Partial<EngineSettings> =
+            session.engine === 'cloudpilot'
+                ? {
+                      speed: session.speed,
+                      manageHotsyncName: session.dontManageHotsyncName,
+                      hotsyncName: session.hotsyncName,
+                      schedulerKind,
 
-        if (this.cloudpilotInstance.getNetworkRedirection() !== this.kvsService.kvs.networkRedirection) {
-            this.cloudpilotInstance.setNetworkRedirection(this.kvsService.kvs.networkRedirection);
+                      clipboardIntegration,
+                      networkIntegration: this.kvsService.kvs.networkRedirection,
+                  }
+                : {
+                      disableAudio: session.disableAudio,
+                      targetMips: session.targetMips,
+                      warnSlowdownThreshold: session.warnSlowdownThreshold,
+                      maxHostLoad: session.maxHostLoad,
+                  };
 
-            this.networkService.reset();
-        }
-
-        this.cloudpilotInstance.setHotsyncNameManagement(!session?.dontManageHotsyncName);
+        this.updateEngineSettings(settings);
     }
 
     private async recoverStoredSession(session: number) {
@@ -295,60 +290,72 @@ Sorry for the inconvenience.`,
         }
     }
 
-    private async restoreSession(session: Session, cloudpilot: Cloudpilot): Promise<boolean> {
-        const { rom, memory, savestate } = await this.storageService.loadSession(
+    private async restoreSession(session: Session): Promise<boolean> {
+        const { rom, memory, savestate, nand } = await this.storageService.loadSession(
             session,
             this.kvsService.kvs.snapshotIntegrityCheck,
         );
+
         if (!rom) {
             throw new Error(`invalid ROM ${session.rom}`);
         }
 
-        cloudpilot.clearExternalStorage();
+        const mountedCard = session.mountedCard;
+        const storageCardProvider: StorageCardProvider | undefined =
+            mountedCard !== undefined
+                ? {
+                      load: (engine) =>
+                          this.storageCardService.loadCardInEmulator(mountedCard, engine).then(() => undefined),
+                  }
+                : undefined;
 
-        if (session.mountedCard !== undefined) {
-            await this.storageCardService.loadCardInEmulator(session.mountedCard);
-        }
-
-        if (!this.openSession(cloudpilot, rom, session.device, memory, savestate)) {
+        if (!this.openSession(rom, session.device, nand, memory, savestate, storageCardProvider)) {
             return false;
         }
 
-        this.networkService.reset();
-        this.buttonService.reset(cloudpilot);
+        if (!this.engine) throw new Error('engine failed to initialize');
 
-        await this.snapshotService.initialize(session, await this.cloudpilotService.cloudpilot);
+        this.networkService.reset();
+        this.buttonService.reset(this.engine);
+
+        await this.snapshotService.initialize(session);
 
         return true;
     }
 
     private onSessionChange = ([sessionId, session]: [number, Session | undefined]): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            const currentSession = this.emulationState.currentSession();
-            if (sessionId !== currentSession?.id) return;
+            const ctx = this.emulationContext.context();
 
-            if (currentSession.mountedCard !== undefined && session === undefined) {
-                this.storageCardContext.release(currentSession.mountedCard, CardOwner.cloudpilot);
+            if (sessionId !== ctx?.session?.id) return;
+
+            if (ctx?.session?.mountedCard !== undefined && session === undefined) {
+                this.storageCardContext.release(ctx.session.mountedCard, CardOwner.cloudpilot);
             }
 
-            this.emulationState.setCurrentSession(session);
-            if (!this.emulationState.currentSession()) {
+            if (session === undefined) {
                 clearStoredSession();
-
-                this.stopLoop();
+                void this.stop();
+            } else {
+                if (ctx) this.emulationContext.setContext(session, ctx.engine);
             }
         });
 
     private onEmergencySave = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            const session = this.emulationState.currentSession();
+            const session = this.emulationContext.session();
 
             if (session) {
                 void this.sessionsService.emergencySaveSession(session);
             }
         });
 
-    protected mutex = new Mutex();
+    protected override clandestineExecute: Executor = (fn) => this.ngZone.runOutsideAngular(fn);
+
+    private mutex = new Mutex();
+
+    private cloudpilotInstance: Cloudpilot | undefined;
+
     private bootstrapCompletePromise: Promise<void>;
-    private lastSnapshotAt = 0;
+    private isDirty = false;
 }

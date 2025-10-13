@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
-import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { EmulationContextService } from '@pwa/service/emulation-context.service';
 
 function getHeight(selector: string): number | undefined {
     const elts = document.querySelectorAll(selector);
@@ -26,7 +26,7 @@ export class TabsPage {
     constructor(
         private router: Router,
         private canvasDisplayService: CanvasDisplayService,
-        private emulationStateService: EmulationStateService,
+        private emulationContext: EmulationContextService,
     ) {
         window.addEventListener('resize', this.updateUseSmallUI);
         window.addEventListener('orientationchange', this.updateUseSmallUI);
@@ -35,11 +35,7 @@ export class TabsPage {
         this.updateUseSmallUI();
     }
     get smallUI(): boolean {
-        return (
-            this.router.url === '/tab/emulation' &&
-            this.useSmallUI &&
-            this.emulationStateService.currentSession() !== undefined
-        );
+        return this.router.url === '/tab/emulation' && this.useSmallUI && this.emulationContext.session() !== undefined;
     }
 
     lock(): void {

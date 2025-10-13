@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Cloudpilot, PalmButton } from '@common/bridge/Cloudpilot';
+import { PalmButton } from '@common/bridge/Cloudpilot';
+import { Engine } from '@common/engine/Engine';
 
 interface ButtonContext {
     button: PalmButton;
@@ -10,16 +11,14 @@ const PRESS_DURATION = 250;
 
 @Injectable({ providedIn: 'root' })
 export class ButtonService {
-    reset(cloudpilot: Cloudpilot): void {
-        this.cloudpilot = cloudpilot;
+    reset(engine: Engine): void {
+        this.engine = engine;
         this.buttons.clear();
 
-        [PalmButton.power, PalmButton.cradle].forEach((button) => cloudpilot.queueButtonUp(button));
+        [PalmButton.power, PalmButton.cradle].forEach((button) => engine.buttonUp(button));
     }
 
     engage(button: PalmButton): void {
-        if (!this.cloudpilot) return;
-
         if (this.buttons.has(button)) {
             this.buttons.get(button)!.timer = 0;
         } else {
@@ -28,24 +27,22 @@ export class ButtonService {
                 timer: 0,
             });
 
-            this.cloudpilot?.queueButtonDown(button);
+            this.engine?.buttonDown(button);
         }
     }
 
     tick(seconds: number): void {
-        if (!this.cloudpilot) return;
-
         for (const [button, ctx] of this.buttons) {
             ctx.timer += seconds * 1000;
 
             if (ctx.timer > PRESS_DURATION) {
-                this.cloudpilot.queueButtonUp(button);
+                this.engine?.buttonUp(button);
 
                 this.buttons.delete(button);
             }
         }
     }
 
-    private cloudpilot: Cloudpilot | undefined;
+    private engine: Engine | undefined;
     private buttons = new Map<PalmButton, ButtonContext>();
 }

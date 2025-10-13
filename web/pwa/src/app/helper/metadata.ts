@@ -1,6 +1,6 @@
 import { SessionMetadata } from '@common/model/SessionMetadata';
 
-import { Session, fixmeAssertSessionHasEngine } from '@pwa/model/Session';
+import { Session } from '@pwa/model/Session';
 
 export function metadataForSession(session: Session): SessionMetadata {
     switch (session.engine) {
@@ -19,5 +19,4 @@ export function metadataForSession(session: Session): SessionMetadata {
         default:
             throw new Error('unreachable');
     }
-    fixmeAssertSessionHasEngine(session, 'cloudpilot');
 }

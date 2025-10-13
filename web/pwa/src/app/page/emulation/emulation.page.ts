@@ -11,7 +11,7 @@ import { AlertService } from '@pwa/service/alert.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
-import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { EmulationContextService } from '@pwa/service/emulation-context.service';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { EventHandlingService } from '@pwa/service/event-handling.service';
 import { FileService } from '@pwa/service/file.service';
@@ -37,7 +37,7 @@ import { ContextMenuComponent } from './context-menu/context-menu.component';
 export class EmulationPage implements DragDropClient {
     constructor(
         public emulationService: EmulationService,
-        public emulationState: EmulationStateService,
+        public emulationContext: EmulationContextService,
         private storageService: StorageService,
         public eventHandlingService: EventHandlingService,
         private canvasDisplayService: CanvasDisplayService,
@@ -76,7 +76,7 @@ export class EmulationPage implements DragDropClient {
             await this.emulationService.bootstrapComplete();
             this.bootstrapComplete = true;
 
-            const session = this.emulationState.currentSession();
+            const session = this.emulationContext.session();
 
             if (session && !session.wasResetForcefully) {
                 await this.launchEmulator();
@@ -231,8 +231,8 @@ export class EmulationPage implements DragDropClient {
 
     cancelIfEmulationActive(event: TouchEvent): void {
         if (
-            this.emulationState.currentSession() &&
-            !this.emulationState.currentSession()?.wasResetForcefully &&
+            this.emulationContext.session() &&
+            !this.emulationContext.session()?.wasResetForcefully &&
             event.cancelable
         ) {
             event.preventDefault();
@@ -246,7 +246,7 @@ export class EmulationPage implements DragDropClient {
             componentProps: {
                 sessions: this.sessionService
                     .sessions()
-                    .filter((session) => session.id !== this.emulationState.currentSession()?.id),
+                    .filter((session) => session.id !== this.emulationContext.session()?.id),
                 onSelect: (session: Session) => this.switchSession(session),
             },
             dismissOnSelect: true,
@@ -265,7 +265,7 @@ export class EmulationPage implements DragDropClient {
     }
 
     private async clearForcefulReset(): Promise<void> {
-        const session = this.emulationState.currentSession();
+        const session = this.emulationContext.session();
         if (!session) return;
 
         await this.storageService.updateSessionPartial(session.id, { wasResetForcefully: false });
@@ -275,11 +275,11 @@ export class EmulationPage implements DragDropClient {
         if (!this.bootstrapComplete) return '';
         if (this.switching) return this.lastTitle;
 
-        return this.emulationState.currentSession()?.name ?? 'No session';
+        return this.emulationContext.session()?.name ?? 'No session';
     }
 
     private async launchEmulator(): Promise<void> {
-        const session = this.emulationState.currentSession();
+        const session = this.emulationContext.session();
         if (!session) return;
 
         await this.kvsService.mutex.runExclusive(
@@ -338,7 +338,7 @@ export class EmulationPage implements DragDropClient {
             return;
         }
 
-        const currentSession = this.emulationState.currentSession();
+        const currentSession = this.emulationContext.session();
         if (!currentSession || !this.emulationService.isRunning()) {
             void this.alertService.message(
                 'Unable to install',

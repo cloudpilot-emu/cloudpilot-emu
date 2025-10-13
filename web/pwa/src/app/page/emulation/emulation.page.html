@@ -4,7 +4,7 @@
             <app-breadcrumb
                 [disabled]="
                     !bootstrapComplete ||
-                    (sessions.length === 1 && !!emulationState.currentSession()) ||
+                    (sessions.length === 1 && !!emulationContext.session()) ||
                     sessions.length === 0
                 "
                 (trigger)="onBreadcrumbTrigger($event)"
@@ -54,7 +54,7 @@
     <div
         class="container running-session"
         [style.display]="
-            emulationState.currentSession() && !emulationState.currentSession()?.wasResetForcefully ? undefined : 'none'
+            emulationContext.session() && !emulationContext.session()?.wasResetForcefully ? undefined : 'none'
         "
         (touchstart)="cancelIfEmulationActive($event)"
         (touchmove)="cancelIfEmulationActive($event)"
@@ -63,11 +63,11 @@
             #canvas
             [style.width]="cssWidth"
             [style.height]="cssHeight"
-            [style.display]="emulationState.currentSession() ? 'block' : 'none'"
+            [style.display]="emulationContext.session() ? 'block' : 'none'"
         ></canvas>
     </div>
 
-    <div class="container no-session" *ngIf="!emulationState.currentSession()?.wasResetForcefully ? undefined : 'none'">
+    <div class="container no-session" *ngIf="!emulationContext.session()?.wasResetForcefully ? undefined : 'none'">
         The device was reset forcefully. How do you want to boot?
 
         <ion-button type="button" color="light" (click)="bootAfterForcefulReset()">Normal boot</ion-button>
@@ -77,7 +77,7 @@
         <ion-button type="button" color="light" (click)="bootAfterForcefulResetHardReset()">Hard reset</ion-button>
     </div>
 
-    <div class="container no-session" *ngIf="!emulationState.currentSession() && bootstrapComplete && !switching">
+    <div class="container no-session" *ngIf="!emulationContext.session() && bootstrapComplete && !switching">
         <div>No session selected</div>
     </div>
 </ion-content>

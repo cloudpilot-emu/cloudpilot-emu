@@ -115,7 +115,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
                       `snapshot time blocking : ${snapshotStatistics.timeBlocking.toFixed(2)} msec`,
                   ]
                 : []),
-            ...(emulationStatistics
+            ...(emulationStatistics?.type === 'cloudpilot'
                 ? [
                       `host speed             : ${emulationStatistics.hostSpeed.toFixed(2)}x`,
                       `emulation speed        : ${emulationStatistics.emulationSpeed.toFixed(2)}x`,

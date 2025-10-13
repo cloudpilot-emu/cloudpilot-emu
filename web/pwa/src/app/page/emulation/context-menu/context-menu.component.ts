@@ -13,7 +13,7 @@ import { BackupService } from '@pwa/service/backup.service';
 import { ButtonService } from '@pwa/service/button.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { EmulationContextService } from '@pwa/service/emulation-context.service';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { KvsService } from '@pwa/service/kvs.service';
@@ -51,7 +51,7 @@ function rotate(oldOrientation: DeviceOrientation): DeviceOrientation {
 export class ContextMenuComponent {
     constructor(
         public emulationService: EmulationService,
-        private emulationStateService: EmulationStateService,
+        private emulationContext: EmulationContextService,
         private backupService: BackupService,
         private buttonService: ButtonService,
         private actionSheetController: ActionSheetController,
@@ -169,35 +169,35 @@ export class ContextMenuComponent {
     }
 
     get powerDisabled(): boolean {
-        const currentSession = this.emulationStateService.currentSession();
+        const currentSession = this.emulationContext.session();
 
         return currentSession ? quirkNoPoweroff(currentSession.device) : false;
     }
 
     get hasActiveSession(): boolean {
-        return !!this.emulationStateService.currentSession();
+        return !!this.emulationContext.session();
     }
 
     get supportsStorageCard(): boolean {
-        const currentSession = this.emulationStateService.currentSession();
+        const currentSession = this.emulationContext.session();
         if (!currentSession) return false;
 
         return slotType(currentSession.device) !== SlotType.none;
     }
 
     get hasMemorystick(): boolean {
-        const currentSession = this.emulationStateService.currentSession();
+        const currentSession = this.emulationContext.session();
         if (!currentSession) return false;
 
         return slotType(currentSession.device) === SlotType.memorystick;
     }
 
     get hasMountedCard(): boolean {
-        return this.emulationStateService.currentSession()?.mountedCard !== undefined;
+        return this.emulationContext.session()?.mountedCard !== undefined;
     }
 
     async editSettings(): Promise<void> {
-        const session = this.emulationStateService.currentSession();
+        const session = this.emulationContext.session();
         fixmeAssertSessionHasEngine(session, 'cloudpilot');
         if (!session) {
             return;
@@ -237,14 +237,14 @@ export class ContextMenuComponent {
     }
 
     async rotate(): Promise<void> {
-        const oldSession = this.emulationStateService.currentSession();
+        const oldSession = this.emulationContext.session();
         if (!oldSession) return;
 
         await this.storageService.updateSessionPartial(oldSession.id, {
             deviceOrientation: rotate(oldSession.deviceOrientation),
         });
 
-        const session = this.emulationStateService.currentSession();
+        const session = this.emulationContext.session();
 
         await this.canvasDisplayService.initialize(undefined, session);
         this.canvasDisplayService.updateEmulationCanvas();
@@ -253,7 +253,7 @@ export class ContextMenuComponent {
     async insertCard(): Promise<void> {
         void this.popoverController.dismiss();
 
-        const deviceId = this.emulationStateService.currentSession()?.device;
+        const deviceId = this.emulationContext.session()?.device;
         if (deviceId === undefined) return;
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;

@@ -1,6 +1,6 @@
 import { Injectable, Signal, signal } from '@angular/core';
 import { SessionImage } from '@common/bridge/Cloudpilot';
-import { engine, nandSize, ramSize } from '@common/helper/deviceProperties';
+import { engineType, nandSize, ramSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { LoadingController } from '@ionic/angular';
@@ -143,7 +143,7 @@ export class SessionService {
         settings: SessionSettings,
         nand?: Uint8Array,
     ): Promise<Session> {
-        const eng = engine(device);
+        const eng = engineType(device);
 
         if (eng !== settings.engine) throw new Error('settings do not match engine');
         if (nand && nand?.length !== nandSize(device)) throw new Error('NAND size mismatch');

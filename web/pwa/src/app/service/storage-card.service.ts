@@ -1,6 +1,7 @@
 import { Injectable, Signal, signal } from '@angular/core';
 import { CardSupportLevel } from '@common/bridge/Cloudpilot';
 import { FsckContext, FsckResult, GzipContext } from '@common/bridge/FSTools';
+import { Engine } from '@common/engine/Engine';
 import { isIOS } from '@common/helper/browser';
 import { LoadingController } from '@ionic/angular';
 import { ZipfileWalkerState } from '@native/cloudpilot_web';
@@ -18,7 +19,7 @@ import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
 
 import { AlertService } from './alert.service';
-import { EmulationStateService } from './emulation-state.service';
+import { EmulationContextService } from './emulation-context.service';
 import { ErrorService } from './error.service';
 import { FileService } from './file.service';
 import { FsToolsService } from './fstools.service';
@@ -99,7 +100,7 @@ export class StorageCardService {
     constructor(
         private sessionService: SessionService,
         private storageService: StorageService,
-        private emulationStateService: EmulationStateService,
+        private emulationContext: EmulationContextService,
         private cloudpilotService: CloudpilotService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
@@ -155,11 +156,11 @@ export class StorageCardService {
     }
 
     onEmulatorStop(): void {
-        const mountedCard = this.emulationStateService.currentSession()?.mountedCard;
+        const mountedCard = this.emulationContext.session()?.mountedCard;
         if (mountedCard !== undefined) this.storageCardContext.release(mountedCard, CardOwner.cloudpilot);
     }
 
-    async loadCardInEmulator(cardId: number, data?: Uint32Array): Promise<StorageCard> {
+    async loadCardInEmulator(cardId: number, engine: Engine, data?: Uint32Array): Promise<StorageCard> {
         const card = await this.storageService.getCard(cardId);
         if (!card) {
             throw new Error(`no card with id ${cardId}`);
@@ -172,14 +173,8 @@ export class StorageCardService {
             throw new Error('attempt to mount a card while another card is mounted');
         }
 
-        if (!cloudpilot.allocateCard(card.storageId, card.size)) {
-            throw new Error('failed to allocate card');
-        }
-
-        const cardData = cloudpilot.getCardData(card.storageId);
-        if (!cardData) {
-            throw new Error('failed to access card data');
-        }
+        const cardData = engine.allocateCard(card.storageId, card.size);
+        if (!cardData) throw new Error('unable to allocate card data');
 
         this.storageCardContext.claim(cardId, CardOwner.cloudpilot);
 
@@ -190,7 +185,7 @@ export class StorageCardService {
     }
 
     async ejectCurrentCard(): Promise<void> {
-        const session = this.emulationStateService.currentSession();
+        const session = this.emulationContext.session();
         if (!session) throw new Error('no running session');
 
         const cardId = session?.mountedCard;
@@ -548,10 +543,7 @@ export class StorageCardService {
         const session = this.mountedInSession(card.id);
         let cardDataFromEmulator: Uint32Array | undefined;
 
-        if (session && session.id === this.emulationStateService.currentSession()?.id) {
-            await this.snapshotService.waitForPendingSnapshot();
-            await this.snapshotService.triggerSnapshot();
-
+        if (session && session.id === this.emulationContext.session()?.id) {
             const cloudpilot = await this.cloudpilotService.cloudpilot;
             cardDataFromEmulator = cloudpilot.getCardData(card.storageId);
 
@@ -831,7 +823,7 @@ export class StorageCardService {
         const card = await this.storageService.getCard(id);
         if (!session || !card) return;
 
-        if (session.id === this.emulationStateService.currentSession()?.id) {
+        if (session.id === this.emulationContext.session()?.id) {
             await this.ejectCurrentCard();
         } else {
             await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
@@ -842,17 +834,22 @@ export class StorageCardService {
     private async mountCardInEmulator(cardId: number, data?: Uint32Array): Promise<StorageCard> {
         if (await this.cardIsMounted(cardId)) throw new Error('card already mounted');
 
+        const engine = this.emulationContext.engine();
+        if (!engine) {
+            throw new Error('emulation engine not initialized');
+        }
+
         const loader = await this.loadingController.create({ message: 'Inserting...' });
 
         try {
             await loader.present();
             await this.vfsService.releaseCard(cardId);
 
-            const session = this.emulationStateService.currentSession();
+            const session = this.emulationContext.session();
             if (!session) throw new Error('no current session');
             if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
 
-            const card = await this.loadCardInEmulator(cardId, data);
+            const card = await this.loadCardInEmulator(cardId, engine, data);
             const cloudpilot = await this.cloudpilotService.cloudpilot;
 
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });

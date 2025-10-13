@@ -25,7 +25,7 @@ import { memoize } from '@pwa/helper/memoize';
 import { Session, buildSettings, mergeSettings, settingsFromMetadata, settingsFromSession } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { EmulationContextService } from '@pwa/service/emulation-context.service';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { LinkApi } from '@pwa/service/link-api.service';
@@ -49,7 +49,7 @@ export class SessionsPage implements DragDropClient, OnInit {
         private fileService: FileService,
         private alertService: AlertService,
         public emulationService: EmulationService,
-        public emulationState: EmulationStateService,
+        public emulationContext: EmulationContextService,
         private storageService: StorageService,
         private modalController: ModalController,
         private linkApi: LinkApi,
@@ -60,9 +60,7 @@ export class SessionsPage implements DragDropClient, OnInit {
         private loadingController: LoadingController,
         private cd: ChangeDetectorRef,
     ) {
-        this.currentSessionId = computed(
-            () => this.currentSessionOverride() ?? this.emulationState.currentSession()?.id,
-        );
+        this.currentSessionId = computed(() => this.currentSessionOverride() ?? this.emulationContext.session()?.id);
     }
 
     ngOnInit(): void {
@@ -160,7 +158,7 @@ export class SessionsPage implements DragDropClient, OnInit {
 
     @debounce()
     async resetSession(session: Session) {
-        const running = session.id === this.emulationState.currentSession()?.id;
+        const running = session.id === this.emulationContext.session()?.id;
 
         if (running) await this.emulationService.stop();
 

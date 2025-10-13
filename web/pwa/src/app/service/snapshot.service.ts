@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
+import { SnapshotContainer } from '@common/engine/Snapshot';
 import { crc32 } from '@common/helper/crc';
 import { DynamicTimeout } from '@common/helper/dynamicTimeout';
 import { LoadingController } from '@ionic/angular';
@@ -12,7 +13,7 @@ import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { StorageCard } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
-import { EmulationStateService } from './emulation-state.service';
+import { EmulationContextService } from './emulation-context.service';
 import { ErrorService } from './error.service';
 import { KvsService } from './kvs.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
@@ -50,7 +51,7 @@ const E_SESSION_MISMATCH = new Error('session does not match emulation');
 export class SnapshotService {
     constructor(
         private storageService: StorageService,
-        private emulationState: EmulationStateService,
+        private emulationContext: EmulationContextService,
         private errorService: ErrorService,
         private storageCardContext: StorageCardContext,
         private kvsService: KvsService,
@@ -59,7 +60,7 @@ export class SnapshotService {
         private ngZone: NgZone,
     ) {}
 
-    async initialize(session: Session, cloudpilot: Cloudpilot): Promise<void> {
+    async initialize(session: Session): Promise<void> {
         if (this.errorService.hasFatalError()) return;
 
         await this.waitForPendingSnapshot();
@@ -70,9 +71,12 @@ export class SnapshotService {
         this.state = undefined;
 
         this.db = await this.storageService.getDb();
-        this.cloudpilot = cloudpilot;
 
         this.resetCard();
+    }
+
+    async storeSnapshot(snapshotContainer: SnapshotContainer): Promise<void> {
+        await snapshotContainer.release(true);
     }
 
     resetCard(): void {
@@ -80,6 +84,16 @@ export class SnapshotService {
         this.cardDirtyPages = undefined;
     }
 
+    triggerSnapshot(): Promise<void> {
+        return new Promise((resolve, reject) =>
+            this.snapshotRequestEvent.dispatch((error) => {
+                if (error !== undefined) reject(error);
+                else resolve();
+            }),
+        );
+    }
+
+    /*
     triggerSnapshot = (): Promise<void> =>
         this.ngZone.runOutsideAngular(() => {
             if (this.sessionId < 0 || this.cloudpilot.isSuspended()) return Promise.resolve();
@@ -101,6 +115,7 @@ export class SnapshotService {
 
             return this.pendingSnapshotPromise;
         });
+        */
 
     waitForPendingSnapshot(): Promise<void> {
         if (this.snapshotInProgress) return this.pendingSnapshotPromise;
@@ -397,7 +412,7 @@ export class SnapshotService {
     }
 
     private assertSessionMatches(): void {
-        if (this.emulationState.currentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
+        if (this.emulationContext.session()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
     }
 
     private async showLoader(): Promise<void> {
@@ -416,6 +431,7 @@ export class SnapshotService {
     }
 
     snapshotEvent = new Event<SnapshotStatistics>();
+    snapshotRequestEvent = new Event<(error?: Error) => void>();
 
     private sessionId = -1;
     private consecutiveErrorCount = 0;

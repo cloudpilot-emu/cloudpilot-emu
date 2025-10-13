@@ -330,7 +330,7 @@ export function slotType(deviceId: DeviceId) {
     }
 }
 
-export function engine(deviceId: DeviceId): EngineType {
+export function engineType(deviceId: DeviceId): EngineType {
     switch (deviceId) {
         case DeviceId.te2:
         case DeviceId.frankene2:
@@ -343,7 +343,7 @@ export function engine(deviceId: DeviceId): EngineType {
 
 export function nandSize(deviceId: DeviceId): number | undefined {
     // blocks * [pages / block] + [bytes / page]
-    return engine(deviceId) === 'uarm' ? 2048 * (2 << 4) * 528 : undefined;
+    return engineType(deviceId) === 'uarm' ? 2048 * (2 << 4) * 528 : undefined;
 }
 
 export function ramSize(deviceId: DeviceId): number {

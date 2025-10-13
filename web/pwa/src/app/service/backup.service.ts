@@ -5,7 +5,7 @@ import { concatFilenames, filenameForBackup } from '@pwa/helper/filename';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
-import { EmulationStateService } from './emulation-state.service';
+import { EmulationContextService } from './emulation-context.service';
 import { EmulationService } from './emulation.service';
 import { FileService } from './file.service';
 import { SnapshotService } from './snapshot.service';
@@ -17,13 +17,13 @@ export class BackupService {
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private fileService: FileService,
-        private emulationStateService: EmulationStateService,
+        private emulationContext: EmulationContextService,
         private alertService: AlertService,
         private cloudpilotService: CloudpilotService,
     ) {}
 
     async saveBackup(includeRomDatabases: boolean): Promise<void> {
-        const currentSession = this.emulationStateService.currentSession();
+        const currentSession = this.emulationContext.session();
         if (!currentSession) return;
 
         const loader = await this.loadingController.create({ message: 'Backing up...' });

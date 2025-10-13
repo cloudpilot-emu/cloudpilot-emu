@@ -2,6 +2,7 @@ import { PwmUpdate } from '@common/bridge/Cloudpilot';
 import { isIOS } from '@common/helper/browser';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Mutex } from 'async-mutex';
+import { EventInterface } from 'microevent.ts';
 
 type AudioContextType = typeof AudioContext;
 
@@ -23,10 +24,12 @@ function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
 }
 export abstract class AbstractAudioService {
     constructor(private emulationService: AbstractEmulationService) {
-        this.emulationService.pwmUpdateEvent.addHandler(this.onPwmUpdate);
+        this.bind();
+
+        this.emulationService.engineChangeEvent.addHandler(this.onEngineChange);
 
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
-        this.emulationService.powerOffChangeEvent.addHandler(() => this.updateState());
+        this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
 
         if (!isIOS) document.addEventListener('visibilitychange', () => this.updateState());
     }
@@ -52,6 +55,18 @@ export abstract class AbstractAudioService {
 
     isMuted(): boolean {
         return this.muted;
+    }
+
+    protected bind(): void {
+        this.unbind();
+
+        this.pwmUpdateEvent = this.emulationService.pwmUpdateEvent();
+        this.pwmUpdateEvent?.addHandler(this.onPwmUpdate);
+    }
+
+    protected unbind(): void {
+        this.pwmUpdateEvent?.removeHandler(this.onPwmUpdate);
+        this.pwmUpdateEvent = undefined;
     }
 
     protected abstract getVolume(): number;
@@ -162,6 +177,8 @@ export abstract class AbstractAudioService {
         return this.context?.state === 'running';
     }
 
+    private onEngineChange = () => this.bind();
+
     private onPwmUpdate = async (pwmUpdate: PwmUpdate): Promise<void> => {
         this.pendingPwmUpdate = pwmUpdate;
 
@@ -231,5 +248,6 @@ export abstract class AbstractAudioService {
     private initialized = false;
     private muted = false;
 
+    private pwmUpdateEvent: EventInterface<PwmUpdate> | undefined;
     private pendingPwmUpdate: PwmUpdate | undefined;
 }
