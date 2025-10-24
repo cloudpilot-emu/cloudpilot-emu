@@ -25,7 +25,6 @@ export function compressPage8(page: Uint32Array): Uint32Array | number {
     let probe = page[0] & 0xff;
     probe |= probe << 8;
     probe |= probe << 16;
-    probe |= probe << 24;
 
     const len = page.length;
 
