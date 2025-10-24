@@ -23,7 +23,7 @@ export class EmulationContextService {
     }
 
     get context(): Signal<EmulationContext | undefined> {
-        return this.context;
+        return this._context;
     }
 
     setContext(session: Session, engine: Engine): void {

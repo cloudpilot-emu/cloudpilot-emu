@@ -309,7 +309,7 @@ Sorry for the inconvenience.`,
                   }
                 : undefined;
 
-        if (!this.openSession(rom, session.device, nand, memory, savestate, storageCardProvider)) {
+        if (!(await this.openSession(rom, session.device, nand, memory, savestate, storageCardProvider))) {
             return false;
         }
 
