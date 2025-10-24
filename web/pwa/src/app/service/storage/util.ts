@@ -20,11 +20,12 @@ export function complete(requestOrTransaction: IDBRequest | IDBTransaction): Pro
 
 // Cloudpilot originally used Uint8Array to represent page data and only switched
 // to 32bit operations later. In order to stay backward compatible we preserve the
-// "8 bit" compression algorithm and still use it for Cloudpilot memory.
+// "8 bit" compression algorithm and still use it for memory.
 export function compressPage8(page: Uint32Array): Uint32Array | number {
     let probe = page[0] & 0xff;
     probe |= probe << 8;
     probe |= probe << 16;
+    probe |= probe << 24;
 
     const len = page.length;
 
@@ -35,7 +36,7 @@ export function compressPage8(page: Uint32Array): Uint32Array | number {
     return page[0] & 0xff;
 }
 
-// SD card and uarm dat.
+// SD card and NAND
 export function compressPage(page: Uint32Array): Uint32Array | number {
     const fst = page[0];
     const len = page.length;

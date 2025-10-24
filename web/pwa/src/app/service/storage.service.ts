@@ -479,6 +479,7 @@ export class StorageService {
 
         return complete(objectStore.get(sessionId));
     }
+
     private saveState(tx: IDBTransaction, sessionId: number, state: Uint8Array | undefined): void {
         const objectStore = tx.objectStore(OBJECT_STORE_STATE);
 
@@ -566,14 +567,7 @@ export class StorageService {
             objectStoreMemoryMeta.put(metadata);
         }
 
-        this.savePagedData(
-            objectStoreMemory,
-            1024,
-            engine === 'cloudpilot' ? compressPage8 : compressPage,
-            sessionId,
-            0,
-            memory8,
-        );
+        this.savePagedData(objectStoreMemory, 1024, compressPage8, sessionId, 0, memory8);
     }
 
     private deleteMemory(tx: IDBTransaction, sessionId: number): void {
