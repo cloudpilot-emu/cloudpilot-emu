@@ -10,10 +10,10 @@
 extern "C" {
 #endif
 
-#define MEMORY_BUFFER_GRANULARITY (32 * 512)
+#define MEMORY_BUFFER_GRANULARITY (32 * 1024)
 
 #define MEMORY_BUFFER_MARK_DIRTY(buf, addr) \
-    ((buf).dirtyPages[(addr) >> 14] |= (1u << (((addr) >> 9) & 0x1f)))
+    ((buf).dirtyPages[(addr) >> 15] |= (1u << (((addr) >> 10) & 0x1f)))
 
 struct MemoryBuffer {
     size_t size;

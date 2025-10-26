@@ -12,9 +12,16 @@
 
 using namespace std;
 
+// Versions
+//
+// * V0: first RLE compressed version
+// * V1: Replace RLE with Gzip compression
+// * V2: Add RAM size to header
+// * V3: RAM page size change 512b -> 1k: migrate memory image
+
 namespace {
     constexpr uint32_t MAGIC = 0x19800819;
-    constexpr uint32_t CURRENT_VERSION = 2;
+    constexpr uint32_t CURRENT_VERSION = 3;
 
     constexpr size_t SIZE_HEADER = 12;  // 4 byte magic + 4 byte version + 4 byte device ID
     constexpr size_t SIZE_TOC = 5 * 4;
@@ -32,7 +39,7 @@ bool SessionFile5::IsSessionFile(size_t size, const void* data) {
     if (magic != MAGIC) return false;
 
     const uint32_t version = data8[4] | (data8[5] << 8) | (data8[6] << 16) | (data8[7] << 24);
-    if (version > 2) return false;
+    if (version > CURRENT_VERSION) return false;
 
     return true;
 }
@@ -220,7 +227,8 @@ bool SessionFile5::Deserialize(size_t size, const void* data) {
 
         case 1:
         case 2:
-            return Deserialize_v1_v2(version);
+        case 3:
+            return Deserialize_v1_v2_v3(version);
 
         default:
             cerr << "unsupported session version " << version << endl;
@@ -424,7 +432,7 @@ bool SessionFile5::Deserialize_v0() {
     return true;
 }
 
-bool SessionFile5::Deserialize_v1_v2(uint32_t sessionVersion) {
+bool SessionFile5::Deserialize_v1_v2_v3(uint32_t sessionVersion) {
     bool success = true;
 
     deviceId = Read32(success);
@@ -480,5 +488,24 @@ bool SessionFile5::Deserialize_v1_v2(uint32_t sessionVersion) {
 
     savestate = cursor;
 
+    if (version == 2) MigrateV2Memory();
+
     return true;
+}
+
+void SessionFile5::MigrateV2Memory() {
+    if (!memory) return;
+
+    const size_t migratedMemorySize = memorySize + 32 * 1024;
+    const size_t ramSize = memorySize - 32 * 1024;
+    migratedMemory = make_unique<uint8_t[]>(migratedMemorySize);
+
+    memcpy(migratedMemory.get(), memory, ramSize);
+    memset(migratedMemory.get() + ramSize, 0, 64 * 1024);
+
+    memcpy(migratedMemory.get() + ramSize, memory + ramSize, 16 * 1024);
+    memcpy(migratedMemory.get() + ramSize + 32 * 1024, memory + ramSize + 16 * 1024, 16 * 1024);
+
+    memory = migratedMemory.get();
+    memorySize = migratedMemorySize;
 }

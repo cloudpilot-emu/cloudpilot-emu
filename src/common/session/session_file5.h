@@ -56,7 +56,9 @@ class SessionFile5 {
     bool Flush(mz_stream_s& stream);
 
     bool Deserialize_v0();
-    bool Deserialize_v1_v2(uint32_t version);
+    bool Deserialize_v1_v2_v3(uint32_t version);
+
+    void MigrateV2Memory();
 
    private:
     uint32_t deviceId{0};
@@ -81,6 +83,8 @@ class SessionFile5 {
 
     size_t bufferSize{0};
     std::unique_ptr<uint8_t[]> buffer;
+
+    std::unique_ptr<uint8_t[]> migratedMemory;
 
     uint32_t ramSize{0};
 

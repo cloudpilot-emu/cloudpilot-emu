@@ -8,7 +8,7 @@
  */
 
 const DB_NAME = 'cp-uarm';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 const SIZE_NAND = 528 * 2 * 1024 * 32;
 const PAGE_SIZE_NAND = 528 * 8;
@@ -17,7 +17,7 @@ const EMPTY_VALUE_NAND = 0xffffffff;
 const PAGE_SIZE_SD = 8 * 1024;
 const EMPTY_VALUE_SD = 0;
 
-const PAGE_SIZE_RAM = 512;
+const PAGE_SIZE_RAM = 1024;
 const EMPTY_VALUE_RAM = 0;
 
 const OBJECT_STORE_KVS = 'kvs';
@@ -255,7 +255,6 @@ async function migrateSd(request) {
  */
 async function migrateCardIdAndMountFlag(request) {
     const tx = request.transaction;
-
     if (!tx) throw new Error('no version change transaction');
 
     const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
@@ -267,6 +266,34 @@ async function migrateCardIdAndMountFlag(request) {
     } else {
         storeKvs.put(false, KVS_CARD_MOUNTED);
     }
+}
+
+/**
+ *
+ * @param {IDBOpenDBRequest} request
+ * @returns {Promise<void>}
+ */
+async function migratePageSizeRam(request) {
+    const tx = request.transaction;
+    if (!tx) throw new Error('no version change transaction');
+
+    const storeRam = tx.objectStore(OBJECT_STORE_RAM);
+    const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+    const entries = /** @type number */ await complete(storeRam.count());
+
+    if (entries === 0) return;
+
+    const ramSize = (await complete(storeKvs.get(KVS_RAM_SIZE))) ?? 16 * 1024 * 1024;
+    const ramData = await getPagedData(ramSize + 64 * 1024, 512, OBJECT_STORE_RAM, 0, tx);
+
+    const extraPages = ramData.subarray(ramSize, ramSize + 64 * 1024);
+    const extraPagesCopy = extraPages.slice();
+
+    extraPages.fill(0);
+    extraPages.subarray(0, 16 * 1024).set(extraPagesCopy.subarray(0, 16 * 1024));
+    extraPages.subarray(32 * 1024, 48 * 1024).set(extraPagesCopy.subarray(16 * 1024, 32 * 1024));
+
+    putPagedData(ramData, 1024, OBJECT_STORE_RAM, 0, tx);
 }
 
 /**
@@ -307,6 +334,10 @@ function initdDb() {
 
             if (e.oldVersion < 6) {
                 migrateCardIdAndMountFlag(request);
+            }
+
+            if (e.oldVersion < 7) {
+                migratePageSizeRam(request);
             }
         };
 
@@ -473,15 +504,17 @@ export class Database {
     /**
      * @param {boolean} crcCheck
      * @param {number} size
+     * @param {IDBTransaction?} tx
      * @returns {Promise<Uint8Array | undefined>}
      */
-    async getRam(crcCheck, size) {
+    async getRam(crcCheck, size, tx) {
         if (size === 0) return undefined;
 
-        const tx = await this.tx(OBJECT_STORE_RAM, OBJECT_STORE_KVS);
+        if (!tx) tx = await this.tx(OBJECT_STORE_RAM, OBJECT_STORE_KVS);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
-        const content = await getPagedData(size + 32 * 1024, PAGE_SIZE_RAM, OBJECT_STORE_RAM, EMPTY_VALUE_RAM, tx);
+        // memory size is RAM + two pagesets (2 * 32 * 1024)
+        const content = await getPagedData(size + 64 * 1024, PAGE_SIZE_RAM, OBJECT_STORE_RAM, EMPTY_VALUE_RAM, tx);
 
         const crc = await complete(storeKvs.get(KVS_RAM_CRC));
         const crc32 = /** @type any */ (window).crc32;

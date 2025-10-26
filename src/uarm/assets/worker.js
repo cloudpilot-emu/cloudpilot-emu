@@ -301,8 +301,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             const ramSize = uarm.GetRamDataSize();
             this.ramTracker = new DirtyPageTracker({
-                pageSize: 512,
-                pageCount: (ramSize / 512) | 0,
+                pageSize: 1024,
+                pageCount: (ramSize / 1024) | 0,
                 name: 'RAM snapshot',
                 crcCheck,
                 getDataPtr: () => module.getPointer(uarm.GetRamData()),

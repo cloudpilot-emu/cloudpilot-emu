@@ -5,9 +5,9 @@
 bool memoryBufferAllocate(struct MemoryBuffer* memoryBuffer, size_t size) {
     if (size % MEMORY_BUFFER_GRANULARITY) return false;
 
-    size_t pageCount = size / 512;
+    size_t pageCount = size / 1024;
 
-    memoryBuffer->size = pageCount * 512;
+    memoryBuffer->size = pageCount * 1024;
     memoryBuffer->buffer = malloc(memoryBuffer->size);
     memset(memoryBuffer->buffer, 0, memoryBuffer->size);
 
@@ -35,9 +35,9 @@ bool memoryBufferGetSubBuffer(struct MemoryBuffer* memoryBuffer, struct MemoryBu
         return false;
 
     subBuffer->size = size;
-    subBuffer->dirtyPagesSize = size / (512 * 8);
+    subBuffer->dirtyPagesSize = size / (1024 * 8);
     subBuffer->buffer = memoryBuffer->buffer + offset;
-    subBuffer->dirtyPages = memoryBuffer->dirtyPages + offset / (512 * 32);
+    subBuffer->dirtyPages = memoryBuffer->dirtyPages + offset / (1024 * 32);
     subBuffer->isSubBuffer = true;
 
     return true;
@@ -46,6 +46,6 @@ bool memoryBufferGetSubBuffer(struct MemoryBuffer* memoryBuffer, struct MemoryBu
 void memoryBufferMarkRangeDirty(struct MemoryBuffer* memoryBuffer, size_t address, size_t size) {
     if (size == 0) return;
 
-    for (size_t page = address >> 9; page <= (address + size - 1) >> 9; page++)
+    for (size_t page = address >> 10; page <= (address + size - 1) >> 10; page++)
         memoryBuffer->dirtyPages[page >> 5] |= (1 << (page & 0x1f));
 }
