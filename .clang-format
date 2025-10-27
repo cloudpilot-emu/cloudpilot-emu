@@ -3,4 +3,5 @@ IndentWidth: 4
 ColumnLimit: 100
 NamespaceIndentation: All
 IndentPPDirectives: BeforeHash
+DerivePointerAlignment: true
 PointerAlignment: Right
