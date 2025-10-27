@@ -1,4 +1,5 @@
 export interface Snapshot {
+    readonly pageCountTotal: number;
     readonly pageCount: number;
     readonly pageSize: number;
 
@@ -8,15 +9,14 @@ export interface Snapshot {
 }
 
 export interface SnapshotContainer {
-    isValid(): boolean;
-    getStorageId(): string;
+    getStorageId(): string | undefined;
 
     materialize(): void;
     release(persistenceSuccess: boolean): Promise<void>;
 
-    snapshotMemory(): Snapshot;
-    snapshotNand(): Snapshot | undefined;
-    snapshotStorage(): Snapshot | undefined;
+    getSnapshotMemory(): Snapshot;
+    getSnapshotNand(): Snapshot | undefined;
+    getSnapshotStorage(): Snapshot | undefined;
 
-    savestate: Uint8Array | undefined;
+    getSavestate(): Uint8Array | undefined;
 }

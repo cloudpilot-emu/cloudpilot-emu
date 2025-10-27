@@ -35,6 +35,8 @@ import { StorageService } from './storage.service';
 // TODO: Insert / Eject storage (badly broken atm)
 // TODO: Get rid of cloudpilot service
 
+const SNAPSHOT_INTERVAL = 1000;
+
 @Injectable({ providedIn: 'root' })
 export class EmulationService extends AbstractEmulationService {
     constructor(
@@ -318,6 +320,7 @@ Sorry for the inconvenience.`,
         this.networkService.reset();
         this.buttonService.reset(this.engine);
 
+        this.updateEngineSettings({ automaticSnapshotInterval: SNAPSHOT_INTERVAL });
         await this.snapshotService.initialize(session);
 
         return true;

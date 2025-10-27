@@ -1,4 +1,4 @@
-import { Cloudpilot, PalmButton, PwmUpdate, SerialTransport, SuspendKind } from '@common/bridge/Cloudpilot';
+import { Cloudpilot, PalmButton, PwmUpdate, SuspendKind } from '@common/bridge/Cloudpilot';
 import { Average } from '@common/helper/Average';
 import { Fifo } from '@common/helper/Fifo';
 import { deviceDimensions } from '@common/helper/deviceProperties';
@@ -6,123 +6,23 @@ import { GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
 import { AnimationFrameScheduler, Scheduler, SchedulerKind, TimeoutScheduler } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatisticsCloudpilot } from '@common/model/EmulationStatistics';
-import { ReceivePayload, SerialPort } from '@common/serial/SerialPort';
+import { SerialPort } from '@common/serial/SerialPort';
 import { Executor } from '@common/service/AbstractEmulationService';
 import { Event, EventInterface } from 'microevent.ts';
 
-import { EngineCloudpilot, StorageCardProvider } from './Engine';
-import { EngineSettings } from './EngineSettings';
-import { Snapshot, SnapshotContainer } from './Snapshot';
+import { EngineCloudpilot, StorageCardProvider } from '../Engine';
+import { EngineSettings } from '../EngineSettings';
+import { SnapshotContainer } from '../Snapshot';
+import { SerialPortImpl } from './SerialPort';
+import { SnapshotContainerImpl } from './Snapshot';
 
 const PWM_FIFO_SIZE = 10;
-const MAX_IRDA_FRAME_BUFFER = 1024;
 const SPEED_AVERAGE_N = 20;
 const TIME_PER_FRAME_AVERAGE_N = 60;
 const SERIAL_SYNC_TIMEOUT_MSEC = 250;
 const MIN_FPS = 30;
 const DUMMY_SPEED = 1000;
 const MIN_MILLISECONDS_PER_PWM_UPDATE = 10;
-
-class SerialPortImpl implements SerialPort {
-    bind(transport: SerialTransport): void {
-        if (this.transport === transport) return;
-
-        this.unbind();
-
-        transport.frameCompleteEvent.addHandler(this.onFrameComplete);
-        transport.SetModeSync(this.isSync);
-
-        this.transport = transport;
-    }
-
-    unbind(): void {
-        if (!this.transport) return;
-
-        this.transport.frameCompleteEvent.removeHandler(this.onFrameComplete);
-        this.transport = undefined;
-    }
-
-    send(data: Uint8Array | undefined, isFrameComplete: boolean): void {
-        if (!this.transport) return;
-
-        if (!this.transport.IsOpen() && this.transport.GetModeSync()) {
-            this.receiveEvent.dispatch({ data: undefined, isFrameComplete: true });
-            return;
-        }
-
-        this.transport.Send(data, isFrameComplete);
-        setTimeout(() => this.dispatchEvent.dispatch(), 0);
-    }
-
-    setModeSync(modeSync: boolean): void {
-        this.isSync = modeSync;
-        this.transport?.SetModeSync(modeSync);
-    }
-
-    getModeSync(): boolean {
-        return this.transport?.GetModeSync() ?? false;
-    }
-
-    dispatch(): void {
-        if (!this.transport) return;
-
-        const bytesPending = this.transport.RxBytesPending();
-        if (bytesPending === 0) return;
-        if (this.transport.GetModeSync() && bytesPending < MAX_IRDA_FRAME_BUFFER) return;
-
-        this.receiveEvent.dispatch({
-            data: this.transport.Receive(),
-            isFrameComplete: this.transport.IsFrameComplete(),
-        });
-    }
-
-    private onFrameComplete = () => {
-        if (!this.transport) return;
-
-        this.receiveEvent.dispatch({
-            data: this.transport.Receive(),
-            isFrameComplete: this.transport.IsFrameComplete(),
-        });
-    };
-
-    receiveEvent = new Event<ReceivePayload>();
-    dispatchEvent = new Event<void>();
-
-    private transport: SerialTransport | undefined;
-    private isSync = false;
-}
-
-class SnapshotImpl implements SnapshotContainer {
-    isValid(): boolean {
-        return false;
-    }
-
-    getStorageId(): string {
-        throw new Error('Method not implemented.');
-    }
-
-    materialize(): void {
-        throw new Error('Method not implemented.');
-    }
-
-    async release(persistenceSuccess: boolean): Promise<void> {
-        console.log(`release snapshot stub: ${persistenceSuccess}`);
-    }
-
-    snapshotMemory(): Snapshot {
-        throw new Error('Method not implemented.');
-    }
-
-    snapshotNand(): Snapshot | undefined {
-        throw new Error('Method not implemented.');
-    }
-
-    snapshotStorage(): Snapshot | undefined {
-        throw new Error('Method not implemented.');
-    }
-
-    savestate: undefined;
-}
 
 export class EngineCloudpilotImpl implements EngineCloudpilot {
     readonly type = 'cloudpilot';
@@ -132,6 +32,8 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         private clandestineExecute: Executor,
         private settings: EngineSettings,
     ) {
+        this.snapshotContainer = new SnapshotContainerImpl(cloudpilotInstance);
+
         cloudpilotInstance.clearExternalStorage();
 
         this.serialPortIR.bind(cloudpilotInstance.getTransportIR());
@@ -249,6 +151,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         }
 
         this.cloudpilotInstance.remountCards();
+        this.cloudpilotInstance.getMountedKey();
 
         this.deviceId = device;
 
@@ -259,6 +162,13 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         const dimensions = deviceDimensions(device);
         this.canvasTmp.width = dimensions.width;
         this.canvasTmp.height = dimensions.height;
+
+        this.snapshotContainer.initializeMemory();
+
+        const storageKey = this.cloudpilotInstance.getMountedKey();
+        if (storageKey !== '') {
+            this.snapshotContainer.addStorage(storageKey);
+        }
 
         return true;
     }
@@ -293,7 +203,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     }
 
     async requestSnapshot(): Promise<SnapshotContainer> {
-        return new SnapshotImpl();
+        return this.snapshotContainer.schedule();
     }
 
     blitFrame(canvas: HTMLCanvasElement): void {
@@ -460,12 +370,16 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         if (!this.cloudpilotInstance.removeCard(id)) {
             console.warn(`failed to release card for key ${id}`);
         }
+
+        this.snapshotContainer.removeStorage();
     }
 
     async insertCard(id: string): Promise<void> {
         if (!this.cloudpilotInstance.mountCard(id)) {
             throw new Error(`failed to mount card with key ${id}`);
         }
+
+        this.snapshotContainer.addStorage(id);
     }
 
     getSerialPortSerial(): SerialPort {
@@ -651,6 +565,15 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.serialPortIR!.dispatch();
         this.serialPortSerial!.dispatch();
 
+        if (
+            this.settings.automaticSnapshotInterval > 0 &&
+            timestamp - this.lastSnapshotAt > this.settings.automaticSnapshotInterval &&
+            !this.cloudpilotInstance.isSuspended()
+        ) {
+            if (this.snapshotContainer.isIdle()) this.snapshotEvent.dispatch(this.snapshotContainer.schedule());
+            this.lastSnapshotAt = timestamp;
+        }
+
         this.timesliceEvent.dispatch(slizeSizeSeconds);
     }
 
@@ -716,4 +639,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     private canvasTmp: HTMLCanvasElement = document.createElement('canvas');
 
     private serialSyncStartedAt = 0;
+
+    private snapshotContainer: SnapshotContainerImpl;
+    private lastSnapshotAt = 0;
 }

@@ -76,6 +76,15 @@ export class SnapshotService {
     }
 
     async storeSnapshot(snapshotContainer: SnapshotContainer): Promise<void> {
+        snapshotContainer.materialize();
+
+        console.log(
+            'materialized snapshot',
+            snapshotContainer.getSnapshotMemory(),
+            snapshotContainer.getSnapshotStorage(),
+            snapshotContainer.getSavestate(),
+        );
+
         await snapshotContainer.release(true);
     }
 

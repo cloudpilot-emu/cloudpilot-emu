@@ -1,8 +1,8 @@
 import { Cloudpilot, PwmUpdate } from '@common/bridge/Cloudpilot';
 import { Engine, StorageCardProvider } from '@common/engine/Engine';
-import { EngineCloudpilotImpl } from '@common/engine/EngineCloudpilot';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { SnapshotContainer } from '@common/engine/Snapshot';
+import { EngineCloudpilotImpl } from '@common/engine/cloudpilot/EngineCloudpilot';
 import { deviceDimensions, engineType, isColor } from '@common/helper/deviceProperties';
 import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
 import { SchedulerKind } from '@common/helper/scheduler';
@@ -17,6 +17,7 @@ import { Event, EventInterface } from 'microevent.ts';
 const PEN_MOVE_THROTTLE = 25;
 
 const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
+    automaticSnapshotInterval: 0,
     speed: 1,
     hotsyncName: '',
     manageHotsyncName: false,
