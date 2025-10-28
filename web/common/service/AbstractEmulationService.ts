@@ -18,6 +18,7 @@ const PEN_MOVE_THROTTLE = 25;
 
 const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
     automaticSnapshotInterval: 0,
+    memoryCrc: false,
     speed: 1,
     hotsyncName: '',
     manageHotsyncName: false,

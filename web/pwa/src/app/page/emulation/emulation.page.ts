@@ -6,7 +6,6 @@ import { Mutex } from 'async-mutex';
 import { HelpComponent } from '@pwa/component/help/help.component';
 import { debounce } from '@pwa/helper/debounce';
 import { Session } from '@pwa/model/Session';
-import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { AlertService } from '@pwa/service/alert.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
@@ -21,7 +20,6 @@ import { LinkApi } from '@pwa/service/link-api.service';
 import { NetworkService } from '@pwa/service/network.service';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
-import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { TabsPage } from '@pwa/tabs/tabs.page';
 
@@ -46,7 +44,6 @@ export class EmulationPage implements DragDropClient {
         private modalController: ModalController,
         private alertService: AlertService,
         private fileService: FileService,
-        private snapshotService: SnapshotService,
         private installlationService: InstallationService,
         public networkService: NetworkService,
         public navigation: TabsPage,
@@ -100,7 +97,6 @@ export class EmulationPage implements DragDropClient {
             void this.emulationService.pause();
 
             this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
-            this.snapshotService.snapshotEvent.removeHandler(this.onSnapshot);
             this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
 
             this.eventHandlingService.release();
@@ -293,7 +289,6 @@ export class EmulationPage implements DragDropClient {
         this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
-        this.snapshotService.snapshotEvent.addHandler(this.onSnapshot);
 
         await this.emulationService.resume();
 
@@ -305,12 +300,6 @@ export class EmulationPage implements DragDropClient {
             void this.canvasDisplayService.updateStatistics();
         } else {
             void this.canvasDisplayService.clearStatistics();
-        }
-    };
-
-    private onSnapshot = (statistics: SnapshotStatistics): void => {
-        if (this.kvsService.kvs.showStatistics) {
-            void this.canvasDisplayService.updateStatistics(statistics, this.emulationService.getStatistics());
         }
     };
 

@@ -206,7 +206,6 @@ export class StorageCardService {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
         cloudpilot.removeCard(card.storageId);
 
-        this.snapshotService.resetCard();
         this.storageCardContext.release(cardId, CardOwner.cloudpilot);
     }
 

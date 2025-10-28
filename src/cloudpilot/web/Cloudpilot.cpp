@@ -343,6 +343,8 @@ int Cloudpilot::GetCardSize(const char* key) {
 
 void Cloudpilot::RemountCards() { gExternalStorage.Remount(); }
 
+bool Cloudpilot::RemountFailed() { return gExternalStorage.RemountFailed(); }
+
 int Cloudpilot::GetSupportLevel(uint32 size) {
     if (size % 512) return static_cast<int>(CardSupportLevel::unsupported);
 

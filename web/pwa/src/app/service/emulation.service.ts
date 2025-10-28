@@ -8,6 +8,7 @@ import { SchedulerKind } from '@common/helper/scheduler';
 import { AbstractEmulationService, Executor } from '@common/service/AbstractEmulationService';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
+import { environment } from 'pwa/src/environments/environment';
 
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
 import { Session } from '@pwa/model/Session';
@@ -31,8 +32,10 @@ import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageService } from './storage.service';
 
 // TODO: Snapshots
+// TODO: Snapshot statistics
 // TODO: ModalWatcher
-// TODO: Insert / Eject storage (badly broken atm)
+// TODO: Insert / Eject storage (badly broken atm).
+//       !!! Mind potential race conditions in savestate --- stop emulator while eject / insert in progress !!!
 // TODO: Get rid of cloudpilot service
 
 const SNAPSHOT_INTERVAL = 1000;
@@ -257,7 +260,10 @@ export class EmulationService extends AbstractEmulationService {
                       maxHostLoad: session.maxHostLoad,
                   };
 
-        this.updateEngineSettings(settings);
+        this.updateEngineSettings({
+            ...settings,
+            memoryCrc: this.kvsService.kvs.snapshotIntegrityCheck && environment.debug,
+        });
     }
 
     private async recoverStoredSession(session: number) {
@@ -302,12 +308,15 @@ Sorry for the inconvenience.`,
             throw new Error(`invalid ROM ${session.rom}`);
         }
 
-        const mountedCard = session.mountedCard;
+        const storageCard =
+            session.mountedCard !== undefined ? await this.storageService.getCard(session.mountedCard) : undefined;
+
         const storageCardProvider: StorageCardProvider | undefined =
-            mountedCard !== undefined
+            storageCard !== undefined
                 ? {
+                      storageKey: storageCard?.storageId,
                       load: (engine) =>
-                          this.storageCardService.loadCardInEmulator(mountedCard, engine).then(() => undefined),
+                          this.storageCardService.loadCardInEmulator(storageCard.id, engine).then(() => undefined),
                   }
                 : undefined;
 

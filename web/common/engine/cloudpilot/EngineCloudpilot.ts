@@ -151,7 +151,11 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         }
 
         this.cloudpilotInstance.remountCards();
-        this.cloudpilotInstance.getMountedKey();
+        if (this.cloudpilotInstance.getMountedKey() === undefined && card && !this.cloudpilotInstance.remountFailed()) {
+            // Card was not remounted, and there was no error? -> card was not mounted in the last saved state of the
+            // emulator, so mount it now.
+            this.cloudpilotInstance.mountCard(card.storageKey);
+        }
 
         this.deviceId = device;
 
@@ -164,11 +168,6 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.canvasTmp.height = dimensions.height;
 
         this.snapshotContainer.initializeMemory();
-
-        const storageKey = this.cloudpilotInstance.getMountedKey();
-        if (storageKey !== '') {
-            this.snapshotContainer.addStorage(storageKey);
-        }
 
         return true;
     }
@@ -203,7 +202,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     }
 
     async requestSnapshot(): Promise<SnapshotContainer> {
-        return this.snapshotContainer.schedule();
+        return this.snapshotContainer.schedule(this.settings.memoryCrc);
     }
 
     blitFrame(canvas: HTMLCanvasElement): void {
@@ -370,16 +369,12 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         if (!this.cloudpilotInstance.removeCard(id)) {
             console.warn(`failed to release card for key ${id}`);
         }
-
-        this.snapshotContainer.removeStorage();
     }
 
     async insertCard(id: string): Promise<void> {
         if (!this.cloudpilotInstance.mountCard(id)) {
             throw new Error(`failed to mount card with key ${id}`);
         }
-
-        this.snapshotContainer.addStorage(id);
     }
 
     getSerialPortSerial(): SerialPort {
@@ -570,7 +565,9 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
             timestamp - this.lastSnapshotAt > this.settings.automaticSnapshotInterval &&
             !this.cloudpilotInstance.isSuspended()
         ) {
-            if (this.snapshotContainer.isIdle()) this.snapshotEvent.dispatch(this.snapshotContainer.schedule());
+            if (this.snapshotContainer.isIdle()) {
+                this.snapshotEvent.dispatch(this.snapshotContainer.schedule(this.settings.memoryCrc));
+            }
             this.lastSnapshotAt = timestamp;
         }
 

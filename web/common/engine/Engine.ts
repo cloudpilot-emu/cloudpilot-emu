@@ -10,6 +10,7 @@ import { EngineSettings } from './EngineSettings';
 import { SnapshotContainer } from './Snapshot';
 
 export interface StorageCardProvider {
+    storageKey: string;
     load(engine: Engine): Promise<void>;
 }
 

@@ -103,6 +103,7 @@ class Cloudpilot {
     void* GetCardDirtyPages(const char* key);
     int GetCardSize(const char* key);
     void RemountCards();
+    bool RemountFailed();
     int GetSupportLevel(uint32 size);
     const char* GetMountedKey();
 

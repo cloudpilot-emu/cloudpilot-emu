@@ -151,6 +151,7 @@ export interface Cloudpilot {
     RemountCards(): void;
     GetSupportLevel(size: number): CardSupportLevel;
     GetMountedKey(): string;
+    RemountFailed(): boolean;
 
     GetTransportIR(): EmSerialTransport;
     GetTransportSerial(): EmSerialTransport;

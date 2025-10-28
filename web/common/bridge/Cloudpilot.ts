@@ -794,8 +794,8 @@ export class Cloudpilot {
     }
 
     @guard()
-    getMountedKey(): string {
-        return this.cloudpilot.GetMountedKey();
+    getMountedKey(): string | undefined {
+        return this.cloudpilot.GetMountedKey() || undefined;
     }
 
     @guard()
@@ -811,6 +811,11 @@ export class Cloudpilot {
     @guard()
     remountCards() {
         this.cloudpilot.RemountCards();
+    }
+
+    @guard()
+    remountFailed() {
+        return this.cloudpilot.RemountFailed();
     }
 
     @guard()

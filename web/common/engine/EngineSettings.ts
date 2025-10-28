@@ -2,6 +2,7 @@ import { SchedulerKind } from '@common/helper/scheduler';
 
 export interface EngineSettings {
     automaticSnapshotInterval: number;
+    memoryCrc: boolean;
 
     speed: number;
     manageHotsyncName: boolean;

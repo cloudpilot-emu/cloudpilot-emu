@@ -9,14 +9,14 @@ export interface Snapshot {
 }
 
 export interface SnapshotContainer {
-    getStorageId(): string | undefined;
+    materialize(): boolean;
+    release(persistenceSuccess: boolean, timeSync: number, timeBackground: number): Promise<void>;
 
-    materialize(): void;
-    release(persistenceSuccess: boolean): Promise<void>;
-
+    getStorageKey(): string | undefined;
     getSnapshotMemory(): Snapshot;
     getSnapshotNand(): Snapshot | undefined;
     getSnapshotStorage(): Snapshot | undefined;
+    getMemoryCrc(): number | undefined;
 
     getSavestate(): Uint8Array | undefined;
 }
