@@ -216,7 +216,7 @@ export class SnapshotService {
 
         this.assertSessionMatches();
 
-        if (snapshotContainer.materialize()) return false;
+        if (!snapshotContainer.materialize()) return false;
 
         let timestampBlockingStart = 0;
         let timestampBlockingEnd = 0;

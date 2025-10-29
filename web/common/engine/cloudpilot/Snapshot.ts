@@ -78,7 +78,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
             this.materializeSnapshot(this.snapshotStorage, dirtyPages);
         }
 
-        this.savestate = this.cloudpilotInstance.getSavestate();
+        this.savestate = this.cloudpilotInstance.saveState() ? this.cloudpilotInstance.getSavestate() : undefined;
 
         this.state = SnapshotState.materialized;
         return true;
