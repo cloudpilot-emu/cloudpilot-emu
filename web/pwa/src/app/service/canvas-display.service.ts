@@ -4,11 +4,11 @@ import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { ScreenSize } from '@common/model/Dimensions';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
+import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { AbstractCanvasDisplayService, DEFAULT_DEVICE } from '@common/service/AbstractCanvasDisplayService';
 import { SkinLoader } from '@common/service/SkinLoader';
 
 import { Session } from '@pwa/model/Session';
-import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 
 function fontScaleForScreenSize(screenSize: ScreenSize) {
@@ -27,7 +27,7 @@ function fontScaleForScreenSize(screenSize: ScreenSize) {
 
 @Injectable({ providedIn: 'root' })
 export class CanvasDisplayService extends AbstractCanvasDisplayService {
-    constructor(private cloudpilotService: CloudpilotService) {
+    constructor(cloudpilotService: CloudpilotService) {
         super(new SkinLoader(cloudpilotService.cloudpilot));
     }
 
@@ -110,7 +110,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
             ...(snapshotStatistics
                 ? [
                       `last snapshot          : ${new Date(snapshotStatistics.timestamp).toLocaleTimeString()}`,
-                      `snapshot pages         : ${snapshotStatistics.pages}`,
+                      `snapshot size          : ${snapshotStatistics.size >>> 10} kB`,
                       `snapshot time total    : ${snapshotStatistics.timeTotal.toFixed(2)} msec`,
                       `snapshot time blocking : ${snapshotStatistics.timeBlocking.toFixed(2)} msec`,
                   ]

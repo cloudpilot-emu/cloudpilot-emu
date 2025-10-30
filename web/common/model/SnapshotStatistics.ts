@@ -1,6 +1,6 @@
 export interface SnapshotStatistics {
     timestamp: number;
-    pages: number;
+    size: number;
     timeBlocking: number;
     timeTotal: number;
 }

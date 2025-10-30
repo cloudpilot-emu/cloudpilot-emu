@@ -1,5 +1,8 @@
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { crc32 } from '@common/helper/crc';
+import { Timed } from '@common/helper/timed';
+import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
+import { Event } from 'microevent.ts';
 
 import { Snapshot, SnapshotContainer } from '../Snapshot';
 
@@ -30,8 +33,13 @@ export class SnapshotContainerImpl implements SnapshotContainer {
 
     schedule(withCrc: boolean): this {
         if (this.state !== SnapshotState.idle) throw new Error('snapshot already in progress');
+
         this.state = SnapshotState.scheduled;
         this.memoryCrcCheck = withCrc;
+
+        this.timed.reset();
+
+        this.timestampStart = Date.now();
 
         return this;
     }
@@ -44,53 +52,70 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         return this.storageKey;
     }
 
-    materialize(): boolean {
-        if (this.cloudpilotInstance.isSuspended()) {
+    materialize = (): boolean =>
+        this.timed.exec(() => {
+            if (this.cloudpilotInstance.isSuspended()) {
+                this.state = SnapshotState.idle;
+                return false;
+            }
+
+            switch (this.state) {
+                case SnapshotState.scheduled:
+                    break;
+
+                case SnapshotState.materialized:
+                    this.mergeBack();
+                    break;
+
+                default:
+                    throw new Error(`bad snapshot state in materialize: ${this.state}`);
+            }
+
+            if (!this.snapshotMemory) throw new Error('snapshot not initialized');
+            this.materializeSnapshot(this.snapshotMemory, this.cloudpilotInstance.getDirtyPages());
+            this.updateMemoryCrc();
+
+            this.size = this.snapshotMemory.pageCount * this.snapshotMemory.pageSize * 4;
+
+            const storageKey = this.cloudpilotInstance.getMountedKey() || undefined;
+            this.updateSnapshotStorage(storageKey);
+
+            if (this.snapshotStorage) {
+                if (this.storageKey === undefined) throw new Error('unreachable');
+
+                const dirtyPages = this.cloudpilotInstance.getCardDirtyPages(this.storageKey);
+                if (dirtyPages === undefined) throw new Error(`storage key ${this.storageKey} not registered`);
+
+                this.materializeSnapshot(this.snapshotStorage, dirtyPages);
+
+                this.size += this.snapshotStorage.pageCount * this.snapshotStorage.pageSize * 4;
+            }
+
+            this.savestate = this.cloudpilotInstance.saveState() ? this.cloudpilotInstance.getSavestate() : undefined;
+            this.size += this.savestate?.length ?? 0;
+
+            this.state = SnapshotState.materialized;
+            return true;
+        });
+
+    async release(persistenceSuccess: boolean, timeBlocking: number, timeBackground: number): Promise<void> {
+        this.timed.exec(() => {
+            const oldState = this.state;
             this.state = SnapshotState.idle;
-            return false;
-        }
 
-        switch (this.state) {
-            case SnapshotState.scheduled:
-                break;
+            if (oldState !== SnapshotState.materialized) return;
 
-            case SnapshotState.materialized:
-                this.mergeBack();
-                break;
+            if (!persistenceSuccess) this.mergeBack();
+        });
 
-            default:
-                throw new Error(`bad snapshot state in materialize: ${this.state}`);
-        }
+        console.log(timeBlocking, timeBackground, this.timed.get());
 
-        if (!this.snapshotMemory) throw new Error('snapshot not initialized');
-        this.materializeSnapshot(this.snapshotMemory, this.cloudpilotInstance.getDirtyPages());
-        this.updateMemoryCrc();
-
-        const storageKey = this.cloudpilotInstance.getMountedKey() || undefined;
-        this.updateSnapshotStorage(storageKey);
-
-        if (this.snapshotStorage) {
-            if (this.storageKey === undefined) throw new Error('unreachable');
-
-            const dirtyPages = this.cloudpilotInstance.getCardDirtyPages(this.storageKey);
-            if (dirtyPages === undefined) throw new Error(`storage key ${this.storageKey} not registered`);
-
-            this.materializeSnapshot(this.snapshotStorage, dirtyPages);
-        }
-
-        this.savestate = this.cloudpilotInstance.saveState() ? this.cloudpilotInstance.getSavestate() : undefined;
-
-        this.state = SnapshotState.materialized;
-        return true;
-    }
-
-    async release(persistenceSuccess: boolean): Promise<void> {
-        const oldState = this.state;
-        this.state = SnapshotState.idle;
-
-        if (oldState !== SnapshotState.materialized) return;
-
-        if (!persistenceSuccess) this.mergeBack();
+        this.snapshotSuccessEvent.dispatch({
+            size: this.size,
+            timeBlocking: timeBlocking + this.timed.get(),
+            timeTotal: timeBlocking + timeBackground + this.timed.get(),
+            timestamp: this.timestampStart,
+        });
     }
 
     getSnapshotMemory(): Snapshot {
@@ -211,6 +236,8 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         };
     }
 
+    snapshotSuccessEvent = new Event<SnapshotStatistics>();
+
     private state = SnapshotState.idle;
     private memoryCrcCheck = false;
     private memoryCrc: number | undefined;
@@ -219,4 +246,8 @@ export class SnapshotContainerImpl implements SnapshotContainer {
     private snapshotStorage: Writeable<Snapshot> | undefined;
     private savestate: Uint8Array | undefined;
     private storageKey: string | undefined;
+
+    private timed = new Timed();
+    private timestampStart = 0;
+    private size = 0;
 }

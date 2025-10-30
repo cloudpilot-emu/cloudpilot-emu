@@ -71,7 +71,7 @@ const MAX_CONSECUTIVE_ERRORS = 3;
 const E_SESSION_MISMATCH = new Error('session does not match emulation');
 
 function snapshotSizeBytes(snapshot: Snapshot | undefined): number {
-    return snapshot ? snapshot.pageSize * snapshot.pageCount : 0;
+    return snapshot ? snapshot.pageSize * snapshot.pageCount * 4 : 0;
 }
 
 @Injectable({
@@ -133,14 +133,14 @@ export class SnapshotService {
     }
 
     private async storeSnapshotUnguarded(snapshotContainer: SnapshotContainer): Promise<void> {
-        this.timeSync = this.timeBackground = 0;
+        this.timeBlocking = this.timeBackground = 0;
         this.timeoutDeltaMsecPerKb = this.timeoutDeltaMsecPerKbStart;
 
         while (true) {
             try {
                 await snapshotContainer.release(
                     await this.attemptToStoreSnapshot(snapshotContainer),
-                    this.timeSync,
+                    this.timeBlocking,
                     this.timeBackground,
                 );
                 this.consecutiveErrorCount = 0;
@@ -218,11 +218,10 @@ export class SnapshotService {
 
         if (!snapshotContainer.materialize()) return false;
 
-        let timestampBlockingStart = 0;
-        let timestampBlockingEnd = 0;
-
         return new Promise<boolean>((resolve, reject) => {
             let isTimeout = false;
+
+            let timestampBackgroundStart = 0;
 
             this.clonePoolMemory.reset();
             this.clonePoolNand.reset();
@@ -256,20 +255,20 @@ export class SnapshotService {
 
             tx.oncomplete = () => {
                 timeout.cancel();
-                this.timeBackground += timeout.getAccumulatedTimeout();
+                this.timeBackground += performance.now() - timestampBackgroundStart;
 
                 resolve(true);
             };
 
             tx.onerror = () => {
                 timeout.cancel();
-                this.timeBackground += timeout.getAccumulatedTimeout();
+                this.timeBackground += performance.now() - timestampBackgroundStart;
 
                 reject(new Error(tx.error?.message));
             };
 
             try {
-                timestampBlockingStart = performance.now();
+                const timestampBlockingStart = performance.now();
 
                 this.saveSnapshotMemory(tx, snapshotMemory, memoryCrc);
 
@@ -293,9 +292,9 @@ export class SnapshotService {
                 this.saveSavestate(tx, savestate);
 
                 timeout.start();
-                timestampBlockingEnd = performance.now();
 
-                this.timeSync += timestampBlockingEnd - timestampBlockingStart;
+                this.timeBlocking += performance.now() - timestampBlockingStart;
+                timestampBackgroundStart = performance.now();
             } catch (e) {
                 if (!isTimeout) {
                     timeout.cancel();
@@ -383,7 +382,7 @@ export class SnapshotService {
     private consecutiveErrorCount = 0;
     private timeoutDeltaMsecPerKbStart = TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT;
     private timeoutDeltaMsecPerKb = TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT;
-    private timeSync = 0;
+    private timeBlocking = 0;
     private timeBackground = 0;
     private snapshotInProgress = false;
     private loader: HTMLIonLoadingElement | undefined;

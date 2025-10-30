@@ -6,6 +6,7 @@ import { GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
 import { AnimationFrameScheduler, Scheduler, SchedulerKind, TimeoutScheduler } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatisticsCloudpilot } from '@common/model/EmulationStatistics';
+import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { SerialPort } from '@common/serial/SerialPort';
 import { Executor } from '@common/service/AbstractEmulationService';
 import { Event, EventInterface } from 'microevent.ts';
@@ -57,6 +58,10 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
 
     get fatalError(): EventInterface<Error> {
         return (this, this.cloudpilotInstance.fatalErrorEvent);
+    }
+
+    get snapshotSuccessEvent(): EventInterface<SnapshotStatistics> {
+        return this.snapshotContainer.snapshotSuccessEvent;
     }
 
     penDown(x: number, y: number): void {

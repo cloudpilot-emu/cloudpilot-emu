@@ -10,6 +10,7 @@ import { DeviceId } from '@common/model/DeviceId';
 import { Dimensions } from '@common/model/Dimensions';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { EngineType } from '@common/model/EngineType';
+import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { SerialPort } from '@common/serial/SerialPort';
 import { PalmButton } from '@native/cloudpilot_web';
 import { Event, EventInterface } from 'microevent.ts';
@@ -291,6 +292,8 @@ export abstract class AbstractEmulationService {
 
     private onSnapshotEvent = (snapshot: SnapshotContainer) => this.handleSnapshot(snapshot);
 
+    private onSnapshotSuccessEvent = (statistics: SnapshotStatistics) => this.snapshotSuccessEvent.dispatch(statistics);
+
     private onPalmosStateChangeEvent = () => {
         this.handlePalmosStateChange();
         this.palmosStateChangeEvent.dispatch();
@@ -307,6 +310,7 @@ export abstract class AbstractEmulationService {
         engine.snapshotEvent.addHandler(this.onSnapshotEvent);
         engine.palmosStateChangeEvent.addHandler(this.onPalmosStateChangeEvent);
         engine.fatalError.addHandler(this.onFatalError);
+        engine.snapshotSuccessEvent.addHandler(this.onSnapshotSuccessEvent);
 
         if (engine.type === 'cloudpilot') {
             engine.configuredHotsyncNameUpdateEvent.addHandler(this.onEngineConfigureHotsyncNameEvent);
@@ -322,6 +326,7 @@ export abstract class AbstractEmulationService {
         engine.snapshotEvent.removeHandler(this.onSnapshotEvent);
         engine.palmosStateChangeEvent.removeHandler(this.onPalmosStateChangeEvent);
         engine.fatalError.removeHandler(this.onFatalError);
+        engine.snapshotSuccessEvent.removeHandler(this.onSnapshotSuccessEvent);
 
         if (engine.type === 'cloudpilot') {
             engine.configuredHotsyncNameUpdateEvent.removeHandler(this.onEngineConfigureHotsyncNameEvent);
@@ -333,6 +338,7 @@ export abstract class AbstractEmulationService {
     emulationStateChangeEvent = new Event<boolean>();
     palmosStateChangeEvent = new Event<void>();
     engineChangeEvent = new Event<void>();
+    snapshotSuccessEvent = new Event<SnapshotStatistics>();
 
     protected abstract readonly clandestineExecute: Executor;
 

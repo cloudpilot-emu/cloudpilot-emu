@@ -1,5 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import helpUrl from '@assets/doc/emulation.md';
+import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { Config, LoadingController, ModalController, PopoverController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 
@@ -98,6 +99,7 @@ export class EmulationPage implements DragDropClient {
 
             this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
             this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
+            this.emulationService.snapshotSuccessEvent.removeHandler(this.onSnapshotSuccess);
 
             this.eventHandlingService.release();
 
@@ -289,6 +291,7 @@ export class EmulationPage implements DragDropClient {
         this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
+        this.emulationService.snapshotSuccessEvent.addHandler(this.onSnapshotSuccess);
 
         await this.emulationService.resume();
 
@@ -305,6 +308,12 @@ export class EmulationPage implements DragDropClient {
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
         this.canvasDisplayService.updateEmulationCanvas(canvas);
+    };
+
+    private onSnapshotSuccess = (statistics: SnapshotStatistics): void => {
+        if (this.kvsService.kvs.showStatistics) {
+            void this.canvasDisplayService.updateStatistics(statistics, this.emulationService.getStatistics());
+        }
     };
 
     private handleLinkApiInstallationRequest = (): void => {

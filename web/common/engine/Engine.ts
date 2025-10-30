@@ -2,6 +2,7 @@ import { PwmUpdate } from '@common/bridge/Cloudpilot';
 import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatisticsCloudpilot, EmulationStatisticsUarm } from '@common/model/EmulationStatistics';
 import { EngineType } from '@common/model/EngineType';
+import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { SerialPort } from '@common/serial/SerialPort';
 import { PalmButton } from '@native/cloudpilot_web';
 import { EventInterface } from 'microevent.ts';
@@ -67,6 +68,7 @@ export interface EngineCommon {
     readonly snapshotEvent: EventInterface<SnapshotContainer>;
     readonly palmosStateChangeEvent: EventInterface<void>;
     readonly fatalError: EventInterface<Error>;
+    readonly snapshotSuccessEvent: EventInterface<SnapshotStatistics>;
 }
 
 export interface EngineCloudpilot extends EngineCommon {
