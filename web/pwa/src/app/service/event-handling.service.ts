@@ -1,4 +1,4 @@
-import { ApplicationRef, Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { EventTarget, GenericEventHandlingService } from '@common/service/GenericEventHandlingService';
 import { EventHandler } from '@common/service/GenericEventHandlingService';
 
@@ -13,7 +13,6 @@ export class EventHandlingService extends GenericEventHandlingService {
         canvasDisplayService: CanvasDisplayService,
         private modalWatcher: ModalWatcherService,
         private ngZone: NgZone,
-        private app: ApplicationRef,
     ) {
         super(emulationService, canvasDisplayService);
     }
@@ -23,7 +22,7 @@ export class EventHandlingService extends GenericEventHandlingService {
     }
 
     protected override onToggleGameMode(): void {
-        this.app.tick();
+        this.ngZone.run(() => undefined);
     }
 
     protected override addEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(

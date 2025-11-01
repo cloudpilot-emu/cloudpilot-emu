@@ -1,4 +1,4 @@
-import { ApplicationRef, Inject, Injectable, NgZone } from '@angular/core';
+import { Inject, Injectable, NgZone } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { StorageCardProvider } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
@@ -58,7 +58,6 @@ export class EmulationService extends AbstractEmulationService {
         private sessionsService: SessionService,
         private featureService: FeatureService,
         private cloudpilotService: CloudpilotService,
-        private app: ApplicationRef,
         modalWatcher: ModalWatcherService,
         @Inject(EMULATOR_LOCK_TOKEN) emulatorLock: Lock,
     ) {
@@ -182,7 +181,7 @@ export class EmulationService extends AbstractEmulationService {
         this.buttonService.tick(sliceSizeSeconds);
 
         if (this.isDirty) {
-            this.app.tick();
+            this.ngZone.run(() => undefined);
             this.isDirty = false;
         }
     }
