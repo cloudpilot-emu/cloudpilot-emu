@@ -58,9 +58,11 @@ export interface EngineCommon {
 
     shutdown(): void;
 
-    allocateCard(id: string, size: number): Uint32Array;
-    releaseCard(id: string): void;
-    insertCard(id: string): Promise<void>;
+    allocateCard(key: string, size: number): Uint32Array;
+    releaseCard(key: string): Promise<void>;
+    mountCard(key: string): Promise<boolean>;
+    getMountedKey(): Promise<string | undefined>;
+    getCardData(key: string): Promise<Uint32Array | undefined>;
 
     readonly newFrameEvent: EventInterface<void>;
     readonly timesliceEvent: EventInterface<number>;

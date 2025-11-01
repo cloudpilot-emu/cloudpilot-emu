@@ -32,8 +32,6 @@ import { SnapshotService } from './snapshot.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageService } from './storage.service';
 
-// TODO: Insert / Eject storage (badly broken atm).
-//       !!! Mind potential race conditions in savestate --- stop emulator while eject / insert in progress !!!
 // TODO: Get rid of cloudpilot service
 
 const SNAPSHOT_INTERVAL = 1000;
@@ -150,7 +148,7 @@ export class EmulationService extends AbstractEmulationService {
             await this.doResume();
         });
 
-    pause = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
+    pause = (): Promise<void> => this.mutex.runExclusive(() => this.doStop());
 
     stop = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 

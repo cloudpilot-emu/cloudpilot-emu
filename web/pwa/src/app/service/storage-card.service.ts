@@ -1,4 +1,4 @@
-import { Injectable, Signal, signal } from '@angular/core';
+import { Inject, Injectable, Signal, signal } from '@angular/core';
 import { CardSupportLevel } from '@common/bridge/Cloudpilot';
 import { FsckContext, FsckResult, GzipContext } from '@common/bridge/FSTools';
 import { Engine } from '@common/engine/Engine';
@@ -11,6 +11,7 @@ import { v4 as uuid } from 'uuid';
 
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameForCards } from '@pwa/helper/filename';
+import { EMULATOR_LOCK_TOKEN, Lock } from '@pwa/helper/lock';
 import { Session } from '@pwa/model/Session';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
@@ -110,6 +111,7 @@ export class StorageCardService {
         private vfsService: VfsService,
         private storageCardContext: StorageCardContext,
         private fstools: FsToolsService,
+        @Inject(EMULATOR_LOCK_TOKEN) private emulatorLock: Lock,
     ) {
         this.vfsService.setStorageCardService(this);
         void this.updateCardsFromDB().then(() => (this.loading = false));
@@ -168,8 +170,7 @@ export class StorageCardService {
 
         await this.vfsService.releaseCard(cardId);
 
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
-        if (cloudpilot.getMountedKey()) {
+        if ((await engine.getMountedKey()) !== undefined) {
             throw new Error('attempt to mount a card while another card is mounted');
         }
 
@@ -185,10 +186,10 @@ export class StorageCardService {
     }
 
     async ejectCurrentCard(): Promise<void> {
-        const session = this.emulationContext.session();
-        if (!session) throw new Error('no running session');
+        const emulationContext = this.emulationContext.context();
+        if (!emulationContext) throw new Error('no running session');
 
-        const cardId = session?.mountedCard;
+        const cardId = emulationContext.session.mountedCard;
         if (cardId === undefined) {
             throw new Error(`no mounted card`);
         }
@@ -198,15 +199,15 @@ export class StorageCardService {
             throw new Error(`no card with id ${cardId}`);
         }
 
-        await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
-        await this.snapshotService.waitForPendingSnapshot();
-        await this.snapshotService.triggerSnapshot();
-        await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
+        await this.emulatorLock.runGuarded(async () => {
+            await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
+            await this.snapshotService.triggerSnapshot();
+            await this.storageService.updateSessionPartial(emulationContext.session.id, { mountedCard: undefined });
 
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
-        cloudpilot.removeCard(card.storageId);
+            await emulationContext.engine.releaseCard(card.storageId);
 
-        this.storageCardContext.release(cardId, CardOwner.cloudpilot);
+            this.storageCardContext.release(cardId, CardOwner.cloudpilot);
+        });
     }
 
     async checkCard(card: StorageCard): Promise<void> {
@@ -543,8 +544,10 @@ export class StorageCardService {
         let cardDataFromEmulator: Uint32Array | undefined;
 
         if (session && session.id === this.emulationContext.session()?.id) {
-            const cloudpilot = await this.cloudpilotService.cloudpilot;
-            cardDataFromEmulator = cloudpilot.getCardData(card.storageId);
+            const engine = this.emulationContext.engine();
+            if (!engine) throw new Error('unreachable');
+
+            cardDataFromEmulator = await engine.getCardData(card.storageId);
 
             if (cardDataFromEmulator) {
                 if (cardData) cardData.set(cardDataFromEmulator);
@@ -842,27 +845,29 @@ export class StorageCardService {
 
         try {
             await loader.present();
-            await this.vfsService.releaseCard(cardId);
 
-            const session = this.emulationContext.session();
-            if (!session) throw new Error('no current session');
-            if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
+            return await this.emulatorLock.runGuarded(async () => {
+                await this.vfsService.releaseCard(cardId);
 
-            const card = await this.loadCardInEmulator(cardId, engine, data);
-            const cloudpilot = await this.cloudpilotService.cloudpilot;
+                const session = this.emulationContext.session();
+                if (!session) throw new Error('no current session');
+                if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
 
-            await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
-            await this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+                const card = await this.loadCardInEmulator(cardId, engine, data);
 
-            if (!cloudpilot.mountCard(card.storageId)) {
-                cloudpilot.removeCard(card.storageId);
+                await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
+                await this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
 
-                throw new Error('failed to mount card');
-            }
+                if (!(await engine.mountCard(card.storageId))) {
+                    await engine.releaseCard(card.storageId);
 
-            this.mountCardEvent.dispatch(card);
+                    throw new Error('failed to mount card');
+                }
 
-            return card;
+                this.mountCardEvent.dispatch(card);
+
+                return card;
+            });
         } finally {
             void loader.dismiss();
         }

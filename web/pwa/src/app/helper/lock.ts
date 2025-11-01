@@ -18,11 +18,11 @@ export class Lock {
         return this.lockCount > 0;
     }
 
-    guard<T>(fn: () => T): T {
+    async runGuarded<T>(fn: () => Promise<T>): Promise<T> {
         this.lock();
 
         try {
-            return fn();
+            return await fn();
         } finally {
             this.unlock();
         }

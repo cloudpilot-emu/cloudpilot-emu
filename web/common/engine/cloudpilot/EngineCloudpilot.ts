@@ -359,27 +359,33 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.settings = settings;
     }
 
-    allocateCard(id: string, size: number): Uint32Array {
-        if (!this.cloudpilotInstance.allocateCard(id, size)) {
-            throw new Error(`failed to allocate card "${id}" @ ${size} bytes`);
+    allocateCard(key: string, size: number): Uint32Array {
+        if (!this.cloudpilotInstance.allocateCard(key, size)) {
+            throw new Error(`failed to allocate card "${key}" @ ${size} bytes`);
         }
 
-        const data = this.cloudpilotInstance.getCardData(id);
-        if (!data) throw new Error(`failed to get card data for key ${id}`);
+        const data = this.cloudpilotInstance.getCardData(key);
+        if (!data) throw new Error(`failed to get card data for key ${key}`);
 
         return data;
     }
 
-    releaseCard(id: string): void {
-        if (!this.cloudpilotInstance.removeCard(id)) {
-            console.warn(`failed to release card for key ${id}`);
+    async releaseCard(key: string): Promise<void> {
+        if (!this.cloudpilotInstance.removeCard(key)) {
+            console.warn(`failed to release card for key ${key}`);
         }
     }
 
-    async insertCard(id: string): Promise<void> {
-        if (!this.cloudpilotInstance.mountCard(id)) {
-            throw new Error(`failed to mount card with key ${id}`);
-        }
+    async getMountedKey(): Promise<string | undefined> {
+        return this.cloudpilotInstance.getMountedKey();
+    }
+
+    async getCardData(key: string): Promise<Uint32Array | undefined> {
+        return this.cloudpilotInstance.getCardData(key);
+    }
+
+    async mountCard(key: string): Promise<boolean> {
+        return this.cloudpilotInstance.mountCard(key);
     }
 
     getSerialPortSerial(): SerialPort {

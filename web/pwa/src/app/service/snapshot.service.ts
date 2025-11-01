@@ -285,7 +285,7 @@ export class SnapshotService {
                         snapshotStorage,
                         storageCard.id,
                         OBJECT_STORE_STORAGE,
-                        this.clonePoolMemory,
+                        this.clonePoolStorage,
                     );
                 }
 
