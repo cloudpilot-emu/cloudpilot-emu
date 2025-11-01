@@ -175,6 +175,7 @@ export abstract class AbstractEmulationService {
         this.unbindEngineHandlers(this.engine);
         this.engine?.shutdown();
         this.engine = undefined;
+        this.shouldRun = false;
 
         const engine = await this.createEngine(engineType(deviceId));
         engine.updateSettings(this.engineSettings);
@@ -203,19 +204,23 @@ export abstract class AbstractEmulationService {
     }
 
     protected async doResume(): Promise<void> {
-        if (!this.engine) return;
-
-        await this.engine.resume();
-
-        this.emulationStateChangeEvent.dispatch(this.engine.isRunning());
+        this.shouldRun = true;
+        await this.enforceRunState();
     }
 
     protected async doStop(): Promise<void> {
-        if (!this.engine) return;
+        this.shouldRun = false;
+        await this.enforceRunState();
+    }
 
-        await this.engine?.stop();
+    protected async doBlock() {
+        this.isBlocked = true;
+        await this.enforceRunState();
+    }
 
-        this.emulationStateChangeEvent.dispatch(this.engine.isRunning());
+    protected async doUnblock() {
+        this.isBlocked = false;
+        await this.enforceRunState();
     }
 
     protected clearCanvas(): void {
@@ -262,6 +267,18 @@ export abstract class AbstractEmulationService {
             default:
                 return 0;
         }
+    }
+
+    private async enforceRunState(): Promise<void> {
+        if (!this.engine) return;
+
+        if (this.shouldRun && !this.isBlocked) {
+            await this.engine.resume();
+        } else {
+            await this.engine.stop();
+        }
+
+        this.emulationStateChangeEvent.dispatch(this.engine.isRunning());
     }
 
     private async createEngine(engineType: EngineType): Promise<Engine> {
@@ -348,5 +365,8 @@ export abstract class AbstractEmulationService {
     protected penDown = false;
 
     protected engine?: Engine;
+
     private engineSettings: EngineSettings = { ...DEFAULT_ENGINE_SETTINGS };
+    private shouldRun = false;
+    private isBlocked = false;
 }

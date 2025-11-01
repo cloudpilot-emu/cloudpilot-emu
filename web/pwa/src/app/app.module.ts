@@ -17,6 +17,7 @@ import { UpdateService } from '@pwa/service/update.service';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
+import { EMULATOR_LOCK_TOKEN, Lock } from './helper/lock';
 import { ServiceWorkerService } from './service/service-worker.service';
 
 const markedOptionsFactory = (): MarkedOptions => {
@@ -55,6 +56,7 @@ const markedOptionsFactory = (): MarkedOptions => {
     ],
     providers: [
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+        { provide: EMULATOR_LOCK_TOKEN, useClass: Lock },
         provideAppInitializer(() => {
             const initializerFn = ((kvsService: KvsService) => kvsService.initialize.bind(kvsService))(
                 inject(KvsService),

@@ -1,4 +1,4 @@
-import { ApplicationRef, Injectable, NgZone } from '@angular/core';
+import { ApplicationRef, Inject, Injectable, NgZone } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { StorageCardProvider } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
@@ -10,6 +10,7 @@ import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { environment } from 'pwa/src/environments/environment';
 
+import { EMULATOR_LOCK_TOKEN, Lock } from '@pwa/helper/lock';
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
 import { Session } from '@pwa/model/Session';
 import { StorageCardService } from '@pwa/service/storage-card.service';
@@ -31,9 +32,6 @@ import { SnapshotService } from './snapshot.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageService } from './storage.service';
 
-// TODO: Snapshots
-// TODO: Snapshot statistics
-// TODO: ModalWatcher
 // TODO: Insert / Eject storage (badly broken atm).
 //       !!! Mind potential race conditions in savestate --- stop emulator while eject / insert in progress !!!
 // TODO: Get rid of cloudpilot service
@@ -50,7 +48,6 @@ export class EmulationService extends AbstractEmulationService {
         private snapshotService: SnapshotService,
         private errorService: ErrorService,
         private alertService: AlertService,
-        private modalWatcher: ModalWatcherService,
         private clipboardService: ClipboardService,
         private kvsService: KvsService,
         private networkService: NetworkService,
@@ -62,6 +59,8 @@ export class EmulationService extends AbstractEmulationService {
         private featureService: FeatureService,
         private cloudpilotService: CloudpilotService,
         private app: ApplicationRef,
+        modalWatcher: ModalWatcherService,
+        @Inject(EMULATOR_LOCK_TOKEN) emulatorLock: Lock,
     ) {
         super();
 
@@ -80,6 +79,13 @@ export class EmulationService extends AbstractEmulationService {
             this.snapshotNow()
                 .then(() => cb())
                 .catch(cb),
+        );
+
+        emulatorLock.lockEvent.addHandler(() => void this.block());
+        emulatorLock.unlockEvent.addHandler(() => void this.unblock());
+
+        modalWatcher.modalVisibilityChangeEvent.addHandler((isVisible) =>
+            isVisible ? void emulatorLock.lock() : void emulatorLock.unlock(),
         );
 
         const storedSession = getStoredSession();
@@ -141,22 +147,11 @@ export class EmulationService extends AbstractEmulationService {
 
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            if (!this.emulationContext.session() || this.errorService.hasFatalError()) {
-                return;
-            }
             await this.kvsService.mutex.runExclusive(() => this.updateSettings());
-
             await this.doResume();
         });
 
-    pause = (): Promise<void> =>
-        this.mutex.runExclusive(async () => {
-            await this.doStop();
-
-            if (!this.errorService.hasFatalError() && this.emulationContext.session()) {
-                await this.snapshotNow();
-            }
-        });
+    pause = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 
     stop = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 
@@ -206,6 +201,10 @@ export class EmulationService extends AbstractEmulationService {
     protected override getCloudpilotInstance(): Promise<Cloudpilot> {
         return this.cloudpilotService.cloudpilot;
     }
+
+    private block = (): Promise<void> => this.mutex.runExclusive(() => this.doBlock());
+
+    private unblock = (): Promise<void> => this.mutex.runExclusive(() => this.doUnblock());
 
     private async snapshotNow(): Promise<void> {
         if (!this.engine) return;
