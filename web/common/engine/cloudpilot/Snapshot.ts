@@ -72,7 +72,11 @@ export class SnapshotContainerImpl implements SnapshotContainer {
             }
 
             if (!this.snapshotMemory) throw new Error('snapshot not initialized');
-            this.materializeSnapshot(this.snapshotMemory, this.cloudpilotInstance.getDirtyPages());
+            this.materializeSnapshot(
+                this.snapshotMemory,
+                this.cloudpilotInstance.getDirtyPages(),
+                this.cloudpilotInstance.getMemory32(),
+            );
             this.updateMemoryCrc();
 
             this.size = this.snapshotMemory.pageCount * this.snapshotMemory.pageSize * 4;
@@ -84,9 +88,12 @@ export class SnapshotContainerImpl implements SnapshotContainer {
                 if (this.storageKey === undefined) throw new Error('unreachable');
 
                 const dirtyPages = this.cloudpilotInstance.getCardDirtyPages(this.storageKey);
-                if (dirtyPages === undefined) throw new Error(`storage key ${this.storageKey} not registered`);
+                const data = this.cloudpilotInstance.getCardData(this.storageKey);
+                if (dirtyPages === undefined || data === undefined) {
+                    throw new Error(`storage key ${this.storageKey} not registered`);
+                }
 
-                this.materializeSnapshot(this.snapshotStorage, dirtyPages);
+                this.materializeSnapshot(this.snapshotStorage, dirtyPages, data);
 
                 this.size += this.snapshotStorage.pageCount * this.snapshotStorage.pageSize * 4;
             }
@@ -169,7 +176,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         }
     }
 
-    private materializeSnapshot(snapshot: Writeable<Snapshot>, dirtyPages: Uint8Array): void {
+    private materializeSnapshot(snapshot: Writeable<Snapshot>, dirtyPages: Uint8Array, data: Uint32Array): void {
         const { pageCountTotal, pageSize, pages, offsets } = snapshot;
 
         let pageCount = 0;
@@ -199,6 +206,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         }
 
         snapshot.pageCount = pageCount;
+        snapshot.pageData = data;
     }
 
     private updateMemoryCrc(): void {
