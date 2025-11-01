@@ -108,8 +108,6 @@ export class SnapshotContainerImpl implements SnapshotContainer {
             if (!persistenceSuccess) this.mergeBack();
         });
 
-        console.log(timeBlocking, timeBackground, this.timed.get());
-
         this.snapshotSuccessEvent.dispatch({
             size: this.size,
             timeBlocking: timeBlocking + this.timed.get(),
