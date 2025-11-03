@@ -11,7 +11,7 @@ import { v4 as uuid } from 'uuid';
 
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameForCards } from '@pwa/helper/filename';
-import { EMULATOR_LOCK_TOKEN, Lock } from '@pwa/helper/lock';
+import { Lock } from '@pwa/helper/lock';
 import { Session } from '@pwa/model/Session';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
@@ -25,6 +25,7 @@ import { ErrorService } from './error.service';
 import { FileService } from './file.service';
 import { FsToolsService } from './fstools.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
+import { EMULATOR_LOCK_TOKEN } from './token';
 import { VfsService } from './vfs.service';
 
 export enum NewCardSize {

@@ -1,7 +1,4 @@
-import { InjectionToken } from '@angular/core';
 import { Event } from 'microevent.ts';
-
-export const EMULATOR_LOCK_TOKEN = new InjectionToken<Lock>('emulator lock');
 
 export class Lock {
     lock(): void {

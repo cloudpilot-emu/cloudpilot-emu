@@ -64,6 +64,11 @@ export interface EngineCommon {
     getMountedKey(): Promise<string | undefined>;
     getCardData(key: string): Promise<Uint32Array | undefined>;
 
+    getRom(): Promise<Uint8Array | undefined>;
+    getMemory(): Promise<Uint8Array | undefined>;
+    getNand(): Promise<Uint8Array | undefined>;
+    getSavestate(): Promise<Uint8Array | undefined>;
+
     readonly newFrameEvent: EventInterface<void>;
     readonly timesliceEvent: EventInterface<number>;
     readonly suspendEvent: EventInterface<void>;

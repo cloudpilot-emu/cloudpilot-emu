@@ -57,7 +57,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     }
 
     get fatalError(): EventInterface<Error> {
-        return (this, this.cloudpilotInstance.fatalErrorEvent);
+        return this.cloudpilotInstance.fatalErrorEvent;
     }
 
     get snapshotSuccessEvent(): EventInterface<SnapshotStatistics> {
@@ -117,7 +117,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     }
 
     getDeviceId(): DeviceId {
-        return this.deviceId;
+        return this.deviceId ?? DeviceId.m515;
     }
 
     async openSession(
@@ -388,6 +388,30 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         return this.cloudpilotInstance.mountCard(key);
     }
 
+    async getRom(): Promise<Uint8Array | undefined> {
+        if (this.deviceId === undefined) return undefined;
+
+        return this.cloudpilotInstance.getRomImage().slice();
+    }
+
+    async getMemory(): Promise<Uint8Array | undefined> {
+        if (this.deviceId === undefined) return undefined;
+
+        return this.cloudpilotInstance.getMemory().slice();
+    }
+
+    async getNand(): Promise<Uint8Array | undefined> {
+        return undefined;
+    }
+
+    async getSavestate(): Promise<Uint8Array | undefined> {
+        if (this.deviceId === undefined) return undefined;
+
+        this.cloudpilotInstance.saveState();
+
+        return this.cloudpilotInstance.getSavestate().slice();
+    }
+
     getSerialPortSerial(): SerialPort {
         return this.serialPortSerial;
     }
@@ -631,7 +655,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     private frameCounter = 0;
     private clockEmulator = 0;
 
-    private deviceId = DeviceId.m515;
+    private deviceId: DeviceId | undefined;
     private deviceHotsyncName: string | undefined;
 
     private scheduler: Scheduler = new AnimationFrameScheduler((timestamp) => this.onSchedule(timestamp));

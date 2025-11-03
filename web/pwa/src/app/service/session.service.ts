@@ -1,6 +1,6 @@
 import { Injectable, Signal, signal } from '@angular/core';
 import { SessionImage } from '@common/bridge/Cloudpilot';
-import { engineType, nandSize, ramSize } from '@common/helper/deviceProperties';
+import { engineType, nandSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { LoadingController } from '@ionic/angular';
@@ -13,9 +13,9 @@ import { metadataForSession } from '@pwa/helper/metadata';
 import { Session, SessionSettings, settingsFromMetadata } from '@pwa/model/Session';
 
 import { AlertService } from './alert.service';
-import { CloudpilotService } from './cloudpilot.service';
 import { FileService } from './file.service';
 import { FsToolsService } from './fstools.service';
+import { NativeSupportService } from './native-support.service';
 import { StorageService } from './storage.service';
 
 class ImportError extends Error {
@@ -29,7 +29,7 @@ class ImportError extends Error {
 })
 export class SessionService {
     constructor(
-        private cloudpilotService: CloudpilotService,
+        private nativeSupportService: NativeSupportService,
         private storageService: StorageService,
         private loadingController: LoadingController,
         private fsTools: FsToolsService,
@@ -61,8 +61,6 @@ export class SessionService {
         await loader.present();
 
         try {
-            const cloudpilot = await this.cloudpilotService.cloudpilot;
-
             const zipfileWalker = await this.fsTools.createZipfileWalker(zipData);
             if (zipfileWalker.GetState() === ZipfileWalkerState.error) {
                 await this.alertService.errorMessage('Import failed: unable to read zip file.');
@@ -80,7 +78,9 @@ export class SessionService {
                     loader.message = `Importing ${iEntry++}/${entriesTotal}...`;
 
                     const sessionImage = /\.(bin|img)$/i.test(zipfileWalker.GetCurrentEntryName())
-                        ? cloudpilot.deserializeSessionImage<SessionMetadata>(zipfileWalker.GetCurrentEntryContent())
+                        ? await this.nativeSupportService.deserializeSessionImage<SessionMetadata>(
+                              zipfileWalker.GetCurrentEntryContent(),
+                          )
                         : undefined;
 
                     if (!sessionImage) {
@@ -152,10 +152,7 @@ export class SessionService {
             ...settings,
             id: -1,
             device,
-            ram:
-                eng === 'cloudpilot'
-                    ? (await this.cloudpilotService.cloudpilot).minRamForDevice(device) >>> 20
-                    : ramSize(device) >>> 20,
+            ram: (await this.nativeSupportService.ramSizeForDevice(device)) >>> 20,
             rom: '',
             wasResetForcefully: false,
             nand: nandSize(device),
@@ -240,8 +237,13 @@ export class SessionService {
         }
     }
 
-    async emergencySaveSession(session: Session): Promise<void> {
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
+    async emergencySaveSession(
+        session: Session,
+        rom: Uint8Array,
+        memory: Uint8Array,
+        nand?: Uint8Array,
+        savestate?: Uint8Array,
+    ): Promise<void> {
         const loader = await this.loadingController.create({ message: 'Exporting...' });
 
         // This code path is usually triggered from a dialog, so make sure that the loader is on top.
@@ -251,31 +253,20 @@ export class SessionService {
         await loader.present();
 
         try {
-            const rom = cloudpilot.getRomImage().slice();
-            const memory = cloudpilot.getMemory().slice();
-            const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate().slice() : undefined;
-            const framebufferSize = cloudpilot.framebufferSizeForDevice(session.device);
-
-            if (framebufferSize < 0) {
-                throw new Error(`invalid device ID ${session.device}`);
-            }
-
             const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
                 engine: session.engine,
                 deviceId: session.device,
                 metadata: metadataForSession(session),
                 rom,
                 memory,
+                nand,
                 savestate,
             };
 
-            const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
+            const image = await this.nativeSupportService.serializeSessionImage(sessionImage);
             if (image) {
                 this.fileService.saveFile(filenameForSession(session), image);
             }
-            // Showing an error alert may conflict with the alert that is already visible.
-            // However, the error case is only possible if allocations fail in WASM --- an
-            // extreme edge case.
         } finally {
             void loader.dismiss();
         }
@@ -298,7 +289,7 @@ export class SessionService {
             nand,
         };
 
-        return (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
+        return this.nativeSupportService.serializeSessionImage(sessionImage);
     }
 
     private async updateSessionsFromStorage(): Promise<void> {
@@ -338,15 +329,11 @@ export class SessionService {
     }
 
     private async getRamSizeForSession(image: SessionImage<unknown>): Promise<number> {
-        if (image.engine === 'cloudpilot') {
-            return (await this.cloudpilotService.cloudpilot).minRamForDevice(image.deviceId) >>> 20;
-        }
-
-        if (image.memory) {
+        if (image.engine === 'uarm' && image.memory) {
             return image.memory?.length >= 32 << 20 ? 32 : 16;
         }
 
-        return ramSize(image.deviceId) >>> 20;
+        return (await this.nativeSupportService.ramSizeForDevice(image.deviceId)) >>> 20;
     }
 
     readonly _sessions = signal<Array<Session>>([]);

@@ -2,23 +2,31 @@ import { HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/
 import { NgModule, inject, provideAppInitializer } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
+import wasmModule from '@native/cloudpilot_web.wasm';
 import { createDirectives } from 'marked-directive';
 import { MARKED_EXTENSIONS, MARKED_OPTIONS, MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
 
+import { AppRoutingModule } from '@pwa/app-routing.module';
+import { AppComponent } from '@pwa/app.component';
 import { DummyComponent } from '@pwa/component/dummy/dummy.component';
+import { Lock } from '@pwa/helper/lock';
 import { AudioService } from '@pwa/service/audio.service';
 import { AutoEnableAudioService } from '@pwa/service/auto-enable-audio.service';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { KvsService } from '@pwa/service/kvs.service';
+import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
+import { CLOUDPILOT_INSTANCE_TOKEN, EMULATOR_LOCK_TOKEN } from '@pwa/service/token';
 import { UpdateService } from '@pwa/service/update.service';
 
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-import { EMULATOR_LOCK_TOKEN, Lock } from './helper/lock';
-import { ServiceWorkerService } from './service/service-worker.service';
+declare global {
+    interface Window {
+        __cp_enableLogging?: (logging: boolean) => void;
+    }
+}
 
 const markedOptionsFactory = (): MarkedOptions => {
     const renderer = new MarkedRenderer();
@@ -57,6 +65,15 @@ const markedOptionsFactory = (): MarkedOptions => {
     providers: [
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
         { provide: EMULATOR_LOCK_TOKEN, useClass: Lock },
+        {
+            provide: CLOUDPILOT_INSTANCE_TOKEN,
+            useFactory: () => {
+                const instance = Cloudpilot.create(wasmModule);
+                window.__cp_enableLogging = (logging) => instance.then((cp) => cp.enableLogging(logging));
+
+                return instance;
+            },
+        },
         provideAppInitializer(() => {
             const initializerFn = ((kvsService: KvsService) => kvsService.initialize.bind(kvsService))(
                 inject(KvsService),

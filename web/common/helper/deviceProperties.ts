@@ -346,7 +346,7 @@ export function nandSize(deviceId: DeviceId): number | undefined {
     return engineType(deviceId) === 'uarm' ? 2048 * (2 << 4) * 528 : undefined;
 }
 
-export function ramSize(deviceId: DeviceId): number {
+export function ramSize(deviceId: DeviceId): number | undefined {
     switch (deviceId) {
         case DeviceId.te2:
             return 16 << 20;
@@ -355,6 +355,6 @@ export function ramSize(deviceId: DeviceId): number {
             return 32 << 20;
 
         default:
-            return -1;
+            return undefined;
     }
 }

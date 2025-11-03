@@ -1,21 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
-import wasmModule from '@native/cloudpilot_web.wasm';
 
-declare global {
-    interface Window {
-        __cp_enableLogging?: (logging: boolean) => void;
-    }
-}
+import { CLOUDPILOT_INSTANCE_TOKEN } from './token';
 
 @Injectable({ providedIn: 'root' })
 export class CloudpilotService {
-    constructor() {
-        void this.cloudpilot.then((instance) => (this.cloudpilotInstance = instance));
-        window.__cp_enableLogging = (logging) => this.cloudpilotInstance?.enableLogging(logging);
-    }
-
-    readonly cloudpilot = Cloudpilot.create(wasmModule);
-
-    private cloudpilotInstance?: Cloudpilot;
+    constructor(@Inject(CLOUDPILOT_INSTANCE_TOKEN) public readonly cloudpilot: Promise<Cloudpilot>) {}
 }

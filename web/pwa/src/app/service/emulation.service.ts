@@ -10,7 +10,7 @@ import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { environment } from 'pwa/src/environments/environment';
 
-import { EMULATOR_LOCK_TOKEN, Lock } from '@pwa/helper/lock';
+import { Lock } from '@pwa/helper/lock';
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
 import { Session } from '@pwa/model/Session';
 import { StorageCardService } from '@pwa/service/storage-card.service';
@@ -31,6 +31,7 @@ import { SessionService } from './session.service';
 import { SnapshotService } from './snapshot.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageService } from './storage.service';
+import { EMULATOR_LOCK_TOKEN } from './token';
 
 // TODO: Get rid of cloudpilot service
 
@@ -352,9 +353,15 @@ Sorry for the inconvenience.`,
     private onEmergencySave = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
             const session = this.emulationContext.session();
+            if (!session || !this.engine) return;
 
-            if (session) {
-                void this.sessionsService.emergencySaveSession(session);
+            const rom = await this.engine.getRom();
+            const memory = await this.engine.getMemory();
+            const nand = await this.engine.getNand();
+            const savestate = await this.engine.getSavestate();
+
+            if (rom && memory) {
+                void this.sessionsService.emergencySaveSession(session, rom, memory, nand, savestate);
             }
         });
 
