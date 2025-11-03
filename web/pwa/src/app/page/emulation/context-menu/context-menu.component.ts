@@ -7,16 +7,17 @@ import { ActionSheetController, AlertController, ModalController, PopoverControl
 
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 import { fixmeAssertSessionHasEngine, mergeSettings, settingsFromSession } from '@pwa/model/Session';
+import { StorageCard } from '@pwa/model/StorageCard';
 import { AlertService } from '@pwa/service/alert.service';
 import { AudioService } from '@pwa/service/audio.service';
 import { BackupService } from '@pwa/service/backup.service';
 import { ButtonService } from '@pwa/service/button.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationContextService } from '@pwa/service/emulation-context.service';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { KvsService } from '@pwa/service/kvs.service';
+import { NativeSupportService } from '@pwa/service/native-support.service';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageCardService } from '@pwa/service/storage-card.service';
@@ -62,7 +63,7 @@ export class ContextMenuComponent {
         private sessionService: SessionService,
         private performanceWatchdogService: PerformanceWatchdogService,
         private canvasDisplayService: CanvasDisplayService,
-        private cloudpilotService: CloudpilotService,
+        private nativeSupportService: NativeSupportService,
         private storageCardService: StorageCardService,
         private alertService: AlertService,
         private alertController: AlertController,
@@ -256,13 +257,20 @@ export class ContextMenuComponent {
         const deviceId = this.emulationContext.session()?.device;
         if (deviceId === undefined) return;
 
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
-        const eligibleCards = this.storageCardService
-            .cards()
-            .filter(
-                (card) =>
-                    cloudpilot.deviceSupportsCardSize(card.size) && !this.storageCardService.mountedInSession(card.id),
-            );
+        const eligibleCards = (
+            await Promise.all(
+                this.storageCardService
+                    .cards()
+                    .map(
+                        (card): Promise<[StorageCard, boolean]> =>
+                            this.nativeSupportService
+                                .deviceSupportsCard(deviceId, card.size)
+                                .then((supported) => [card, supported]),
+                    ),
+            )
+        )
+            .filter(([card, supported]) => supported && !this.storageCardService.mountedInSession(card.id))
+            .map(([card]) => card);
 
         if (eligibleCards.length === 0) {
             void this.alertService.message(

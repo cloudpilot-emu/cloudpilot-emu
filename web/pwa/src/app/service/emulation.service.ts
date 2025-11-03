@@ -19,7 +19,6 @@ import { AlertService } from './alert.service';
 import { BootstrapService } from './bootstrap-service';
 import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
-import { CloudpilotService } from './cloudpilot.service';
 import { EmulationContextService } from './emulation-context.service';
 import { ErrorService } from './error.service';
 import { FeatureService } from './feature.service';
@@ -31,7 +30,7 @@ import { SessionService } from './session.service';
 import { SnapshotService } from './snapshot.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageService } from './storage.service';
-import { EMULATOR_LOCK_TOKEN } from './token';
+import { TOKEN_CLOUDPILOT_INSTANCE, TOKEN_EMULATOR_LOCK } from './token';
 
 // TODO: Get rid of cloudpilot service
 
@@ -56,9 +55,9 @@ export class EmulationService extends AbstractEmulationService {
         private storageCardContext: StorageCardContext,
         private sessionsService: SessionService,
         private featureService: FeatureService,
-        private cloudpilotService: CloudpilotService,
+        @Inject(TOKEN_CLOUDPILOT_INSTANCE) private cloudpilotPromise: Promise<Cloudpilot>,
         modalWatcher: ModalWatcherService,
-        @Inject(EMULATOR_LOCK_TOKEN) emulatorLock: Lock,
+        @Inject(TOKEN_EMULATOR_LOCK) emulatorLock: Lock,
     ) {
         super();
 
@@ -66,7 +65,7 @@ export class EmulationService extends AbstractEmulationService {
         errorService.fatalErrorEvent.addHandler(this.stop);
         this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
 
-        void this.getCloudpilotInstance().then((instance) => {
+        void cloudpilotPromise.then((instance) => {
             this.cloudpilotInstance = instance;
 
             this.networkService.initialize(instance);
@@ -197,7 +196,7 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     protected override getCloudpilotInstance(): Promise<Cloudpilot> {
-        return this.cloudpilotService.cloudpilot;
+        return this.cloudpilotPromise;
     }
 
     private block = (): Promise<void> => this.mutex.runExclusive(() => this.doBlock());

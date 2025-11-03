@@ -19,7 +19,7 @@ import { KvsService } from '@pwa/service/kvs.service';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
-import { CLOUDPILOT_INSTANCE_TOKEN, EMULATOR_LOCK_TOKEN } from '@pwa/service/token';
+import { TOKEN_CLOUDPILOT_INSTANCE, TOKEN_EMULATOR_LOCK } from '@pwa/service/token';
 import { UpdateService } from '@pwa/service/update.service';
 
 declare global {
@@ -64,9 +64,9 @@ const markedOptionsFactory = (): MarkedOptions => {
     ],
     providers: [
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-        { provide: EMULATOR_LOCK_TOKEN, useClass: Lock },
+        { provide: TOKEN_EMULATOR_LOCK, useClass: Lock },
         {
-            provide: CLOUDPILOT_INSTANCE_TOKEN,
+            provide: TOKEN_CLOUDPILOT_INSTANCE,
             useFactory: () => {
                 const instance = Cloudpilot.create(wasmModule);
                 window.__cp_enableLogging = (logging) => instance.then((cp) => cp.enableLogging(logging));

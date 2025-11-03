@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { deviceDimensions } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
@@ -9,7 +10,8 @@ import { AbstractCanvasDisplayService, DEFAULT_DEVICE } from '@common/service/Ab
 import { SkinLoader } from '@common/service/SkinLoader';
 
 import { Session } from '@pwa/model/Session';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
+
+import { TOKEN_CLOUDPILOT_INSTANCE } from './token';
 
 function fontScaleForScreenSize(screenSize: ScreenSize) {
     switch (screenSize) {
@@ -27,8 +29,8 @@ function fontScaleForScreenSize(screenSize: ScreenSize) {
 
 @Injectable({ providedIn: 'root' })
 export class CanvasDisplayService extends AbstractCanvasDisplayService {
-    constructor(cloudpilotService: CloudpilotService) {
-        super(new SkinLoader(cloudpilotService.cloudpilot));
+    constructor(@Inject(TOKEN_CLOUDPILOT_INSTANCE) cloudpilotInstance: Promise<Cloudpilot>) {
+        super(new SkinLoader(cloudpilotInstance));
     }
 
     async initialize(canvas?: HTMLCanvasElement, session: Session | undefined = this.session): Promise<void> {

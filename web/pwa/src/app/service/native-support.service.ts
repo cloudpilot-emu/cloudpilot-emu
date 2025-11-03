@@ -1,13 +1,14 @@
 import { Inject, Injectable } from '@angular/core';
-import { Cloudpilot, SessionImage } from '@common/bridge/Cloudpilot';
-import { ramSize } from '@common/helper/deviceProperties';
+import { CardSupportLevel, Cloudpilot, RomInfo, SessionImage } from '@common/bridge/Cloudpilot';
+import { ramSize, slotType } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
+import { SlotType } from '@common/model/SlotType';
 
-import { CLOUDPILOT_INSTANCE_TOKEN } from './token';
+import { TOKEN_CLOUDPILOT_INSTANCE } from './token';
 
 @Injectable({ providedIn: 'root' })
 export class NativeSupportService {
-    constructor(@Inject(CLOUDPILOT_INSTANCE_TOKEN) private cloudpilot: Promise<Cloudpilot>) {}
+    constructor(@Inject(TOKEN_CLOUDPILOT_INSTANCE) private cloudpilot: Promise<Cloudpilot>) {}
 
     async ramSizeForDevice(device: DeviceId): Promise<number> {
         return ramSize(device) ?? (await this.cloudpilot).minRamForDevice(device);
@@ -19,5 +20,30 @@ export class NativeSupportService {
 
     deserializeSessionImage<T>(buffer: Uint8Array | undefined): Promise<SessionImage<T> | undefined> {
         return this.cloudpilot.then((cp) => cp.deserializeSessionImage(buffer));
+    }
+
+    async deviceSupportsCard(device: DeviceId, size: number): Promise<boolean> {
+        const deviceSlotType = slotType(device);
+        if (deviceSlotType === SlotType.none) return false;
+
+        const supportLevel = (await this.cloudpilot).getCardSupportLevel(size);
+        switch (supportLevel) {
+            case CardSupportLevel.sdAndMs:
+                return true;
+
+            case CardSupportLevel.sdOnly:
+                return deviceSlotType === SlotType.sdcard;
+
+            default:
+                return false;
+        }
+    }
+
+    getRomInfo(rom: Uint8Array): Promise<RomInfo | undefined> {
+        return this.cloudpilot.then((cp) => cp.getRomInfo(rom));
+    }
+
+    getCardSupportLevel(size: number): Promise<CardSupportLevel> {
+        return this.cloudpilot.then((cp) => cp.getCardSupportLevel(size));
     }
 }

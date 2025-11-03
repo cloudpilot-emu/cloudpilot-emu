@@ -24,11 +24,11 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 import { memoize } from '@pwa/helper/memoize';
 import { Session, buildSettings, mergeSettings, settingsFromMetadata, settingsFromSession } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationContextService } from '@pwa/service/emulation-context.service';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { LinkApi } from '@pwa/service/link-api.service';
+import { NativeSupportService } from '@pwa/service/native-support.service';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
 
@@ -54,7 +54,7 @@ export class SessionsPage implements DragDropClient, OnInit {
         private modalController: ModalController,
         private linkApi: LinkApi,
         private router: Router,
-        private cloudpilotService: CloudpilotService,
+        private nativeSupportService: NativeSupportService,
         private dragDropService: DragDropService,
         private popoverController: PopoverController,
         private loadingController: LoadingController,
@@ -361,9 +361,7 @@ export class SessionsPage implements DragDropClient, OnInit {
             return;
         }
 
-        const sessionImage = (await this.cloudpilotService.cloudpilot).deserializeSessionImage<SessionMetadata>(
-            content,
-        );
+        const sessionImage = await this.nativeSupportService.deserializeSessionImage<SessionMetadata>(content);
 
         if (sessionImage) {
             const settings = {
@@ -377,7 +375,7 @@ export class SessionsPage implements DragDropClient, OnInit {
                 this.lastSessionTouched = session.id;
             }
         } else {
-            const romInfo = (await this.cloudpilotService.cloudpilot).getRomInfo(content);
+            const romInfo = await this.nativeSupportService.getRomInfo(content);
 
             if (!romInfo) {
                 void this.alertService.errorMessage(`Not a valid session file or ROM image.`);

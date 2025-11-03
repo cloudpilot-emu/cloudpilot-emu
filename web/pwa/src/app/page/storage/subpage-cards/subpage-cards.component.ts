@@ -10,10 +10,10 @@ import { filenameFragment } from '@pwa/helper/filename';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { AlertService } from '@pwa/service/alert.service';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { FsToolsService } from '@pwa/service/fstools.service';
+import { NativeSupportService } from '@pwa/service/native-support.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 
 import { ActionMenuCardsComponent } from '../action-menu-cards/action-menu-cards.component';
@@ -33,7 +33,7 @@ export class SubpageCardsComponent implements OnInit {
         private actionSheetController: angular.ActionSheetController,
         public storageCardService: StorageCardService,
         private modalController: angular.ModalController,
-        private cloudpilotService: CloudpilotService,
+        private nativeSupportService: NativeSupportService,
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
@@ -97,14 +97,12 @@ export class SubpageCardsComponent implements OnInit {
 
     @debounce()
     async editCard(card: StorageCard) {
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
-
         const modal = await this.modalController.create({
             component: EditCardDialogComponent,
             backdropDismiss: false,
             componentProps: {
                 card,
-                cardSupportLevel: cloudpilot.getCardSupportLevel(card.size),
+                cardSupportLevel: await this.nativeSupportService.getCardSupportLevel(card.size),
                 onCancel: () => modal.dismiss(),
                 onSave: async (update: Partial<StorageCard>) => {
                     await this.storageCardService.updateCard(card.id, update);
@@ -406,8 +404,6 @@ export class SubpageCardsComponent implements OnInit {
             return;
         }
 
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
-
         if (/\.gz$/.test(file.name)) {
             const loader = await this.loadingController.create({ message: 'Unpacking...' });
             await loader.present();
@@ -419,7 +415,9 @@ export class SubpageCardsComponent implements OnInit {
             }
         }
 
-        const supportLevel = content ? cloudpilot.getCardSupportLevel(content.length) : CardSupportLevel.unsupported;
+        const supportLevel = content
+            ? await this.nativeSupportService.getCardSupportLevel(content.length)
+            : CardSupportLevel.unsupported;
 
         if (content === undefined || supportLevel === CardSupportLevel.unsupported) {
             void this.alertService.errorMessage('This is not a supported card image.');

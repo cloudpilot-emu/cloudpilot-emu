@@ -730,11 +730,6 @@ export class Cloudpilot {
     }
 
     @guard()
-    deviceSupportsCardSize(size: number): boolean {
-        return this.cloudpilot.DeviceSupportsCardSize(size);
-    }
-
-    @guard()
     clearExternalStorage(): void {
         this.cloudpilot.ClearExternalStorage();
     }

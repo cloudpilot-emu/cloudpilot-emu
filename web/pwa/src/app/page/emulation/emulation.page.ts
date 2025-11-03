@@ -9,7 +9,6 @@ import { debounce } from '@pwa/helper/debounce';
 import { Session } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
 import { EmulationContextService } from '@pwa/service/emulation-context.service';
 import { EmulationService } from '@pwa/service/emulation.service';
@@ -50,7 +49,6 @@ export class EmulationPage implements DragDropClient {
         public navigation: TabsPage,
         private linkApi: LinkApi,
         public performanceWatchdogService: PerformanceWatchdogService,
-        private cloudpilotService: CloudpilotService,
         private dragDropService: DragDropService,
         private sessionService: SessionService,
         private loadingController: LoadingController,
@@ -205,7 +203,7 @@ export class EmulationPage implements DragDropClient {
     async bootAfterForcefulResetNoExtensions(): Promise<void> {
         await this.clearForcefulReset();
 
-        (await this.cloudpilotService.cloudpilot).resetNoExtensions();
+        await this.emulationContext.engine()?.resetNoExtensions();
         await this.launchEmulator();
     }
 
@@ -213,7 +211,7 @@ export class EmulationPage implements DragDropClient {
     async bootAfterForcefulResetHardReset(): Promise<void> {
         await this.clearForcefulReset();
 
-        (await this.cloudpilotService.cloudpilot).resetHard();
+        await this.emulationContext.engine()?.resetHard();
         await this.launchEmulator();
     }
 

@@ -14,7 +14,6 @@ import { filenameForCards } from '@pwa/helper/filename';
 import { Lock } from '@pwa/helper/lock';
 import { Session } from '@pwa/model/Session';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { SessionService } from '@pwa/service/session.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
@@ -24,8 +23,9 @@ import { EmulationContextService } from './emulation-context.service';
 import { ErrorService } from './error.service';
 import { FileService } from './file.service';
 import { FsToolsService } from './fstools.service';
+import { NativeSupportService } from './native-support.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
-import { EMULATOR_LOCK_TOKEN } from './token';
+import { TOKEN_EMULATOR_LOCK } from './token';
 import { VfsService } from './vfs.service';
 
 export enum NewCardSize {
@@ -103,7 +103,7 @@ export class StorageCardService {
         private sessionService: SessionService,
         private storageService: StorageService,
         private emulationContext: EmulationContextService,
-        private cloudpilotService: CloudpilotService,
+        private nativeSupportService: NativeSupportService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private alertService: AlertService,
@@ -112,7 +112,7 @@ export class StorageCardService {
         private vfsService: VfsService,
         private storageCardContext: StorageCardContext,
         private fstools: FsToolsService,
-        @Inject(EMULATOR_LOCK_TOKEN) private emulatorLock: Lock,
+        @Inject(TOKEN_EMULATOR_LOCK) private emulatorLock: Lock,
     ) {
         this.vfsService.setStorageCardService(this);
         void this.updateCardsFromDB().then(() => (this.loading = false));
@@ -411,7 +411,6 @@ export class StorageCardService {
 
         try {
             await loader.present();
-            const cloudpilot = await this.cloudpilotService.cloudpilot;
 
             const walker = await this.fstools.createZipfileWalker(zipData);
             if (walker.GetState() === ZipfileWalkerState.error) {
@@ -449,7 +448,10 @@ export class StorageCardService {
                         throw new ImportError(`Failed to extract ${filename}. ${SAFARI_DISCLAIMER}`);
                     }
 
-                    if (cloudpilot.getCardSupportLevel(content.length) === CardSupportLevel.unsupported) {
+                    if (
+                        (await this.nativeSupportService.getCardSupportLevel(content.length)) ===
+                        CardSupportLevel.unsupported
+                    ) {
                         throw new ImportError(`${filename} is not a valid card image.`);
                     }
 

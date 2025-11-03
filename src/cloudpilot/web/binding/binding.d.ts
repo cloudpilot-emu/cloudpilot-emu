@@ -139,7 +139,6 @@ export interface Cloudpilot {
     LaunchAppByName(name: string): boolean;
     LaunchAppByDbHeader(buffer: VoidPtr, len: number): boolean;
 
-    DeviceSupportsCardSize(size: number): boolean;
     ClearExternalStorage(): void;
     AllocateCard(key: string, blockCount: number): boolean;
     AdoptCard(key: string, data: VoidPtr, blockCount: number): boolean;
