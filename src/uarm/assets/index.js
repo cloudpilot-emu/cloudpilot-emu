@@ -13,7 +13,7 @@ import { SessionFile } from './sessionfile.js';
     const isWebkit =
         isMacOSSafari || isIOS || (!!navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/));
 
-    let binary = isWebkit ? 'uarm_web_webkit.wasm' : 'uarm_web_other.wasm';
+    let binary = 'uarm_web_optimized.wasm';
     let sessionFile;
 
     const BACKUP_TYPE_RAM = 0;
