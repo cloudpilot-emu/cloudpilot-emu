@@ -1,4 +1,4 @@
-import { Cloudpilot, PalmButton, PwmUpdate, SuspendKind } from '@common/bridge/Cloudpilot';
+import { Cloudpilot, DbInstallResult, PalmButton, PwmUpdate, SuspendKind } from '@common/bridge/Cloudpilot';
 import { Average } from '@common/helper/Average';
 import { Fifo } from '@common/helper/Fifo';
 import { deviceDimensions } from '@common/helper/deviceProperties';
@@ -11,7 +11,7 @@ import { SerialPort } from '@common/serial/SerialPort';
 import { Executor } from '@common/service/AbstractEmulationService';
 import { Event, EventInterface } from 'microevent.ts';
 
-import { EngineCloudpilot, StorageCardProvider } from '../Engine';
+import { BackupResult, EngineCloudpilot, StorageCardProvider } from '../Engine';
 import { EngineSettings } from '../EngineSettings';
 import { SnapshotContainer } from '../Snapshot';
 import { SerialPortImpl } from './SerialPort';
@@ -431,6 +431,29 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
 
     getOSVersion(): number {
         return this.cloudpilotInstance.getOSVersion();
+    }
+
+    async installDb(data: Uint8Array): Promise<DbInstallResult> {
+        return this.cloudpilotInstance.installDb(data);
+    }
+
+    async backup(includeRomDatabases: boolean): Promise<BackupResult | undefined> {
+        return this.cloudpilotInstance.backup(async (dbBackup) => {
+            const failedDatabases: Array<string> = [];
+            dbBackup.Init(includeRomDatabases);
+
+            while (dbBackup.IsInProgress()) {
+                const db = dbBackup.GetCurrentDatabase();
+
+                if (!dbBackup.Save()) failedDatabases.push(db);
+
+                await new Promise((r) => setTimeout(r, 0));
+            }
+
+            const archive = this.cloudpilotInstance.getArchive(dbBackup);
+
+            return archive ? { archive, failedDatabases } : undefined;
+        });
     }
 
     private schedule() {

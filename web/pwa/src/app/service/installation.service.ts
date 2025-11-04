@@ -1,17 +1,19 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { DbInstallResult } from '@common/bridge/Cloudpilot';
 import { FsTools } from '@common/bridge/FSTools';
 import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
 import { LoadingController } from '@ionic/angular';
 
 import { concatFilenames } from '@pwa/helper/filename';
+import { Lock } from '@pwa/helper/lock';
 
 import { AlertService } from './alert.service';
-import { CloudpilotService } from './cloudpilot.service';
+import { EmulationContextService } from './emulation-context.service';
 import { EmulationService } from './emulation.service';
 import { FileDescriptor } from './file.service';
 import { FsToolsService } from './fstools.service';
 import { SnapshotService } from './snapshot.service';
+import { TOKEN_EMULATOR_LOCK } from './token';
 
 const ZIP_SIZE_LIMIT = 32 * 1024 * 1024;
 const SNAPSHOT_LIMIT = 4 * 1024 * 1024;
@@ -57,11 +59,11 @@ function getDatabaseName(data: Uint8Array): string {
 
 class InstallationContext {
     constructor(
-        private cloudpilotService: CloudpilotService,
         private fstools: FsTools,
         private alertService: AlertService,
         private snapshotService: SnapshotService,
         private files: Array<FileDescriptor>,
+        private emulationContext: EmulationContextService,
     ) {}
 
     async run(): Promise<[Array<string>, Array<string>, Array<string>]> {
@@ -94,8 +96,10 @@ class InstallationContext {
     }
 
     private async installOne(name: string, content: Uint8Array): Promise<void> {
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
-        const code = await cloudpilot.installDb(content);
+        const engine = await this.emulationContext.engine();
+        if (!engine) throw new Error('emulator not running');
+
+        const code = await engine.installDb(content);
 
         switch (code) {
             case DbInstallResult.needsReboot:
@@ -193,12 +197,13 @@ class InstallationContext {
 @Injectable({ providedIn: 'root' })
 export class InstallationService {
     constructor(
-        private cloudpilotService: CloudpilotService,
         private emulationService: EmulationService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private alertService: AlertService,
         private fstools: FsToolsService,
+        private emulationContext: EmulationContextService,
+        @Inject(TOKEN_EMULATOR_LOCK) private emulatorLock: Lock,
     ) {}
 
     async installFiles(files: Array<FileDescriptor>): Promise<void> {
@@ -206,27 +211,24 @@ export class InstallationService {
             message: 'Installing...',
         });
 
-        await loader.present();
-        await this.emulationService.pause();
-        await this.snapshotService.waitForPendingSnapshot();
+        const [filesSuccess, filesRequireReset, filesFail] = await this.emulatorLock.runGuarded(async () => {
+            await loader.present();
+            await this.snapshotService.waitForPendingSnapshot();
 
-        let filesSuccess: Array<string> = [];
-        let filesFail: Array<string> = [];
-        let filesRequireReset: Array<string> = [];
+            try {
+                const installationContext = new InstallationContext(
+                    this.fstools,
+                    this.alertService,
+                    this.snapshotService,
+                    files,
+                    this.emulationContext,
+                );
 
-        try {
-            const installationContext = new InstallationContext(
-                this.cloudpilotService,
-                this.fstools,
-                this.alertService,
-                this.snapshotService,
-                files,
-            );
-            [filesSuccess, filesRequireReset, filesFail] = await installationContext.run();
-        } finally {
-            void loader.dismiss();
-            void this.emulationService.resume();
-        }
+                return installationContext.run();
+            } finally {
+                void loader.dismiss();
+            }
+        });
 
         const message = [
             this.messageSuccess(filesSuccess),

@@ -4,7 +4,7 @@ import { EmulationStatisticsCloudpilot, EmulationStatisticsUarm } from '@common/
 import { EngineType } from '@common/model/EngineType';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { SerialPort } from '@common/serial/SerialPort';
-import { PalmButton } from '@native/cloudpilot_web';
+import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
 import { EventInterface } from 'microevent.ts';
 
 import { EngineSettings } from './EngineSettings';
@@ -13,6 +13,11 @@ import { SnapshotContainer } from './Snapshot';
 export interface StorageCardProvider {
     storageKey: string;
     load(engine: Engine): Promise<void>;
+}
+
+export interface BackupResult {
+    archive: Uint8Array;
+    failedDatabases: Array<string>;
 }
 
 export interface EngineCommon {
@@ -68,6 +73,9 @@ export interface EngineCommon {
     getMemory(): Promise<Uint8Array | undefined>;
     getNand(): Promise<Uint8Array | undefined>;
     getSavestate(): Promise<Uint8Array | undefined>;
+
+    installDb(data: Uint8Array): Promise<DbInstallResult>;
+    backup(includeRomDatabases: boolean): Promise<BackupResult | undefined>;
 
     readonly newFrameEvent: EventInterface<void>;
     readonly timesliceEvent: EventInterface<number>;

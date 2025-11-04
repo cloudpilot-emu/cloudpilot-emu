@@ -1,25 +1,24 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 
 import { concatFilenames, filenameForBackup } from '@pwa/helper/filename';
+import { Lock } from '@pwa/helper/lock';
 
 import { AlertService } from './alert.service';
-import { CloudpilotService } from './cloudpilot.service';
 import { EmulationContextService } from './emulation-context.service';
-import { EmulationService } from './emulation.service';
 import { FileService } from './file.service';
 import { SnapshotService } from './snapshot.service';
+import { TOKEN_EMULATOR_LOCK } from './token';
 
 @Injectable({ providedIn: 'root' })
 export class BackupService {
     constructor(
-        private emulationService: EmulationService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private fileService: FileService,
         private emulationContext: EmulationContextService,
+        @Inject(TOKEN_EMULATOR_LOCK) private emulatorLock: Lock,
         private alertService: AlertService,
-        private cloudpilotService: CloudpilotService,
     ) {}
 
     async saveBackup(includeRomDatabases: boolean): Promise<void> {
@@ -27,38 +26,24 @@ export class BackupService {
         if (!currentSession) return;
 
         const loader = await this.loadingController.create({ message: 'Backing up...' });
-        await loader.present();
 
-        const failedDatabases: Array<string> = [];
-        let archive: Uint8Array | undefined;
+        const { failedDatabases, archive } = await this.emulatorLock.runGuarded(async () => {
+            await loader.present();
+            await this.snapshotService.waitForPendingSnapshot();
 
-        await this.emulationService.pause();
-        await this.snapshotService.waitForPendingSnapshot();
+            try {
+                const engine = this.emulationContext.engine();
+                if (!engine) throw new Error('emulator not running');
 
-        try {
-            const cloudpilot = await this.cloudpilotService.cloudpilot;
-
-            await cloudpilot.backup(async (dbBackup) => {
-                dbBackup.Init(includeRomDatabases);
-
-                while (dbBackup.IsInProgress()) {
-                    const db = dbBackup.GetCurrentDatabase();
-
-                    if (!dbBackup.Save()) failedDatabases.push(db);
-
-                    await new Promise((r) => setTimeout(r, 0));
-                }
-
-                archive = cloudpilot.getArchive(dbBackup);
-            });
-        } finally {
-            await loader.dismiss();
-            await this.emulationService.resume();
-        }
+                return (await engine.backup(includeRomDatabases)) ?? { failedDatabases: undefined, archive: undefined };
+            } finally {
+                await loader.dismiss();
+            }
+        });
 
         if (!archive) {
             await this.alertService.errorMessage('Backup failed.');
-        } else if (failedDatabases.length > 0) {
+        } else if (failedDatabases !== undefined && failedDatabases.length > 0) {
             await this.alertService.message(
                 'Backup complete',
                 `
