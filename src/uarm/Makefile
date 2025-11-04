@@ -30,10 +30,8 @@ INCLUDE = -I./uarm -I. -I../common -I../common/zip -I../argparse
 STD_C ?= -std=gnu11
 
 WASMOPT = wasm-opt
-WASMOPT_FLAGS_BASE = --no-inline="*mmuTranslate*" --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
+WASMOPT_FLAGS = --no-inline="*mmuTranslate*" --no-inline="*cpuCycle<*" --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
-WASMOPT_FLAGS_WEBKIT = --no-inline="*execFn_*" --no-inline="*cpuCycleArm*" --no-inline="*cpuCycleThumb*" $(WASMOPT_FLAGS_BASE) 
-WASMOPT_FLAGS_OTHER = --no-inline="*cpuCycle" $(WASMOPT_FLAGS_BASE)
 
 WASMSTRIP = wasm-strip
 YARN = yarn
@@ -137,14 +135,12 @@ BINARY_EMCC = uarm_web.wasm
 BINARY_TEST = test/test
 
 PROCESSED_BINARY_WASM = uarm_web_processed.wasm
-OPTIMIZED_BINARIY_WASM_OTHER = uarm_web_other.wasm
-OPTIMIZED_BINARIY_WASM_WEBKIT = uarm_web_webkit.wasm
-OPTIMIZED_BINARIES_WASM = $(OPTIMIZED_BINARIY_WASM_OTHER) $(OPTIMIZED_BINARIY_WASM_WEBKIT)
+OPTIMIZED_BINARY_WASM = uarm_web_optimized.wasm
 
 GARBAGE_EXTRA = 						\
 	$(PROCESSED_BINARY_WASM)			\
 	$(PROCESSED_BINARY_WASM).s			\
-	$(OPTIMIZED_BINARIES_WASM)
+	$(OPTIMIZED_BINARY_WASM)
 
 include ../Makefile.common
 
@@ -153,17 +149,13 @@ bin: $(BINARY_NATIVE)
 test: $(BINARY_TEST)
 	$(BINARY_TEST)
 
-emscripten: $(OPTIMIZED_BINARIES_WASM)
+emscripten: $(OPTIMIZED_BINARY_WASM)
 
 $(PROCESSED_BINARY_WASM): $(BINARY_EMCC)
 	if test -z "$(DEVELOP)"; then $(YARN) --cwd ./tools/build-jump-table && $(YARN) --cwd ./tools/build-jump-table build-jump-table "$$(pwd)/$^" "$$(pwd)/$@"; fi
 
-$(OPTIMIZED_BINARIY_WASM_OTHER): $(PROCESSED_BINARY_WASM)
-	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_OTHER) -o $@ $^; fi
-	if test -z "$(DEVELOP)"; then $(WASMSTRIP) $@; fi
-
-$(OPTIMIZED_BINARIY_WASM_WEBKIT): $(PROCESSED_BINARY_WASM)
-	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_WEBKIT) -o $@ $^; fi
+$(OPTIMIZED_BINARY_WASM): $(PROCESSED_BINARY_WASM)
+	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS) -o $@ $^; fi
 	if test -z "$(DEVELOP)"; then $(WASMSTRIP) $@; fi
 
 .PHONY: bin emscripten clean test
