@@ -5,12 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CPEndian.h"
 #include "CPU.h"
 #include "cputil.h"
 
 #define CACHE_LINE_WIDTH_BITS 5
 #define CACHE_INDEX_BITS 17
+
+// THIS FILE IS ABSOLUTELY NOT ENDIAN SAFE!
 
 #if (32 - CACHE_LINE_WIDTH_BITS - CACHE_INDEX_BITS <= 8)
     #define CACHE_TAG_TYPE uint_fast8_t
@@ -40,6 +41,7 @@
 struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
     DECODED_INSTRUCTION_TYPE decoded[1 << (CACHE_LINE_WIDTH_BITS - 1)];
+    uint32_t translatedThumbInstructions[1 << (CACHE_LINE_WIDTH_BITS - 1)];
 
     CACHE_TAG_TYPE tag;
     uint32_t revision;
@@ -92,7 +94,8 @@ void icacheInvalRange(struct icache* ic, uint32_t addr, uint32_t size) {
 }
 
 template <int sz, int tier>
-bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, uint32_t* decoded) {
+bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
+                 uint32_t& decoded) {
     if (va & (sz - 1)) {  // alignment issue
 
         *fsrP = 3;
@@ -119,14 +122,22 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
         }
 
         if (!cacheable) {
-            bool ok = memInstructionFetch(ic->mem, pa, sz, buf);
+            bool ok = memInstructionFetch(ic->mem, pa, sz, &instr);
 
             if (!ok) {
                 *fsrP = 0x0d;  // perm error
                 return false;
             }
 
-            *decoded = sz == 4 ? cpuDecodeArm(*(uint32_t*)buf) : cpuDecodeThumb(*(uint16_t*)buf);
+            if (sz == 4) {
+                decoded = cpuDecodeArm(instr);
+            } else {
+                uint32_t translatedInstr;
+
+                decoded = cpuDecodeThumb(instr, translatedInstr);
+                instr = translatedInstr;
+            }
+
             return true;
         }
 
@@ -163,19 +174,18 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
     switch (sz) {
         case 4: {
             const size_t i = calculateLineIndex(va);
-            const uint32_t inst = *(uint32_t*)(line->data + i);
-            *(uint32_t*)buf = inst;
+            instr = *(uint32_t*)(line->data + i);
 
             const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & DECODED_BITS) != DECODED_BITS_ARM) {
                 // fprintf(stderr, "decode cache miss ARM\n");
-                *decoded = cpuDecodeArm(inst);
-                line->decoded[iInst] = (*decoded << DECODED_BITS_SHIFT) | DECODED_BITS_ARM;
+                decoded = cpuDecodeArm(instr);
+                line->decoded[iInst] = (decoded << DECODED_BITS_SHIFT) | DECODED_BITS_ARM;
             } else {
 #ifdef __EMSCRIPTEN__
-                *decoded = line->decoded[iInst] & ~DECODED_BITS;
+                decoded = line->decoded[iInst] & ~DECODED_BITS;
 #else
-                *decoded = ((int32_t)line->decoded[iInst]) >> DECODED_BITS_SHIFT;
+                decoded = ((int32_t)line->decoded[iInst]) >> DECODED_BITS_SHIFT;
 #endif
             }
 
@@ -184,20 +194,21 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
 
         case 2: {
             const size_t i = calculateLineIndex(va);
-            const uint16_t inst = *(uint16_t*)(line->data + i);
-            *(uint16_t*)buf = inst;
+            const uint16_t instrThumb = *(uint16_t*)(line->data + i);
 
             const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & DECODED_BITS) != DECODED_BITS_THUMB) {
                 // fprintf(stderr, "decode cache miss thumb\n");
-                *decoded = cpuDecodeThumb(inst);
-                line->decoded[iInst] = (*decoded << DECODED_BITS_SHIFT) | DECODED_BITS_THUMB;
+                decoded = cpuDecodeThumb(instrThumb, instr);
+                line->decoded[iInst] = (decoded << DECODED_BITS_SHIFT) | DECODED_BITS_THUMB;
+                line->translatedThumbInstructions[iInst] = instr;
             } else {
 #ifdef __EMSCRIPTEN__
-                *decoded = line->decoded[iInst] & ~DECODED_BITS;
+                decoded = line->decoded[iInst] & ~DECODED_BITS;
 #else
-                *decoded = ((int32_t)line->decoded[iInst]) >> DECODED_BITS_SHIFT;
+                decoded = ((int32_t)line->decoded[iInst]) >> DECODED_BITS_SHIFT;
 #endif
+                instr = line->translatedThumbInstructions[iInst];
             }
 
             break;
@@ -210,11 +221,11 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
     return true;
 }
 
-template bool icacheFetch<2, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                                uint32_t* decoded);
-template bool icacheFetch<4, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                                uint32_t* decoded);
-template bool icacheFetch<2, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                                uint32_t* decoded);
-template bool icacheFetch<4, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                                uint32_t* decoded);
+template bool icacheFetch<2, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
+                                uint32_t& decoded);
+template bool icacheFetch<4, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
+                                uint32_t& decoded);
+template bool icacheFetch<2, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
+                                uint32_t& decoded);
+template bool icacheFetch<4, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
+                                uint32_t& decoded);

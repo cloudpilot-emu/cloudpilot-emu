@@ -30,7 +30,7 @@ INCLUDE = -I./uarm -I. -I../common -I../common/zip -I../argparse
 STD_C ?= -std=gnu11
 
 WASMOPT = wasm-opt
-WASMOPT_FLAGS = --no-inline="*mmuTranslate*" --no-inline="*cpuCycle<*" --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
+WASMOPT_FLAGS = --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
 
 WASMSTRIP = wasm-strip

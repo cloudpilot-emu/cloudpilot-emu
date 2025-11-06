@@ -80,17 +80,12 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
     }
 
     if (ramSize == 0)
-        ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
+        ramSize = (romInfo.GetCardName() == string("PalmCard") && romInfo.GetHalId() == 'hspr')
                       ? (16ul << 20)
                       : (32ul << 20);
 
     cout << romInfo << endl;
     cout << "using " << ramSize << " bytes of RAM" << endl;
-
-    if (ramSize == 0)
-        ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
-                      ? (16ul << 20)
-                      : (32ul << 20);
 
     deviceType = romInfo.GetDeviceType();
     soc = socInit(deviceType, ramSize, romData, romSize, nandData, nandSize, 0, deviceGetSocRev());

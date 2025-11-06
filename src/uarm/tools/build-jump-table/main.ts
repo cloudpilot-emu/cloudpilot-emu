@@ -137,6 +137,12 @@ function remapExecFunctions(
                     : module.local.set(localSetInfo.index, mapExpression(localSetInfo.value));
             }
 
+            case binaryen.ExpressionIds.Loop: {
+                const loopInfo = info as binaryen.LoopInfo;
+
+                return module.loop(loopInfo.name, mapExpression(loopInfo.body));
+            }
+
             default:
                 return e;
         }

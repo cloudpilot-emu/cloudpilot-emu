@@ -1074,8 +1074,6 @@ template <bool wasT, bool align2>
 static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t ea;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
-
     ea = instr << 8;
     ea = ((int32_t)ea) >> 7;
     ea += 4;
@@ -1171,7 +1169,6 @@ static void execFn_swb(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr;
     uint8_t memVal8;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     switch (tag) {
@@ -1221,7 +1218,6 @@ static void execFn_mult(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, op2, res;
     uint64_t res64;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     switch (tag) {  // multiplies
@@ -1301,7 +1297,6 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
     uint8_t memVal8;
     uint32_t doubleMem[2];
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     reg = (instr >> 16) & 0x0F;
@@ -1400,7 +1395,6 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
 
 template <bool wasT>
 static void execFn_clz(struct ArmCpu *cpu, uint32_t instr) {
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, cpuPrvClz(cpuPrvGetRegNotPC(cpu, instr & 0xF)));
@@ -1408,7 +1402,6 @@ static void execFn_clz(struct ArmCpu *cpu, uint32_t instr) {
 
 template <bool wasT, bool link>
 static void execFn_bl_reg(struct ArmCpu *cpu, uint32_t instr) {
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     if (link)
@@ -1419,7 +1412,6 @@ static void execFn_bl_reg(struct ArmCpu *cpu, uint32_t instr) {
 
 template <bool wasT, bool spsr>
 static void execFn_psr2reg(struct ArmCpu *cpu, uint32_t instr) {
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, spsr ? cpu->SPSR : cpuPrvMaterializeCPSR(cpu));
@@ -1427,7 +1419,6 @@ static void execFn_psr2reg(struct ArmCpu *cpu, uint32_t instr) {
 
 template <bool wasT, bool spsr, bool pc>
 static void execFn_reg2psr(struct ArmCpu *cpu, uint32_t instr) {
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpuPrvSetPSR<spsr>(cpu, (instr >> 16) & 0x0F, cpuPrvGetReg<wasT, pc>(cpu, instr & 0x0F));
@@ -1437,7 +1428,6 @@ template <bool wasT, int tag>
 static void execFn_dspadd(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, op2, res;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);          // Rm
@@ -1502,7 +1492,6 @@ static void execFn_dspadd(struct ArmCpu *cpu, uint32_t instr) {
 
 template <bool wasT>
 static void execFn_softbreak(struct ArmCpu *cpu, uint32_t instr) {
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_P_ABT, cpu->curInstrPC + 4,
@@ -1514,7 +1503,6 @@ static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, op2, res;
     uint64_t res64;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);         // Rm
@@ -1601,7 +1589,6 @@ static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr) {
     uint64_t res64;
     bool cOut;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     op2 = cpuPrvArmAdrMode_1<wasT>(cpu, instr, &cOut);
@@ -1771,7 +1758,6 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
     uint8_t memVal8;
     bool privileged = cpu->privileged;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     sourceReg = (instr >> 16) & 0x0F;
@@ -1881,7 +1867,6 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
 
 template <bool wasT, int mode, bool isLoad, bool sBit>
 static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr) {
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     bool userModeRegs = false, copySPSR = false, ok;
@@ -1984,7 +1969,6 @@ template <bool wasT, bool link>
 static void execFn_bl(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t ea;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     ea = instr << 8;
@@ -2003,7 +1987,6 @@ template <bool wasT>
 static void execFn_swi(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr;
 
-    if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     if ((wasT && (instr & 0x00fffffful) == 0xab) ||
@@ -2758,8 +2741,15 @@ uint32_t cpuDecodeArm(uint32_t instr) {
     return cpuPrvCompressExecFn(cpuPrvDecoderArm<false>(instr));
 }
 
-uint32_t cpuDecodeThumb(uint32_t instr) {
-    const uint32_t translatedInstr = table_thumb2arm[instr];
+uint32_t cpuDecodeThumb(uint16_t instr, uint32_t &translatedInstr) {
+    translatedInstr = table_thumb2arm[instr];
+
+    if (translatedInstr) {
+        return cpuPrvCompressExecFn(cpuPrvDecoderArm<true>(translatedInstr));
+    } else {
+        translatedInstr = instr;
+        return cpuPrvCompressExecFn(cpuPrvDecoderThumb(instr));
+    }
 
     return cpuPrvCompressExecFn(translatedInstr ? cpuPrvDecoderArm<true>(translatedInstr)
                                                 : cpuPrvDecoderThumb(instr));
@@ -3453,7 +3443,7 @@ template <bool injected>
 ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
     bool ok;
-    uint16_t instr;
+    uint32_t translatedInstr;
     uint32_t decoded;
     uint_fast8_t fsr;
 
@@ -3467,7 +3457,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<2, injected>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+        ok = icacheFetch<2, injected>(cpu->ic, cpu->curInstrPC, &fsr, translatedInstr, decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
@@ -3478,9 +3468,9 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
         cpu->regs[REG_NO_PC] += 2;
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFnThumb<injected>(cpuPrvDecompressExecFn(decoded), cpu, instr);
+        cpuPrvDispatchExecFnThumb<injected>(cpuPrvDecompressExecFn(decoded), cpu, translatedInstr);
 #else
-        cpuPrvDecompressExecFn(decoded)(cpu, instr);
+        cpuPrvDecompressExecFn(decoded)(cpu, translatedInstr);
 #endif
 
         cycleAcc += 1;
@@ -3513,7 +3503,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<4, injected>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+        ok = icacheFetch<4, injected>(cpu->ic, cpu->curInstrPC, &fsr, instr, decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
