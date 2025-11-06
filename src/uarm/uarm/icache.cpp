@@ -194,11 +194,12 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
 
         case 2: {
             const size_t i = calculateLineIndex(va);
-            const uint16_t instrThumb = *(uint16_t*)(line->data + i);
 
             const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & DECODED_BITS) != DECODED_BITS_THUMB) {
                 // fprintf(stderr, "decode cache miss thumb\n");
+                const uint16_t instrThumb = *(uint16_t*)(line->data + i);
+
                 decoded = cpuDecodeThumb(instrThumb, instr);
                 line->decoded[iInst] = (decoded << DECODED_BITS_SHIFT) | DECODED_BITS_THUMB;
                 line->translatedThumbInstructions[iInst] = instr;
