@@ -116,9 +116,6 @@ void cpuSetCPAR(struct ArmCpu *cpu, uint16_t cpar);
 void cpuSetSleeping(struct ArmCpu *cpu);
 void cpuWakeup(struct ArmCpu *cpu);
 
-uint32_t cpuDecodeArm(uint32_t instr);
-uint32_t cpuDecodeThumb(uint32_t instr);
-
 void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason);
 void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason);
 uint32_t cpuGetSlowPathReason(struct ArmCpu *cpu);
@@ -130,6 +127,9 @@ struct ArmMem *cpuGetMem(struct ArmCpu *cpu);
 
 #ifdef __cplusplus
 }
+
+uint32_t cpuDecodeArm(uint32_t instr);
+uint32_t cpuDecodeThumb(uint16_t instr, uint32_t &translatedInstr);
 
 template <bool monitorPC>
 uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles);
