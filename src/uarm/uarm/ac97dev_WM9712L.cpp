@@ -353,12 +353,10 @@ static bool wm9712LprvCodecRegW(void *userData, uint32_t regAddr, uint16_t val) 
 
         case GPIOCFG:
             wm->gpioCfg = val;
-            wm9712LprvGpioRecalc(wm);
             break;
 
         case GPIOPOLTYP:
             wm->gpioPolTyp = val;
-            wm9712LprvGpioRecalc(wm);
             break;
 
         case GPIOSTICKY:
@@ -596,8 +594,6 @@ void wm9712Lperiodic(struct WM9712L *wm) {
 
     if (wm9712LprvHaveModemOutSample(wm, &val))
         socAC97clientClientHaveData(wm->ac97, Ac97PrimaryModem, val);
-
-    wm9712LprvGpioRecalc(wm);
 }
 
 void wm9712LsetAuxVoltage(struct WM9712L *wm, enum WM9712LauxPin which, uint32_t mV) {
