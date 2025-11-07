@@ -82,6 +82,8 @@
 #define PCM_HZ_ENABLED 44300
 #define PCM_HZ_DISABLED (44100 / 3)
 
+#define MIN_EVENT_QUEUE_TICKS_BEFORE_PEN_UP 2
+
 struct PenEvent {
     bool penDown;
     int x, y;
@@ -112,7 +114,10 @@ struct SoC {
     SocI2c *i2c;
     SocIc *ic;
 
-    bool mouseDown;
+    bool penDown;
+    uint64_t eventQueueTicks;
+    uint64_t eventQueueTicksAtPenDown;
+
     bool enablePcmOutput;
     bool pcmSuspended;
     bool sleeping;
@@ -582,28 +587,45 @@ void socPenDown(SoC *soc, int x, int y) {
 
 void socPenUp(SoC *soc) { soc->penEventQueue->Push(PenEvent::PenUp()); }
 
-static void socPumpEventQueues(SoC *soc) {
-    if (soc->penEventQueue->GetSize() > 0) {
-        PenEvent evt(soc->penEventQueue->Pop());
+static void socPumpPenEventQueue(SoC *soc) {
+    if (soc->penEventQueue->GetSize() == 0) return;
 
-        if (evt.penDown) {
-            while (soc->penEventQueue->GetSize() > 0 && soc->penEventQueue->Peek().penDown) {
-                evt = soc->penEventQueue->Pop();
-            }
-        }
+    if (soc->penDown && !soc->penEventQueue->Peek().penDown &&
+        soc->eventQueueTicks - soc->eventQueueTicksAtPenDown <
+            MIN_EVENT_QUEUE_TICKS_BEFORE_PEN_UP) {
+        return;
+    }
 
-        if (evt.penDown || soc->mouseDown) {
-            soc->mouseDown = evt.penDown;
-            deviceTouch(soc->dev, evt.x, evt.y);
+    PenEvent evt(soc->penEventQueue->Pop());
+
+    if (evt.penDown) {
+        while (soc->penEventQueue->GetSize() > 0 && soc->penEventQueue->Peek().penDown) {
+            evt = soc->penEventQueue->Pop();
         }
     }
 
+    if (evt.penDown || soc->penDown) {
+        if (evt.penDown && !soc->penDown) soc->eventQueueTicksAtPenDown = soc->eventQueueTicks;
+        soc->penDown = evt.penDown;
+
+        deviceTouch(soc->dev, evt.x, evt.y);
+    }
+}
+
+static void socPumpKeyEventQueue(SoC *soc) {
     if (soc->keyEventQueue->GetSize() > 0) {
         KeyEvent evt(soc->keyEventQueue->Pop());
 
         deviceKey(soc->dev, evt.key, evt.keyDown);
         keypadKeyEvt(soc->kp, evt.key, evt.keyDown);
     }
+}
+
+static void socPumpEventQueues(SoC *soc) {
+    soc->eventQueueTicks++;
+
+    socPumpPenEventQueue(soc);
+    socPumpKeyEventQueue(soc);
 }
 
 void socSleep(SoC *soc) {
