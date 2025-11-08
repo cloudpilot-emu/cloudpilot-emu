@@ -3,7 +3,7 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-import { InstantiateFunction, cachedInstantiate } from '@common/helper/wasm';
+import { cachedInstantiate } from '@common/helper/wasm';
 import createModule, {
     CreateZipContext as CreateZipNativeContext,
     FsckContext as FsckNativeContext,
@@ -21,8 +21,6 @@ import { ZipfileWalker, decorateZipfileWalker } from './ZipfileWalker';
 import { dirtyPagesSize } from './util';
 
 export { FsckResult } from '@native-fstools/index';
-
-const WASM_BINARY = 'fstools_web.wasm';
 
 const GUNZIP_SLICE_SIZE = 512 * 1024;
 const GZIP_SLICE_SIZE = 512 * 1024;
@@ -44,7 +42,10 @@ export class CreateZipContext {
         module.destroy(fsTools);
     }
 
-    static async create(compressionLevel: number, instantiateWasm: InstantiateFunction): Promise<CreateZipContext> {
+    static async create(
+        compressionLevel: number,
+        instantiateWasm: Module['instantiateWasm'],
+    ): Promise<CreateZipContext> {
         return new CreateZipContext(
             await createModule({
                 print: (x: string) => console.log(x),
@@ -92,7 +93,7 @@ export class MkfsContext {
         this.nativeContext = new module.MkfsContext();
     }
 
-    static async create(instantiateWasm: InstantiateFunction): Promise<MkfsContext> {
+    static async create(instantiateWasm: Module['instantiateWasm']): Promise<MkfsContext> {
         return new MkfsContext(
             await createModule({
                 print: (x: string) => console.log(x),
@@ -125,7 +126,7 @@ export class FsckContext {
         this.nativeContext = new module.FsckContext(size >>> 9);
     }
 
-    static async create(size: number, instantiateWasm: InstantiateFunction): Promise<FsckContext> {
+    static async create(size: number, instantiateWasm: Module['instantiateWasm']): Promise<FsckContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
@@ -179,7 +180,7 @@ export class GunzipContext {
         if (gzippedData) this.initialize(gzippedData);
     }
 
-    static async create(instantiateWasm: InstantiateFunction, gzippedData?: Uint8Array): Promise<GunzipContext> {
+    static async create(instantiateWasm: Module['instantiateWasm'], gzippedData?: Uint8Array): Promise<GunzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
@@ -248,7 +249,10 @@ export class GzipContext {
         if (uncompressedDataSize !== undefined) this.initialize(uncompressedDataSize);
     }
 
-    static async create(instantiateWasm: InstantiateFunction, uncompressedDataSize?: number): Promise<GzipContext> {
+    static async create(
+        instantiateWasm: Module['instantiateWasm'],
+        uncompressedDataSize?: number,
+    ): Promise<GzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
@@ -329,10 +333,10 @@ export class GzipContext {
     private bufferPtr: VoidPtr | undefined;
 }
 
-const cachedInstantiateByUrl = new Map<string, InstantiateFunction>();
+const cachedInstantiateByUrl = new Map<string, Module['instantiateWasm']>();
 
 export class FsTools {
-    constructor(wasmModuleUrl = WASM_BINARY) {
+    constructor(wasmModuleUrl: string) {
         let instantiate = cachedInstantiateByUrl.get(wasmModuleUrl);
 
         if (!instantiate) {
@@ -392,5 +396,5 @@ export class FsTools {
         return decorateZipfileWalker(new module.ZipfileWalker(zipfile.length, buffer), module);
     }
 
-    private instantiante: InstantiateFunction;
+    private instantiante: Module['instantiateWasm'];
 }

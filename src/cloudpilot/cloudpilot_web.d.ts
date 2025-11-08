@@ -22,14 +22,14 @@ export type SessionFile5 = SessionFile5Impl<VoidPtr>;
 export type RomInfo5 = RomInfo5Impl<VoidPtr>;
 
 export interface Module
-    extends Omit<EmscriptenModule, 'instantiateWasm'>,
+    extends EmscriptenModule,
         ModuleWithGunzipContext<VoidPtr>,
         ModuleWithZipfileWalker<VoidPtr>,
         ModuleWithSessionFile5<VoidPtr>,
         ModuleWithRomInfo5<VoidPtr> {
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
-    UTF8ToString(charPtr: number): string;
+    UTF8ToString: typeof UTF8ToString;
 
     Cloudpilot: { new (): Cloudpilot };
     RomInfo: { new (buffer: VoidPtr, size: number): RomInfo };

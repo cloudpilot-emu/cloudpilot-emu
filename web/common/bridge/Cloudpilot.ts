@@ -4,7 +4,6 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { identifySessionEngine } from '@common/helper/sessionfile';
-import { InstantiateFunction } from '@common/helper/wasm';
 import { EngineType } from '@common/model/EngineType';
 import { DeviceType5 } from '@native-common/index';
 import createModule, {
@@ -205,8 +204,8 @@ export class Cloudpilot {
     }
 
     static async create(wasmModuleUrl?: string): Promise<Cloudpilot>;
-    static async create(instantiateWasm?: InstantiateFunction): Promise<Cloudpilot>;
-    static async create(urlOrFunction?: string | InstantiateFunction): Promise<Cloudpilot> {
+    static async create(instantiateWasm?: Module['instantiateWasm']): Promise<Cloudpilot>;
+    static async create(urlOrFunction?: string | Module['instantiateWasm']): Promise<Cloudpilot> {
         const id = nextId++;
 
         return new Cloudpilot(

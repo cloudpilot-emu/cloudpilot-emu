@@ -22,7 +22,7 @@ export type CreateZipContext = CreateZipContextImpl<VoidPtr>;
 export type ZipfileWalker = ZipfileWalkerImpl<VoidPtr>;
 
 export interface Module
-    extends Omit<EmscriptenModule, 'instantiateWasm'>,
+    extends EmscriptenModule,
         ModuleWithGunzipContext<VoidPtr>,
         ModuleWithGzipContext<VoidPtr>,
         ModuleWithCreateZipContext<VoidPtr>,
@@ -30,7 +30,7 @@ export interface Module
     ccall: typeof ccall;
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
-    UTF8ToString(charPtr: number): string;
+    UTF8ToString: typeof UTF8ToString;
 
     FSTools: { new (): FSTools };
     MkfsContext: { new (): MkfsContext };
@@ -41,11 +41,6 @@ export interface Module
     destroy(fsckContext: FsckContext): void;
     destroy(gunzipContext: GunzipContext): void;
     destroy(gzipContext: GzipContext): void;
-
-    instantiateWasm(
-        imports: WebAssembly.Imports,
-        successCallback: (instance: WebAssembly.Instance) => void
-    ): void | Promise<void>;
 }
 
 declare const createModule: (moduleOverrides: Partial<Module>) => Promise<Module>;
