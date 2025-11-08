@@ -23,6 +23,7 @@
             "@native-fstools/*": ["../src/fstools/*"],
             "@native-vfs/*": ["../src/vfs/*"],
             "@native-common/*": ["../src/common/*"],
+            "@native-uarm/*": ["../src/uarm/*"],
             "@pwa/*": ["pwa/src/app/*"],
             "@assets/*": ["pwa/src/assets/*"],
             "@root/*": ["../*"],

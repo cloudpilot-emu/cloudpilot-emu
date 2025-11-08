@@ -3,8 +3,10 @@ import { NgModule, inject, provideAppInitializer } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
+import { loadAndCompileModule } from '@common/helper/wasm';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
-import wasmModule from '@native/cloudpilot_web.wasm';
+import uarmModuleUrl from '@native-uarm/uarm_web_optimized.wasm';
+import wasmModuleUrl from '@native/cloudpilot_web.wasm';
 import { createDirectives } from 'marked-directive';
 import { MARKED_EXTENSIONS, MARKED_OPTIONS, MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
 
@@ -19,7 +21,7 @@ import { KvsService } from '@pwa/service/kvs.service';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
-import { TOKEN_CLOUDPILOT_INSTANCE, TOKEN_EMULATOR_LOCK } from '@pwa/service/token';
+import { TOKEN_CLOUDPILOT_INSTANCE, TOKEN_EMULATOR_LOCK, TOKEN_UARM_MODULE } from '@pwa/service/token';
 import { UpdateService } from '@pwa/service/update.service';
 
 declare global {
@@ -68,11 +70,15 @@ const markedOptionsFactory = (): MarkedOptions => {
         {
             provide: TOKEN_CLOUDPILOT_INSTANCE,
             useFactory: () => {
-                const instance = Cloudpilot.create(wasmModule);
+                const instance = Cloudpilot.create(wasmModuleUrl);
                 window.__cp_enableLogging = (logging) => instance.then((cp) => cp.enableLogging(logging));
 
                 return instance;
             },
+        },
+        {
+            provide: TOKEN_UARM_MODULE,
+            useFactory: () => loadAndCompileModule(uarmModuleUrl),
         },
         provideAppInitializer(() => {
             const initializerFn = ((kvsService: KvsService) => kvsService.initialize.bind(kvsService))(

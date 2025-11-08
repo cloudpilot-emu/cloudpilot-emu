@@ -30,7 +30,7 @@ import { SessionService } from './session.service';
 import { SnapshotService } from './snapshot.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageService } from './storage.service';
-import { TOKEN_CLOUDPILOT_INSTANCE, TOKEN_EMULATOR_LOCK } from './token';
+import { TOKEN_CLOUDPILOT_INSTANCE, TOKEN_EMULATOR_LOCK, TOKEN_UARM_MODULE } from './token';
 
 // TODO: Get rid of cloudpilot service
 
@@ -55,8 +55,9 @@ export class EmulationService extends AbstractEmulationService {
         private storageCardContext: StorageCardContext,
         private sessionsService: SessionService,
         private featureService: FeatureService,
-        @Inject(TOKEN_CLOUDPILOT_INSTANCE) private cloudpilotPromise: Promise<Cloudpilot>,
         modalWatcher: ModalWatcherService,
+        @Inject(TOKEN_CLOUDPILOT_INSTANCE) private cloudpilotPromise: Promise<Cloudpilot>,
+        @Inject(TOKEN_UARM_MODULE) private uarmModulePromise: Promise<WebAssembly.Module>,
         @Inject(TOKEN_EMULATOR_LOCK) emulatorLock: Lock,
     ) {
         super();
