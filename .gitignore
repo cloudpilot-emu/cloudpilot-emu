@@ -38,6 +38,7 @@ Makefile.local
 *.wat
 *.wasm
 *.patch
+*.profraw
 __pycache__
 .vscode/.ropeproject
 .mypy_cache
