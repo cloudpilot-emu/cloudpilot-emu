@@ -56,7 +56,8 @@
             "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
-            "namedChunks": true
+            "namedChunks": true,
+            "webWorkerTsConfig": "pwa/tsconfig.worker.json"
           },
           "configurations": {
             "production": {
@@ -147,7 +148,8 @@
                 "output": "/assets-pwa"
               },
               "pwa/src/manifest.webmanifest"
-            ]
+            ],
+            "webWorkerTsConfig": "pwa/tsconfig.worker.json"
           },
           "configurations": {
             "ci": {

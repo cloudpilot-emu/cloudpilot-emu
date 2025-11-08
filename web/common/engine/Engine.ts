@@ -20,6 +20,13 @@ export interface BackupResult {
     failedDatabases: Array<string>;
 }
 
+export interface FullState {
+    rom: Uint8Array;
+    memory: Uint8Array;
+    savestate: Uint8Array;
+    nand?: Uint8Array;
+}
+
 export interface EngineCommon {
     readonly type: EngineType;
 
@@ -69,10 +76,7 @@ export interface EngineCommon {
     getMountedKey(): Promise<string | undefined>;
     getCardData(key: string): Promise<Uint32Array | undefined>;
 
-    getRom(): Promise<Uint8Array | undefined>;
-    getMemory(): Promise<Uint8Array | undefined>;
-    getNand(): Promise<Uint8Array | undefined>;
-    getSavestate(): Promise<Uint8Array | undefined>;
+    getFullState(): Promise<FullState | undefined>;
 
     installDb(data: Uint8Array): Promise<DbInstallResult>;
     backup(includeRomDatabases: boolean): Promise<BackupResult | undefined>;

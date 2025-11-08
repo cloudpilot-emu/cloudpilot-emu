@@ -200,6 +200,10 @@ export class EmulationService extends AbstractEmulationService {
         return this.cloudpilotPromise;
     }
 
+    protected override getUarmModule(): Promise<WebAssembly.Module> {
+        return this.uarmModulePromise;
+    }
+
     private block = (): Promise<void> => this.mutex.runExclusive(() => this.doBlock());
 
     private unblock = (): Promise<void> => this.mutex.runExclusive(() => this.doUnblock());
@@ -355,13 +359,16 @@ Sorry for the inconvenience.`,
             const session = this.emulationContext.session();
             if (!session || !this.engine) return;
 
-            const rom = await this.engine.getRom();
-            const memory = await this.engine.getMemory();
-            const nand = await this.engine.getNand();
-            const savestate = await this.engine.getSavestate();
+            const fullState = await this.engine.getFullState();
 
-            if (rom && memory) {
-                void this.sessionsService.emergencySaveSession(session, rom, memory, nand, savestate);
+            if (fullState) {
+                void this.sessionsService.emergencySaveSession(
+                    session,
+                    fullState.rom,
+                    fullState.memory,
+                    fullState.nand,
+                    fullState.savestate,
+                );
             }
         });
 

@@ -3,6 +3,7 @@ import { Engine, StorageCardProvider } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { SnapshotContainer } from '@common/engine/Snapshot';
 import { EngineCloudpilotImpl } from '@common/engine/cloudpilot/EngineCloudpilot';
+import { EngineUarmImpl } from '@common/engine/uarm/EngineUarm';
 import { deviceDimensions, engineType, isColor } from '@common/helper/deviceProperties';
 import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
 import { SchedulerKind } from '@common/helper/scheduler';
@@ -156,6 +157,8 @@ export abstract class AbstractEmulationService {
 
     protected abstract getCloudpilotInstance(): Promise<Cloudpilot>;
 
+    protected abstract getUarmModule(): Promise<WebAssembly.Module>;
+
     protected abstract handleFatalInNativeCode(error: Error): void;
 
     protected abstract handlePalmosStateChange(): void;
@@ -282,11 +285,20 @@ export abstract class AbstractEmulationService {
     }
 
     private async createEngine(engineType: EngineType): Promise<Engine> {
-        if (engineType !== 'cloudpilot') throw new Error(`unsupported engine ${engineType}`);
+        switch (engineType) {
+            case 'cloudpilot':
+                return new EngineCloudpilotImpl(
+                    await this.getCloudpilotInstance(),
+                    this.clandestineExecute,
+                    this.engineSettings,
+                );
 
-        const cloudpilotInstance = await this.getCloudpilotInstance();
+            case 'uarm':
+                return EngineUarmImpl.create(await this.getUarmModule());
 
-        return new EngineCloudpilotImpl(cloudpilotInstance, this.clandestineExecute, this.engineSettings);
+            default:
+                throw new Error('unreachable');
+        }
     }
 
     private onEngineNewFrameEvent = () => {

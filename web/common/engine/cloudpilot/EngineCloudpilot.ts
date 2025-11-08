@@ -11,7 +11,7 @@ import { SerialPort } from '@common/serial/SerialPort';
 import { Executor } from '@common/service/AbstractEmulationService';
 import { Event, EventInterface } from 'microevent.ts';
 
-import { BackupResult, EngineCloudpilot, StorageCardProvider } from '../Engine';
+import { BackupResult, EngineCloudpilot, FullState, StorageCardProvider } from '../Engine';
 import { EngineSettings } from '../EngineSettings';
 import { SnapshotContainer } from '../Snapshot';
 import { SerialPortImpl } from './SerialPort';
@@ -388,28 +388,16 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         return this.cloudpilotInstance.mountCard(key);
     }
 
-    async getRom(): Promise<Uint8Array | undefined> {
-        if (this.deviceId === undefined) return undefined;
-
-        return this.cloudpilotInstance.getRomImage().slice();
-    }
-
-    async getMemory(): Promise<Uint8Array | undefined> {
-        if (this.deviceId === undefined) return undefined;
-
-        return this.cloudpilotInstance.getMemory().slice();
-    }
-
-    async getNand(): Promise<Uint8Array | undefined> {
-        return undefined;
-    }
-
-    async getSavestate(): Promise<Uint8Array | undefined> {
+    async getFullState(): Promise<FullState | undefined> {
         if (this.deviceId === undefined) return undefined;
 
         this.cloudpilotInstance.saveState();
 
-        return this.cloudpilotInstance.getSavestate().slice();
+        return {
+            rom: this.cloudpilotInstance.getRomImage().slice(),
+            memory: this.cloudpilotInstance.getMemory().slice(),
+            savestate: this.cloudpilotInstance.getSavestate().slice(),
+        };
     }
 
     getSerialPortSerial(): SerialPort {
