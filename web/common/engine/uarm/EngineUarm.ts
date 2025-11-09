@@ -17,6 +17,12 @@ import { RcpMethod } from './worker/rpc';
 export class EngineUarmImpl implements EngineUarm {
     readonly type = 'uarm';
 
+    private constructor(private worker: Worker) {
+        this.rpcHost = new RpcHost(this.dispatchMessage);
+
+        worker.addEventListener('message', this.onMessage);
+    }
+
     static async create(uarmModule: WebAssembly.Module, settings: EngineSettings): Promise<EngineUarmImpl> {
         const worker = new Worker(new URL('./worker/main.worker', import.meta.url));
 
@@ -180,12 +186,6 @@ export class EngineUarmImpl implements EngineUarm {
 
     backup(includeRomDatabases: boolean): Promise<BackupResult | undefined> {
         throw new Error('Method not implemented.');
-    }
-
-    private constructor(private worker: Worker) {
-        this.rpcHost = new RpcHost(this.dispatchMessage);
-
-        worker.addEventListener('message', this.onMessage);
     }
 
     private dispatchMessage = (mesage: HostMessage, transferables?: Array<Transferable>) => {
