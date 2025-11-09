@@ -4,6 +4,7 @@ export const enum ClientMessageType {
     ready = 'ready',
     rpcError = 'rpcError',
     rpcSuccess = 'rpcSuccess',
+    fatalError = 'fatalErro',
 }
 
 export interface ClientMessageReady {
@@ -18,4 +19,13 @@ export type ClientMessageRpcSuccess = RpcResponse & {
     type: ClientMessageType.rpcSuccess;
 };
 
-export type ClientMessage = ClientMessageReady | ClientMessageRpcError | ClientMessageRpcSuccess;
+export interface ClientMessageFatalError {
+    type: ClientMessageType.fatalError;
+    error: string;
+}
+
+export type ClientMessage =
+    | ClientMessageReady
+    | ClientMessageRpcError
+    | ClientMessageRpcSuccess
+    | ClientMessageFatalError;

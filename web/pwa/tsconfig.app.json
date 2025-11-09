@@ -7,5 +7,5 @@
     },
     "files": ["src/main.ts", "src/polyfills.ts"],
     "include": ["src/**/*.ts", "src/**/*.d.ts", "../common/**/*.ts", "../common/**/*.d.ts"],
-    "exclude": ["src/**/*.spec.ts", "../common/test/*.ts", "../common/**/*.worker.ts", "src/**/*.worker.ts"],
+    "exclude": ["src/**/*.spec.ts", "../common/test/*.ts", "../common/**/*.worker.ts", "../common/**/*.worker.d.ts"],
 }

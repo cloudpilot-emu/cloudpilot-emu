@@ -11,6 +11,7 @@ import { EngineSettings } from '../EngineSettings';
 import { SnapshotContainer } from '../Snapshot';
 import { RpcHost } from './RpcHost';
 import { ClientMessage, ClientMessageType } from './worker/ClientMessage';
+import { HostMessage } from './worker/HostMessage';
 import { RcpMethod } from './worker/rpc';
 
 export class EngineUarmImpl implements EngineUarm {
@@ -182,12 +183,14 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     private constructor(private worker: Worker) {
-        this.rpcHost = new RpcHost((message, transferables) =>
-            this.worker.postMessage(message, transferables as Array<Transferable>),
-        );
+        this.rpcHost = new RpcHost(this.dispatchMessage);
 
         worker.addEventListener('message', this.onMessage);
     }
+
+    private dispatchMessage = (mesage: HostMessage, transferables?: Array<Transferable>) => {
+        this.worker.postMessage(mesage, transferables as Array<Transferable>);
+    };
 
     private async initialize(module: WebAssembly.Module, settings: EngineSettings): Promise<this> {
         await this.rpcHost.call(RcpMethod.initialize, { module, settings });
@@ -209,6 +212,9 @@ export class EngineUarmImpl implements EngineUarm {
             case ClientMessageType.rpcError:
             case ClientMessageType.rpcSuccess:
                 return this.rpcHost.dispatchRpcMessage(message);
+
+            case ClientMessageType.fatalError:
+                return this.fatal(message.error);
 
             default:
                 message satisfies never;

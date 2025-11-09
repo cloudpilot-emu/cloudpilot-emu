@@ -1,23 +1,46 @@
+// This is a nasty hack. The web worker has no Navigator type available, but the
+// Emscripten typings insist on testing it for WebGPU support. The following
+// stub installs a type alias that forces Navigator to never. We have to put it here
+// as an ambient type in order to make sure that the stub is available when the
+// Emscripten typings are evaluated further down the lane.
+//
 /// <reference lib="webworker" />
-import { EngineSettings } from '@common/engine/EngineSettings';
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./stub-navigator.worker.d.ts"/>
+//
+import { Uarm } from '@common/bridge/Uarm';
 
-import { ClientMessageType } from './ClientMessage';
+import { ClientMessage, ClientMessageType } from './ClientMessage';
+import { Emulator } from './Emulator';
 import { HostMessage, HostMessageType } from './HostMessage';
 import { RpcClient } from './RpcClient';
-import { RcpMethod, RpcArgsForMethod } from './rpc';
+import { RcpMethod } from './rpc';
 
-async function rpcInitialize({ module, settings }: RpcArgsForMethod<RcpMethod.initialize>): Promise<void> {
-    console.log('worker initialized', module, settings);
+let emulator: Emulator | undefined;
+
+function unwrapEmulator(): Emulator {
+    if (!emulator) throw new Error('worker not initialized');
+
+    return emulator;
 }
 
-async function rpcUpdateSettings(settings: EngineSettings): Promise<void> {
-    console.log('updated engine settings', settings);
+function dispatchMessage(message: ClientMessage, transferables?: Array<Transferable>): void {
+    postMessage(message, transferables as Array<Transferable>);
 }
 
-const rpcClient = new RpcClient((message, transferable) =>
-    self.postMessage(message, transferable as Array<Transferable>),
-);
-rpcClient.register(RcpMethod.initialize, rpcInitialize).register(RcpMethod.updateSettings, rpcUpdateSettings);
+const rpcClient = new RpcClient(dispatchMessage);
+rpcClient
+    .register(RcpMethod.initialize, async ({ module, settings }) => {
+        if (emulator) throw new Error('worker already initialized');
+
+        const uarm = await Uarm.create(module);
+        uarm.fatalErrorEvent.addHandler((error) =>
+            dispatchMessage({ type: ClientMessageType.fatalError, error: error.message }),
+        );
+
+        emulator = new Emulator(uarm, settings);
+    })
+    .register(RcpMethod.updateSettings, (settings) => unwrapEmulator().updateSettings(settings));
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;
@@ -30,4 +53,4 @@ async function onMessage(e: MessageEvent) {
 
 addEventListener('message', onMessage);
 
-postMessage({ type: ClientMessageType.ready });
+dispatchMessage({ type: ClientMessageType.ready });

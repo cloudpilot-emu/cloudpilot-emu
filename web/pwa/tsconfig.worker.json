@@ -5,5 +5,5 @@
         "lib": ["es2020", "webworker"],
         "types": [],
     },
-    "include": ["../common/**/*.worker.ts", "src/**/*.worker.ts"],
+    "include": ["../common/**/*.worker.ts", "../common/**/*.worker.d.ts"],
 }

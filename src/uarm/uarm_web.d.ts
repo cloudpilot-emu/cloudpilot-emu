@@ -3,7 +3,7 @@ import { Bridge, Uarm, VoidPtr } from './web/binding/binding';
 
 export * from './web/binding/binding';
 
-export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
+export interface Module extends EmscriptenModule {
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
     UTF8ToString: typeof UTF8ToString;
