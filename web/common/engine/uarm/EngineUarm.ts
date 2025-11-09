@@ -3,35 +3,37 @@ import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatisticsUarm } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
+import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
 
 import { BackupResult, EngineUarm, FullState, StorageCardProvider } from '../Engine';
 import { EngineSettings } from '../EngineSettings';
 import { SnapshotContainer } from '../Snapshot';
-import { Message, MessageType } from './worker/message';
+import { RpcHost } from './RpcHost';
+import { ClientMessage, ClientMessageType } from './worker/ClientMessage';
+import { RcpMethod } from './worker/rpc';
 
 export class EngineUarmImpl implements EngineUarm {
     readonly type = 'uarm';
 
-    private constructor(private worker: Worker) {}
-
-    static create(uarmModule: WebAssembly.Module): Promise<EngineUarmImpl> {
+    static async create(uarmModule: WebAssembly.Module, settings: EngineSettings): Promise<EngineUarmImpl> {
         const worker = new Worker(new URL('./worker/main.worker', import.meta.url));
 
-        return new Promise<EngineUarmImpl>((resolve, reject) => {
+        const engine = await new Promise<EngineUarmImpl>((resolve, reject) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const handlers: Array<[string, any]> = [];
-
-            const onError = (e: ErrorEvent) => {
+            const cleanupHandlers = () =>
                 handlers.forEach(([evt, handler]) => worker.removeEventListener(evt, handler));
 
+            const onError = (e: ErrorEvent) => {
+                cleanupHandlers();
                 reject(e.error);
             };
 
             const onMessage = (e: MessageEvent) => {
-                handlers.forEach(([evt, handler]) => worker.removeEventListener(evt, handler));
+                cleanupHandlers();
 
-                if ((e.data as Message).type === MessageType.ready) {
+                if ((e.data as ClientMessage).type === ClientMessageType.ready) {
                     resolve(new EngineUarmImpl(worker));
                 } else {
                     reject(new Error('invalid message from worker'));
@@ -43,9 +45,12 @@ export class EngineUarmImpl implements EngineUarm {
 
             handlers.push(['error', onError], ['message', onMessage]);
         });
+
+        return engine.initialize(uarmModule, settings);
     }
 
     shutdown(): void {
+        this.worker.removeEventListener('message', this.onMessage);
         this.worker.terminate();
     }
 
@@ -141,7 +146,7 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     updateSettings(settings: EngineSettings): void {
-        throw new Error('Method not implemented.');
+        void this.rpcMutex.runExclusive(() => this.rpcHost.call(RcpMethod.updateSettings, settings));
     }
 
     allocateCard(key: string, size: number): Uint32Array {
@@ -176,6 +181,40 @@ export class EngineUarmImpl implements EngineUarm {
         throw new Error('Method not implemented.');
     }
 
+    private constructor(private worker: Worker) {
+        this.rpcHost = new RpcHost((message, transferables) =>
+            this.worker.postMessage(message, transferables as Array<Transferable>),
+        );
+
+        worker.addEventListener('message', this.onMessage);
+    }
+
+    private async initialize(module: WebAssembly.Module, settings: EngineSettings): Promise<this> {
+        await this.rpcHost.call(RcpMethod.initialize, { module, settings });
+
+        return this;
+    }
+
+    private fatal(error: Error | string): void {
+        this.fatalError.dispatch(error instanceof Error ? error : new Error(error));
+    }
+
+    private onMessage = (e: MessageEvent): void => {
+        const message = e.data as ClientMessage;
+
+        switch (message.type) {
+            case ClientMessageType.ready:
+                return this.fatal('duplicate ready event');
+
+            case ClientMessageType.rpcError:
+            case ClientMessageType.rpcSuccess:
+                return this.rpcHost.dispatchRpcMessage(message);
+
+            default:
+                message satisfies never;
+        }
+    };
+
     newFrameEvent = new Event<void>();
     timesliceEvent = new Event<number>();
     suspendEvent = new Event<void>();
@@ -183,4 +222,7 @@ export class EngineUarmImpl implements EngineUarm {
     palmosStateChangeEvent = new Event<void>();
     fatalError = new Event<Error>();
     snapshotSuccessEvent = new Event<SnapshotStatistics>();
+
+    private rpcHost: RpcHost;
+    private rpcMutex = new Mutex();
 }
