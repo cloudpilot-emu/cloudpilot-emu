@@ -3,7 +3,6 @@ import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatisticsUarm } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
-import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
 
 import { BackupResult, EngineUarm, FullState, StorageCardProvider } from '../Engine';
@@ -153,7 +152,7 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     updateSettings(settings: EngineSettings): void {
-        void this.rpcMutex.runExclusive(() => this.rpcHost.call(RcpMethod.updateSettings, settings));
+        void this.rpcHost.call(RcpMethod.updateSettings, settings);
     }
 
     allocateCard(key: string, size: number): Uint32Array {
@@ -230,5 +229,4 @@ export class EngineUarmImpl implements EngineUarm {
     snapshotSuccessEvent = new Event<SnapshotStatistics>();
 
     private rpcHost: RpcHost;
-    private rpcMutex = new Mutex();
 }
