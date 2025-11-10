@@ -1,8 +1,9 @@
 import { EngineSettings } from '@common/engine/EngineSettings';
+import { DeviceId } from '@common/model/DeviceId';
 
 export const enum RcpMethod {
     initialize = 'initialize',
-    updateSettings = 'updateSettings',
+    openSession = 'opemSession',
 }
 
 interface RpcPayload<M extends RcpMethod> {
@@ -18,29 +19,40 @@ export interface RpcResponseInitialize extends RpcPayload<RcpMethod.initialize> 
     result: void;
 }
 
-export interface RpcRequestUpdateSettings extends RpcPayload<RcpMethod.updateSettings> {
-    args: EngineSettings;
+export interface RpcRequestOpenSession extends RpcPayload<RcpMethod.openSession> {
+    args: {
+        rom: Uint8Array;
+        device: DeviceId;
+        nand?: Uint8Array;
+        memory?: Uint8Array;
+        state?: Uint8Array;
+        card?: [Uint8Array, string];
+    };
 }
 
-export interface RpcResponseUpdateSettings extends RpcPayload<RcpMethod.updateSettings> {
-    result: void;
+export interface RpcResponseOpenSession extends RpcPayload<RcpMethod.openSession> {
+    result: boolean;
 }
 
 export interface RpcError extends RpcPayload<RcpMethod> {
     error: string;
 }
 
-export type RpcRequest = RpcRequestInitialize | RpcRequestUpdateSettings;
+export type RpcRequest = RpcRequestInitialize | RpcRequestOpenSession;
 
-export type RpcResponse = RpcResponseInitialize | RpcResponseUpdateSettings;
+export type RpcResponse = RpcResponseInitialize | RpcResponseOpenSession;
 
 export type RpcRequestForMethod<M extends RcpMethod> = M extends RcpMethod.initialize
     ? RpcRequestInitialize
-    : RpcRequestUpdateSettings;
+    : M extends RcpMethod.openSession
+      ? RpcRequestOpenSession
+      : never;
 
 export type RpcResponseForMethod<M extends RcpMethod> = M extends RcpMethod.initialize
     ? RpcResponseInitialize
-    : RpcResponseUpdateSettings;
+    : M extends RcpMethod.openSession
+      ? RpcResponseOpenSession
+      : never;
 
 export type RpcArgsForMethod<M extends RcpMethod> = RpcRequestForMethod<M>['args'];
 

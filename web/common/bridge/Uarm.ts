@@ -3,7 +3,7 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-import { Module, Uarm as UarmNative, default as createModule } from '@native-uarm/index';
+import { Bridge, Module, Uarm as UarmNative, VoidPtr, default as createModule } from '@native-uarm/index';
 import { Event } from 'microevent.ts';
 
 let nextId = 0;
@@ -23,6 +23,7 @@ function guard(): MethodDecorator {
 export class Uarm {
     private constructor(private module: Module) {
         this.uarm = new module.Uarm();
+        this.bridge = new module.Bridge();
     }
 
     static async create(wasmModule: WebAssembly.Module): Promise<Uarm> {
@@ -39,7 +40,33 @@ export class Uarm {
     }
 
     @guard()
-    foo(): void {}
+    setRamSize(ramSize: number): void {
+        this.uarm.SetRamSize(ramSize);
+    }
+
+    @guard()
+    setMemory(data: Uint8Array): void {
+        this.uarm.SetMemory(data.length, this.copyIn(data));
+    }
+
+    @guard()
+    setNand(data: Uint8Array): void {
+        this.uarm.SetNand(data.length, this.copyIn(data));
+    }
+
+    @guard()
+    setSd(data: Uint8Array, key: string): void {
+        this.uarm.SetSd(data.length, this.copyIn(data), key);
+    }
+
+    @guard()
+    setSavestate(data: Uint8Array): void {
+        this.uarm.SetSavestate(data.length, this.copyIn(data));
+    }
+
+    launch(nor: Uint8Array): boolean {
+        return this.uarm.Launch(nor.length, this.copyIn(nor));
+    }
 
     guard<T>(fn: () => T) {
         if (this.amIdead) throw new Error('uarm instance is dead');
@@ -57,7 +84,17 @@ export class Uarm {
         }
     }
 
+    private copyIn(data: Uint8Array): VoidPtr {
+        const ptr = this.bridge.Malloc(data.length);
+        const offset = this.module.getPointer(ptr);
+
+        this.module.HEAPU8.subarray(offset, offset + data.length).set(data);
+
+        return ptr;
+    }
+
     private uarm: UarmNative;
+    private bridge: Bridge;
 
     fatalErrorEvent = new Event<Error>();
     private amIdead = false;

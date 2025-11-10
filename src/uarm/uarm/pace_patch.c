@@ -10,7 +10,7 @@
         fprintf(stderr, "unable to locate callout for" name ", PACE will not be patched\n"); \
         return;                                                                              \
     }                                                                                        \
-    fprintf(stderr, "found PACE callout for " name " at %#010x\n", var);
+    printf("found PACE callout for " name " at %#010x\n", var);
 
 static uint32_t decodeBBlBlx(void* rom, uint32_t addr) {
     const uint32_t instruction = *(uint32_t*)(rom + addr);
@@ -75,7 +75,7 @@ void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t 
     }
 
     const uint32_t enterPace = romBase + paceLocation;
-    fprintf(stderr, "found PACE entry at %#010x\n", enterPace);
+    printf("found PACE entry at %#010x\n", enterPace);
 
     findCallout(calloutSyscall, "syscall", 0x25894);
     findCallout(calloutDivu, "divu", 0x22ab0);
@@ -104,7 +104,7 @@ void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t 
     patch->calloutTrap8 = calloutTrap8;
     patch->calloutUnimplementedInstr = calloutUnimplementedInstr;
 
-    fprintf(stderr, "patching PACE\n");
+    printf("patching PACE\n");
 
     return;
 }

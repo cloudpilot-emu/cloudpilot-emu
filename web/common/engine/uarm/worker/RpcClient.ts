@@ -1,4 +1,4 @@
-import { ClientMessage, ClientMessageType } from './ClientMessage';
+import { ClientMessage, ClientMessageRpcSuccess, ClientMessageType } from './ClientMessage';
 import { RcpMethod, RpcArgsForMethod, RpcRequest, RpcResultForMethod } from './rpc';
 
 export type RpcHandler<M extends RcpMethod> = (
@@ -33,7 +33,7 @@ export class RpcClient {
 
         try {
             const result = await callback(args, rpcComplete);
-            this.dispatchMessage({ type: ClientMessageType.rpcSuccess, method, id, result });
+            this.dispatchMessage({ type: ClientMessageType.rpcSuccess, method, id, result } as ClientMessageRpcSuccess);
 
             onRpcSuccess!();
         } catch (e) {

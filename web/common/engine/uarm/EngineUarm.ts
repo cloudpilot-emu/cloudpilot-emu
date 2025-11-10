@@ -10,7 +10,7 @@ import { EngineSettings } from '../EngineSettings';
 import { SnapshotContainer } from '../Snapshot';
 import { RpcHost } from './RpcHost';
 import { ClientMessage, ClientMessageType } from './worker/ClientMessage';
-import { HostMessage } from './worker/HostMessage';
+import { HostMessage, HostMessageType } from './worker/HostMessage';
 import { RcpMethod } from './worker/rpc';
 
 export class EngineUarmImpl implements EngineUarm {
@@ -117,18 +117,36 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     getDeviceId(): DeviceId {
-        throw new Error('Method not implemented.');
+        if (this.deviceId === undefined) throw new Error('not initialized');
+
+        return this.deviceId;
     }
 
-    openSession(
+    async openSession(
         rom: Uint8Array,
         device: DeviceId,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,
-        card?: StorageCardProvider,
+        cardProvider?: StorageCardProvider,
     ): Promise<boolean> {
-        throw new Error('Method not implemented.');
+        if (this.deviceId !== undefined) throw new Error('already initialized');
+        this.deviceId = device;
+
+        if (cardProvider) await cardProvider.load(this);
+
+        const card: [Uint8Array, string] | undefined =
+            this.cardData && this.cardKey !== undefined
+                ? [new Uint8Array(this.cardData.buffer), this.cardKey]
+                : undefined;
+
+        return this.rpcHost.call(
+            RcpMethod.openSession,
+            { rom, device, nand, memory, state, card },
+            [rom.buffer, nand?.buffer, memory?.buffer, state?.buffer, this.cardData?.buffer].filter(
+                (x) => x !== undefined,
+            ),
+        );
     }
 
     resume(): Promise<void> {
@@ -152,15 +170,21 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     updateSettings(settings: EngineSettings): void {
-        void this.rpcHost.call(RcpMethod.updateSettings, settings);
+        this.dispatchMessage({ type: HostMessageType.updateSettings, settings });
     }
 
     allocateCard(key: string, size: number): Uint32Array {
-        throw new Error('Method not implemented.');
+        if (this.cardKey !== undefined) throw new Error(`card already allocated with key ${this.cardKey}`);
+        if (size & 0x03) throw new Error(`invalid card size ${size}`);
+
+        this.cardData = new Uint32Array(size >>> 2);
+        this.cardKey = key;
+
+        return this.cardData;
     }
 
-    releaseCard(key: string): Promise<void> {
-        throw new Error('Method not implemented.');
+    async releaseCard(key: string): Promise<void> {
+        this.cardKey = this.cardData = undefined;
     }
 
     mountCard(key: string): Promise<boolean> {
@@ -227,6 +251,11 @@ export class EngineUarmImpl implements EngineUarm {
     palmosStateChangeEvent = new Event<void>();
     fatalError = new Event<Error>();
     snapshotSuccessEvent = new Event<SnapshotStatistics>();
+
+    deviceId: DeviceId | undefined;
+
+    cardData: Uint32Array | undefined;
+    cardKey: string | undefined;
 
     private rpcHost: RpcHost;
 }

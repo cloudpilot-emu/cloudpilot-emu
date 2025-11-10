@@ -40,7 +40,9 @@ rpcClient
 
         emulator = new Emulator(uarm, settings);
     })
-    .register(RcpMethod.updateSettings, (settings) => unwrapEmulator().updateSettings(settings));
+    .register(RcpMethod.openSession, ({ rom, device, memory, nand, state, card }) =>
+        unwrapEmulator().openSession(rom, device, nand, memory, state, card),
+    );
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;
@@ -48,6 +50,10 @@ async function onMessage(e: MessageEvent) {
     switch (message.type) {
         case HostMessageType.rpcCall:
             void rpcClient.dispatch(message);
+            break;
+
+        case HostMessageType.updateSettings:
+            emulator?.updateSettings(message.settings);
     }
 }
 
