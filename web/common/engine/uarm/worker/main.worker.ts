@@ -75,5 +75,4 @@ async function onMessage(e: MessageEvent) {
 }
 
 addEventListener('message', onMessage);
-
 dispatchMessage({ type: ClientMessageType.ready });

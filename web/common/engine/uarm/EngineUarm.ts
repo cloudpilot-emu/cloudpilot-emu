@@ -13,6 +13,29 @@ import { ClientMessage, ClientMessageType } from './worker/ClientMessage';
 import { HostMessage, HostMessageType } from './worker/HostMessage';
 import { RcpMethod } from './worker/rpc';
 
+const enum CardState {
+    none,
+    allocated,
+    mounted,
+}
+
+interface CardNone {
+    state: CardState.none;
+}
+
+interface CardAllocated {
+    state: CardState.allocated;
+    key: string;
+    data: Uint32Array;
+}
+
+interface CardMounted {
+    state: CardState.mounted;
+    key: string;
+}
+
+type Card = CardNone | CardAllocated | CardMounted;
+
 export class EngineUarmImpl implements EngineUarm {
     readonly type = 'uarm';
 
@@ -134,16 +157,20 @@ export class EngineUarmImpl implements EngineUarm {
         if (cardProvider) await cardProvider.load(this);
 
         const card: [Uint8Array, string] | undefined =
-            this.cardData && this.cardKey !== undefined
-                ? [new Uint8Array(this.cardData.buffer), this.cardKey]
+            this.card.state === CardState.allocated
+                ? [new Uint8Array(this.card.data.buffer), this.card.key]
                 : undefined;
 
         return this.rpcHost.call(
             RcpMethod.openSession,
             { rom, nand, memory, state, card },
-            [rom.buffer, nand?.buffer, memory?.buffer, state?.buffer, this.cardData?.buffer].filter(
-                (x) => x !== undefined,
-            ),
+            [
+                rom.buffer,
+                nand?.buffer,
+                memory?.buffer,
+                state?.buffer,
+                this.card.state === CardState.allocated ? this.card.data.buffer : undefined,
+            ].filter((x) => x !== undefined),
         );
     }
 
@@ -172,17 +199,24 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     allocateCard(key: string, size: number): Uint32Array {
-        if (this.cardKey !== undefined) throw new Error(`card already allocated with key ${this.cardKey}`);
+        if (this.card.state !== CardState.none) throw new Error(`bad card state ${this.card.state}`);
         if (size & 0x03) throw new Error(`invalid card size ${size}`);
 
-        this.cardData = new Uint32Array(size >>> 2);
-        this.cardKey = key;
+        this.card = {
+            state: CardState.allocated,
+            key,
+            data: new Uint32Array(size >>> 2),
+        };
 
-        return this.cardData;
+        return this.card.data;
     }
 
     async releaseCard(key: string): Promise<void> {
-        this.cardKey = this.cardData = undefined;
+        if (this.card.state === CardState.none) return;
+
+        // TODO: unmount
+
+        this.card = { state: CardState.none };
     }
 
     mountCard(key: string): Promise<boolean> {
@@ -252,8 +286,7 @@ export class EngineUarmImpl implements EngineUarm {
 
     deviceId: DeviceId | undefined;
 
-    cardData: Uint32Array | undefined;
-    cardKey: string | undefined;
+    card: Card = { state: CardState.none };
 
     private rpcHost: RpcHost;
 }
