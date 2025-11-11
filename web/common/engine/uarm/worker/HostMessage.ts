@@ -1,10 +1,15 @@
 import { EngineSettings } from '@common/engine/EngineSettings';
+import { PalmButton } from '@native/cloudpilot_web';
 
 import { RpcRequest } from './rpc';
 
 export const enum HostMessageType {
     rpcCall = 'rpcCall',
     updateSettings = 'updateSettings',
+    buttonUp = 'buttonUp',
+    buttonDown = 'buttonDown',
+    penUp = 'penUp',
+    penDown = 'penDown',
 }
 
 export type HostMessageRpcCall = RpcRequest & {
@@ -16,4 +21,30 @@ export interface HostMessageUpdateSettings {
     settings: EngineSettings;
 }
 
-export type HostMessage = HostMessageRpcCall | HostMessageUpdateSettings;
+export interface HostMessageButtonUp {
+    type: HostMessageType.buttonUp;
+    button: PalmButton;
+}
+
+export interface HostMessageButtonDown {
+    type: HostMessageType.buttonDown;
+    button: PalmButton;
+}
+
+export interface HostMessagePenUp {
+    type: HostMessageType.penUp;
+}
+
+export interface HostMessagePenDown {
+    type: HostMessageType.penDown;
+    x: number;
+    y: number;
+}
+
+export type HostMessage =
+    | HostMessageRpcCall
+    | HostMessageUpdateSettings
+    | HostMessageButtonUp
+    | HostMessageButtonDown
+    | HostMessagePenUp
+    | HostMessagePenDown;

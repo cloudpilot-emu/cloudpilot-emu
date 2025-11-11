@@ -1,5 +1,6 @@
 import { Uarm } from '@common/bridge/Uarm';
 import { EngineSettings } from '@common/engine/EngineSettings';
+import { PalmButton } from '@native/cloudpilot_web';
 
 export class Emulator {
     constructor(
@@ -35,5 +36,21 @@ export class Emulator {
 
     updateSettings(settings: EngineSettings): void {
         this.settings = settings;
+    }
+
+    buttonUp(button: PalmButton): void {
+        this.uarm.buttonUp(button);
+    }
+
+    buttonDown(button: PalmButton): void {
+        this.uarm.buttonDown(button);
+    }
+
+    penDown(x: number, y: number): void {
+        this.uarm.penDown(x, y);
+    }
+
+    penUp(): void {
+        this.uarm.penUp();
     }
 }

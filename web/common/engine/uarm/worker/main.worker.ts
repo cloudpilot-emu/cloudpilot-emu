@@ -54,6 +54,23 @@ async function onMessage(e: MessageEvent) {
 
         case HostMessageType.updateSettings:
             emulator?.updateSettings(message.settings);
+            break;
+
+        case HostMessageType.buttonDown:
+            emulator?.buttonDown(message.button);
+            break;
+
+        case HostMessageType.buttonUp:
+            emulator?.buttonUp(message.button);
+            break;
+
+        case HostMessageType.penDown:
+            emulator?.penDown(message.x, message.y);
+            break;
+
+        case HostMessageType.penUp:
+            emulator?.penUp();
+            break;
     }
 }
 

@@ -69,24 +69,22 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     penDown(x: number, y: number): void {
-        throw new Error('Method not implemented.');
+        this.dispatchMessage({ type: HostMessageType.penDown, x, y });
     }
 
     penUp(): void {
-        throw new Error('Method not implemented.');
+        this.dispatchMessage({ type: HostMessageType.penUp });
     }
 
     buttonDown(button: PalmButton): void {
-        throw new Error('Method not implemented.');
+        this.dispatchMessage({ type: HostMessageType.buttonDown, button });
     }
 
     buttonUp(button: PalmButton): void {
-        throw new Error('Method not implemented.');
+        this.dispatchMessage({ type: HostMessageType.buttonUp, button });
     }
 
-    keyStroke(key: number, ctrl?: boolean): void {
-        throw new Error('Method not implemented.');
-    }
+    keyStroke(key: number, ctrl?: boolean): void {}
 
     reset(): Promise<void> {
         throw new Error('Method not implemented.');
