@@ -2,7 +2,7 @@ import { EngineSettings } from '@common/engine/EngineSettings';
 
 export const enum RcpMethod {
     initialize = 'initialize',
-    openSession = 'opemSession',
+    openSession = 'openSession',
 }
 
 interface RpcPayload<M extends RcpMethod> {
