@@ -152,7 +152,7 @@ export class SessionService {
             ...settings,
             id: -1,
             device,
-            ram: (await this.nativeSupportService.ramSizeForDevice(device)) >>> 20,
+            ram: (await this.nativeSupportService.ramSizeForDevice(device, rom)) >>> 20,
             rom: '',
             wasResetForcefully: false,
             nand: nandSize(device),
@@ -333,7 +333,7 @@ export class SessionService {
             return image.memory?.length >= 32 << 20 ? 32 : 16;
         }
 
-        return (await this.nativeSupportService.ramSizeForDevice(image.deviceId)) >>> 20;
+        return (await this.nativeSupportService.ramSizeForDevice(image.deviceId, image.rom)) >>> 20;
     }
 
     readonly _sessions = signal<Array<Session>>([]);

@@ -1,5 +1,4 @@
 import { EngineSettings } from '@common/engine/EngineSettings';
-import { DeviceId } from '@common/model/DeviceId';
 
 export const enum RcpMethod {
     initialize = 'initialize',
@@ -22,7 +21,6 @@ export interface RpcResponseInitialize extends RpcPayload<RcpMethod.initialize> 
 export interface RpcRequestOpenSession extends RpcPayload<RcpMethod.openSession> {
     args: {
         rom: Uint8Array;
-        device: DeviceId;
         nand?: Uint8Array;
         memory?: Uint8Array;
         state?: Uint8Array;

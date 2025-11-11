@@ -62,6 +62,7 @@ export interface RomInfoUarm {
     companyId: number;
     halId: number;
 
+    recommendedRamSize: number;
     deviceType: DeviceType5;
 
     supportedDevices: Array<DeviceId>;
@@ -894,6 +895,7 @@ export class Cloudpilot {
                       companyId: romInfoNative.GetCompanyId(),
                       halId: romInfoNative.GetHalId(),
                       deviceType,
+                      recommendedRamSize: romInfoNative.GetRecommendedRamSize(),
                       supportedDevices: [deviceId],
                   }
                 : undefined;

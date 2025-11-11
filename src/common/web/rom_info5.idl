@@ -11,4 +11,6 @@ interface RomInfo5 {
     long GetHalId();
 
     long GetDeviceType();
+
+    long GetRecommendedRamSize();
 };

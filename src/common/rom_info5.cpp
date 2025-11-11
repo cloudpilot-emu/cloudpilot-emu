@@ -2,8 +2,11 @@
 
 #include <iomanip>
 #include <iostream>
+#include <string>
 
 #pragma GCC diagnostic ignored "-Wmultichar"
+
+using namespace std;
 
 namespace {
     constexpr uint32_t HAL_ID_DMITRY_TUNGSTEN_E3 = 'DmGR';
@@ -55,6 +58,11 @@ const char* RomInfo5::GetRomName() const { return romName.c_str(); }
 uint32_t RomInfo5::GetCompanyId() const { return companyId; }
 
 uint32_t RomInfo5::GetHalId() const { return halId; }
+
+uint32_t RomInfo5::GetRecommendedRamSize() const {
+    return (GetCardName() == string("PalmCard") && GetHalId() == 'hspr') ? (16ul << 20)
+                                                                         : (32ul << 20);
+}
 
 DeviceType5 RomInfo5::GetDeviceType() const {
     if (!isValid) return deviceTypeInvalid;

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import { CardSupportLevel, Cloudpilot, RomInfo, SessionImage } from '@common/bridge/Cloudpilot';
-import { ramSize, slotType } from '@common/helper/deviceProperties';
+import { slotType } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { SlotType } from '@common/model/SlotType';
 
@@ -10,8 +10,20 @@ import { TOKEN_CLOUDPILOT_INSTANCE } from './token';
 export class NativeSupportService {
     constructor(@Inject(TOKEN_CLOUDPILOT_INSTANCE) private cloudpilot: Promise<Cloudpilot>) {}
 
-    async ramSizeForDevice(device: DeviceId): Promise<number> {
-        return ramSize(device) ?? (await this.cloudpilot).minRamForDevice(device);
+    async ramSizeForDevice(device: DeviceId, romData: Uint8Array): Promise<number> {
+        switch (device) {
+            case DeviceId.te2:
+            case DeviceId.frankene2: {
+                const rominfo = (await this.cloudpilot).getRomInfo(romData);
+
+                if (rominfo?.engine !== 'uarm') throw new Error(`${device} is OS5, but ROM is invalid`);
+
+                return rominfo.recommendedRamSize;
+            }
+
+            default:
+                return (await this.cloudpilot).minRamForDevice(device);
+        }
     }
 
     serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Promise<Uint8Array | undefined> {

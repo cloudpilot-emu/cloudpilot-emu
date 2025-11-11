@@ -21,6 +21,8 @@ class RomInfo5 {
     uint32_t GetCompanyId() const;
     uint32_t GetHalId() const;
 
+    uint32_t GetRecommendedRamSize() const;
+
     DeviceType5 GetDeviceType() const;
 
    private:

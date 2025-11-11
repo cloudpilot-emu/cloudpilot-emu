@@ -176,7 +176,7 @@ namespace {
         }
 
         Buffer nor, nand, memory, savestate;
-        uint32_t ramSize;
+        uint32_t ramSize{0};
 
         if (!readSession(options, nor, nand, memory, savestate, ramSize)) return false;
 
@@ -195,10 +195,7 @@ namespace {
             }
         }
 
-        if (ramSize == 0)
-            ramSize = (romInfo.GetCardName() == string("PalmCard") && romInfo.GetHalId() == 'hspr')
-                          ? (16ul << 20)
-                          : (32ul << 20);
+        if (ramSize == 0) ramSize = romInfo.GetRecommendedRamSize();
 
         if (!deviceSupportsRamSize(ramSize)) {
             cerr << "unsupported RAM size: " << ramSize << " bytes" << endl;

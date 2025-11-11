@@ -120,6 +120,8 @@ export interface RomInfo5<VoidPtr> {
     GetHalId(): number;
 
     GetDeviceType(): DeviceType5;
+
+    GetRecommendedRamSize(): number;
 }
 
 export interface ModuleWithGunzipContext<VoidPtr> {

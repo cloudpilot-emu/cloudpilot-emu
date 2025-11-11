@@ -40,8 +40,8 @@ rpcClient
 
         emulator = new Emulator(uarm, settings);
     })
-    .register(RcpMethod.openSession, ({ rom, device, memory, nand, state, card }) =>
-        unwrapEmulator().openSession(rom, device, nand, memory, state, card),
+    .register(RcpMethod.openSession, ({ rom, memory, nand, state, card }) =>
+        unwrapEmulator().openSession(rom, nand, memory, state, card),
     );
 
 async function onMessage(e: MessageEvent) {

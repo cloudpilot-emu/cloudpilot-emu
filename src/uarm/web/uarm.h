@@ -88,7 +88,7 @@ class Uarm {
     DbBackup* NewDbBackup(int type);
 
    private:
-    size_t ramSize{16 << 20};
+    size_t ramSize{0};
 
     size_t nandSize{0};
     uint8_t* nandData{nullptr};

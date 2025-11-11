@@ -79,10 +79,7 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
         ramSize = 0;
     }
 
-    if (ramSize == 0)
-        ramSize = (romInfo.GetCardName() == string("PalmCard") && romInfo.GetHalId() == 'hspr')
-                      ? (16ul << 20)
-                      : (32ul << 20);
+    if (ramSize == 0) ramSize = romInfo.GetRecommendedRamSize();
 
     cout << romInfo << endl;
     cout << "using " << ramSize << " bytes of RAM" << endl;

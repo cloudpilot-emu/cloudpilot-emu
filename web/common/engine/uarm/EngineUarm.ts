@@ -142,7 +142,7 @@ export class EngineUarmImpl implements EngineUarm {
 
         return this.rpcHost.call(
             RcpMethod.openSession,
-            { rom, device, nand, memory, state, card },
+            { rom, nand, memory, state, card },
             [rom.buffer, nand?.buffer, memory?.buffer, state?.buffer, this.cardData?.buffer].filter(
                 (x) => x !== undefined,
             ),
