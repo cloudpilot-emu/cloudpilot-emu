@@ -39,6 +39,9 @@ rpcClient
         );
 
         emulator = new Emulator(uarm, settings);
+        emulator.timesliceEvent.addHandler((props) =>
+            dispatchMessage({ type: ClientMessageType.timeslice, ...props }, props.frame ? [props.frame] : undefined),
+        );
     })
     .register(RcpMethod.openSession, ({ rom, memory, nand, state, card }) =>
         unwrapEmulator().openSession(rom, nand, memory, state, card),
@@ -73,6 +76,13 @@ async function onMessage(e: MessageEvent) {
         case HostMessageType.penUp:
             emulator?.penUp();
             break;
+
+        case HostMessageType.returnFrame:
+            emulator?.returnFrame(message.frame);
+            break;
+
+        default:
+            message satisfies never;
     }
 }
 

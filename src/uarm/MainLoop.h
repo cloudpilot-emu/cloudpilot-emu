@@ -12,7 +12,7 @@ class MainLoop {
    public:
     MainLoop(SoC* soc);
 
-    void Cycle(uint64_t now);
+    double Cycle(uint64_t now);
 
     uint64_t GetTimesliceSizeUsec() const;
 

@@ -1,6 +1,8 @@
 import 'emscripten';
 import { Bridge, Uarm, VoidPtr } from './web/binding/binding';
 
+export { DeviceType5 } from '../common/web/common';
+
 export * from './web/binding/binding';
 
 export interface Module extends EmscriptenModule {

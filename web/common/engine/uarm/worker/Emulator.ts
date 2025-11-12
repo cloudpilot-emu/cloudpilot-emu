@@ -1,7 +1,14 @@
 import { Uarm } from '@common/bridge/Uarm';
 import { EngineSettings } from '@common/engine/EngineSettings';
+import { DeviceId } from '@common/model/DeviceId';
 import { PalmButton } from '@native/cloudpilot_web';
+import { Event } from 'microevent.ts';
 import 'setimmediate';
+
+interface TimesliceProperties {
+    sizeSeconds: number;
+    frame: ArrayBuffer | undefined;
+}
 
 export class Emulator {
     constructor(
@@ -34,7 +41,11 @@ export class Emulator {
             this.uarm.setSd(cardData, key);
         }
 
-        return this.uarm.launch(rom);
+        if (!this.uarm.launch(rom)) return false;
+
+        this.deviceId = this.uarm.getDevice();
+
+        return true;
     }
 
     updateSettings(settings: EngineSettings): void {
@@ -78,21 +89,24 @@ export class Emulator {
         return this.timeoutHandle !== undefined || this.immediateHandle !== undefined;
     }
 
+    returnFrame(frame: ArrayBuffer): void {
+        this.framePool.push(frame);
+    }
+
     private timesliceTask = () => {
         const now64 = this.uarm.getTimestampUsec();
         const now = Number(now64);
 
-        this.uarm.cycle(now64);
+        const sizeSeconds = this.uarm.cycle(now64);
 
-        //        this.render();
         //        this.processAudio();
 
-        const timesliceRemainning =
+        const timesliceRemaining =
             (this.uarm.getTimesliceSizeUsec() - Number(this.uarm.getTimestampUsec()) + now) / 1000;
         this.timeoutHandle = this.immediateHandle = undefined;
 
-        if (timesliceRemainning < 5) this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
-        else this.timeoutHandle = setTimeout(this.timesliceTask, timesliceRemainning) as unknown as number;
+        if (timesliceRemaining < 5) this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
+        else this.timeoutHandle = setTimeout(this.timesliceTask, timesliceRemaining) as unknown as number;
 
         //if (now - this.lastSnapshot > 1000000) {
         //    this.triggerSnapshot();
@@ -100,8 +114,29 @@ export class Emulator {
         //
         //    this.lastSnapshot = now;
         //}
+
+        this.timesliceEvent.dispatch({ sizeSeconds, frame: this.getFrame() });
     };
+
+    private getFrame(): ArrayBuffer | undefined {
+        const frame = this.uarm.getFrame(this.deviceId === DeviceId.frankene2 ? 480 : 320);
+        if (!frame) return undefined;
+
+        if (this.framePool.length === 0) {
+            return frame.slice().buffer;
+        } else {
+            const frameCopy = new Uint32Array(this.framePool.pop()!);
+            frameCopy.set(frame);
+
+            return frameCopy.buffer;
+        }
+    }
+
+    timesliceEvent = new Event<TimesliceProperties>();
 
     private timeoutHandle: number | undefined;
     private immediateHandle: number | undefined;
+
+    private framePool: Array<ArrayBuffer> = [];
+    private deviceId = DeviceId.te2;
 }

@@ -502,6 +502,7 @@ export abstract class AbstractCanvasDisplayService {
                 return SkinElement.SILKSCREEN_M130;
 
             case DeviceId.i710:
+            case DeviceId.te2:
                 return SkinElement.SILKSCREEN_TUNGSTEN_W;
 
             case DeviceId.i705:

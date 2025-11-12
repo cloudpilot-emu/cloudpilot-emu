@@ -35,12 +35,12 @@ MainLoop::MainLoop(SoC* soc)
     cyclesPerSecondAverage.Add(cyclesPerSecondLimit);
 }
 
-void MainLoop::Cycle(uint64_t now) {
+double MainLoop::Cycle(uint64_t now) {
     // virtualTimeUsec += static_cast<double>(socGetInjectedTimeNsec(soc)) / 1000;
     socResetInjectedTimeNsec(soc);
 
     double deltaUsec = now - virtualTimeUsec;
-    if (deltaUsec < 0) return;
+    if (deltaUsec < 0) return 0;
 
     if (deltaUsec > LAG_THRESHOLD_SKIP_USEC) {
         deltaUsec = TIMESLICE_SIZE_USEC;
@@ -61,13 +61,17 @@ void MainLoop::Cycle(uint64_t now) {
     const uint64_t cyclesEmulated =
         socRun(soc, deltaUsec * cyclesPerSecond / 1E6, round(cyclesPerSecond));
 
-    virtualTimeUsec += cyclesEmulated / cyclesPerSecond * 1E6;
+    const double slizeSizeSeconds = cyclesEmulated / cyclesPerSecond;
+
+    virtualTimeUsec += slizeSizeSeconds * 1E6;
     uint64_t now2 = timestampUsec();
 
     if (now2 != now) cyclesPerSecondAverage.Add((cyclesEmulated * 1000000) / (now2 - now));
 
     currentIps = cyclesPerSecond;
     currentIpsMax = cyclesPerSecondAverage.Calculate();
+
+    return slizeSizeSeconds;
 }
 
 uint64_t MainLoop::GetTimesliceSizeUsec() const { return TIMESLICE_SIZE_USEC; }

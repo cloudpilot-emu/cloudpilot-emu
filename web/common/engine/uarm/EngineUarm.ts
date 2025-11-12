@@ -180,6 +180,8 @@ export class EngineUarmImpl implements EngineUarm {
 
     async stop(): Promise<void> {
         this.running = await this.rpcHost.call(RcpMethod.stop, undefined);
+
+        this.returnPendingFrame();
     }
 
     processTimesliceNow(): void {
@@ -191,7 +193,13 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     blitFrame(canvas: HTMLCanvasElement): void {
-        throw new Error('Method not implemented.');
+        if (!this.pendingFrame) return;
+
+        const imageData = new ImageData(new Uint8ClampedArray(this.pendingFrame), 320);
+
+        canvas.getContext('2d')?.putImageData(imageData, 0, 0);
+
+        this.returnPendingFrame();
     }
 
     updateSettings(settings: EngineSettings): void {
@@ -257,6 +265,14 @@ export class EngineUarmImpl implements EngineUarm {
         this.fatalError.dispatch(error instanceof Error ? error : new Error(error));
     }
 
+    private returnPendingFrame(): void {
+        if (this.pendingFrame) {
+            this.dispatchMessage({ type: HostMessageType.returnFrame, frame: this.pendingFrame }, [this.pendingFrame]);
+        }
+
+        this.pendingFrame = undefined;
+    }
+
     private onMessage = (e: MessageEvent): void => {
         const message = e.data as ClientMessage;
 
@@ -270,6 +286,18 @@ export class EngineUarmImpl implements EngineUarm {
 
             case ClientMessageType.fatalError:
                 return this.fatal(message.error);
+
+            case ClientMessageType.timeslice:
+                this.timesliceEvent.dispatch(message.sizeSeconds);
+
+                if (message.frame) {
+                    this.returnPendingFrame();
+                    this.pendingFrame = message.frame;
+
+                    this.newFrameEvent.dispatch();
+                }
+
+                break;
 
             default:
                 message satisfies never;
@@ -287,6 +315,8 @@ export class EngineUarmImpl implements EngineUarm {
     private deviceId: DeviceId | undefined;
     private running = false;
     private slowdown = false;
+
+    private pendingFrame: ArrayBuffer | undefined;
 
     private card: Card = { state: CardState.none };
 

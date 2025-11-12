@@ -3,7 +3,8 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-import { Bridge, Module, Uarm as UarmNative, VoidPtr, default as createModule } from '@native-uarm/index';
+import { DeviceId } from '@common/model/DeviceId';
+import { Bridge, DeviceType5, Module, Uarm as UarmNative, VoidPtr, default as createModule } from '@native-uarm/index';
 import { PalmButton } from '@native/cloudpilot_web';
 import { Event } from 'microevent.ts';
 
@@ -123,13 +124,41 @@ export class Uarm {
     }
 
     @guard()
-    cycle(now: bigint): void {
-        this.uarm.Cycle(now);
+    cycle(now: bigint): number {
+        return this.uarm.Cycle(now);
     }
 
     @guard()
     getTimesliceSizeUsec(): number {
         return this.uarm.GetTimesliceSizeUsec();
+    }
+
+    @guard()
+    getDevice(): DeviceId {
+        const deviceType = this.uarm.GetDeviceType();
+
+        switch (deviceType) {
+            case DeviceType5.deviceTypeE2:
+                return DeviceId.te2;
+
+            case DeviceType5.deviceTypeFrankenE2:
+                return DeviceId.frankene2;
+
+            default:
+                throw new Error(`invalid device ID ${deviceType}`);
+        }
+    }
+
+    @guard()
+    getFrame(height: number): Uint32Array | undefined {
+        const framePtr = this.module.getPointer(this.uarm.GetFrame()) >>> 2;
+
+        return framePtr === 0 ? undefined : this.module.HEAPU32.subarray(framePtr, framePtr + 320 * height);
+    }
+
+    @guard()
+    resetFrame(): void {
+        this.uarm.ResetFrame();
     }
 
     dead(): boolean {

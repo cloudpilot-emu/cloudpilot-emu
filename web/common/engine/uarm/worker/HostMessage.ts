@@ -10,6 +10,7 @@ export const enum HostMessageType {
     buttonDown = 'buttonDown',
     penUp = 'penUp',
     penDown = 'penDown',
+    returnFrame = 'returnFrame',
 }
 
 export type HostMessageRpcCall = RpcRequest & {
@@ -41,10 +42,16 @@ export interface HostMessagePenDown {
     y: number;
 }
 
+export interface HostMessageReturnFrame {
+    type: HostMessageType.returnFrame;
+    frame: ArrayBuffer;
+}
+
 export type HostMessage =
     | HostMessageRpcCall
     | HostMessageUpdateSettings
     | HostMessageButtonUp
     | HostMessageButtonDown
     | HostMessagePenUp
-    | HostMessagePenDown;
+    | HostMessagePenDown
+    | HostMessageReturnFrame;

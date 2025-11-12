@@ -10,7 +10,7 @@ interface Uarm {
 
     boolean Launch(long romSize, VoidPtr romData);
 
-    void Cycle(unsigned long long now);
+    double Cycle(unsigned long long now);
 
     VoidPtr GetFrame();
     void ResetFrame();

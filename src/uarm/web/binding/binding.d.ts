@@ -27,7 +27,7 @@ export interface Uarm {
 
     Launch(romSize: number, romData: VoidPtr): boolean;
 
-    Cycle(now: bigint): void;
+    Cycle(now: bigint): number;
 
     GetFrame(): VoidPtr;
     ResetFrame(): void;

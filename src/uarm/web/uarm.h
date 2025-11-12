@@ -26,7 +26,7 @@ class Uarm {
 
     bool Launch(unsigned int romSize, void* romData);
 
-    void Cycle(uint64_t now);
+    double Cycle(uint64_t now);
 
     void* GetFrame();
     void ResetFrame();

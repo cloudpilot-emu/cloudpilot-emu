@@ -120,7 +120,7 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
     return true;
 }
 
-void Uarm::Cycle(uint64_t now) { mainLoop->Cycle(now); }
+double Uarm::Cycle(uint64_t now) { return mainLoop->Cycle(now); }
 
 void* Uarm::GetFrame() { return socGetPendingFrame(soc); }
 
