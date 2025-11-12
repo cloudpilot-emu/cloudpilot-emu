@@ -122,19 +122,19 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     isRunning(): boolean {
-        throw new Error('Method not implemented.');
+        return this.running;
     }
 
     isPowerOff(): boolean {
-        throw new Error('Method not implemented.');
+        return false;
     }
 
     isUIInitialized(): boolean {
-        throw new Error('Method not implemented.');
+        return true;
     }
 
     isSlowdown(): boolean {
-        throw new Error('Method not implemented.');
+        return this.slowdown;
     }
 
     getDeviceId(): DeviceId {
@@ -174,12 +174,12 @@ export class EngineUarmImpl implements EngineUarm {
         );
     }
 
-    resume(): Promise<void> {
-        throw new Error('Method not implemented.');
+    async resume(): Promise<void> {
+        this.running = await this.rpcHost.call(RcpMethod.start, undefined);
     }
 
-    stop(): Promise<void> {
-        throw new Error('Method not implemented.');
+    async stop(): Promise<void> {
+        this.running = await this.rpcHost.call(RcpMethod.stop, undefined);
     }
 
     processTimesliceNow(): void {
@@ -284,9 +284,11 @@ export class EngineUarmImpl implements EngineUarm {
     fatalError = new Event<Error>();
     snapshotSuccessEvent = new Event<SnapshotStatistics>();
 
-    deviceId: DeviceId | undefined;
+    private deviceId: DeviceId | undefined;
+    private running = false;
+    private slowdown = false;
 
-    card: Card = { state: CardState.none };
+    private card: Card = { state: CardState.none };
 
     private rpcHost: RpcHost;
 }

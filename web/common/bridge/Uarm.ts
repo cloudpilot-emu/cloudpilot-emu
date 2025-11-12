@@ -117,6 +117,25 @@ export class Uarm {
         this.uarm.PenUp();
     }
 
+    @guard()
+    getTimestampUsec(): bigint {
+        return this.uarm.GetTimestampUsec();
+    }
+
+    @guard()
+    cycle(now: bigint): void {
+        this.uarm.Cycle(now);
+    }
+
+    @guard()
+    getTimesliceSizeUsec(): number {
+        return this.uarm.GetTimesliceSizeUsec();
+    }
+
+    dead(): boolean {
+        return this.amIdead;
+    }
+
     guard<T>(fn: () => T) {
         if (this.amIdead) throw new Error('uarm instance is dead');
 

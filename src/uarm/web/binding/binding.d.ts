@@ -27,7 +27,7 @@ export interface Uarm {
 
     Launch(romSize: number, romData: VoidPtr): boolean;
 
-    Cycle(now: number): void;
+    Cycle(now: bigint): void;
 
     GetFrame(): VoidPtr;
     ResetFrame(): void;
@@ -42,7 +42,7 @@ export interface Uarm {
     SetMaxLoad(maxLoad: number): void;
     SetCyclesPerSecondLimit(cyclesPerSecondLimit: number): void;
 
-    GetTimestampUsec(): number;
+    GetTimestampUsec(): bigint;
 
     KeyDown(key: number): void;
     KeyUp(key: number): void;

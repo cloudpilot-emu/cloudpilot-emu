@@ -1,12 +1,15 @@
 import { Uarm } from '@common/bridge/Uarm';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { PalmButton } from '@native/cloudpilot_web';
+import 'setimmediate';
 
 export class Emulator {
     constructor(
         private uarm: Uarm,
         private settings: EngineSettings,
-    ) {}
+    ) {
+        uarm.fatalErrorEvent.addHandler(() => this.stop());
+    }
 
     openSession(
         rom: Uint8Array,
@@ -53,4 +56,52 @@ export class Emulator {
     penUp(): void {
         this.uarm.penUp();
     }
+
+    start(): boolean {
+        if (!this.isRunning() || !this.uarm.dead()) {
+            this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
+        }
+
+        return this.isRunning();
+    }
+
+    stop(): boolean {
+        if (this.timeoutHandle !== undefined) clearTimeout(this.timeoutHandle);
+        if (this.immediateHandle !== undefined) clearImmediate(this.immediateHandle);
+
+        this.timeoutHandle = this.immediateHandle = undefined;
+
+        return this.isRunning();
+    }
+
+    isRunning(): boolean {
+        return this.timeoutHandle !== undefined || this.immediateHandle !== undefined;
+    }
+
+    private timesliceTask = () => {
+        const now64 = this.uarm.getTimestampUsec();
+        const now = Number(now64);
+
+        this.uarm.cycle(now64);
+
+        //        this.render();
+        //        this.processAudio();
+
+        const timesliceRemainning =
+            (this.uarm.getTimesliceSizeUsec() - Number(this.uarm.getTimestampUsec()) + now) / 1000;
+        this.timeoutHandle = this.immediateHandle = undefined;
+
+        if (timesliceRemainning < 5) this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
+        else this.timeoutHandle = setTimeout(this.timesliceTask, timesliceRemainning) as unknown as number;
+
+        //if (now - this.lastSnapshot > 1000000) {
+        //    this.triggerSnapshot();
+        //    this.updateSpeedDisplay();
+        //
+        //    this.lastSnapshot = now;
+        //}
+    };
+
+    private timeoutHandle: number | undefined;
+    private immediateHandle: number | undefined;
 }

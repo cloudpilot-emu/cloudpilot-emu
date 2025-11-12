@@ -3,6 +3,8 @@ import { EngineSettings } from '@common/engine/EngineSettings';
 export const enum RcpMethod {
     initialize = 'initialize',
     openSession = 'openSession',
+    start = 'start',
+    stop = 'stop',
 }
 
 interface RpcPayload<M extends RcpMethod> {
@@ -32,25 +34,49 @@ export interface RpcResponseOpenSession extends RpcPayload<RcpMethod.openSession
     result: boolean;
 }
 
+export interface RpcRequestStart extends RpcPayload<RcpMethod.start> {
+    args: void;
+}
+
+export interface RpcResponseStart extends RpcPayload<RcpMethod.start> {
+    result: boolean;
+}
+
+export interface RpcRequestStop extends RpcPayload<RcpMethod.stop> {
+    args: void;
+}
+
+export interface RpcResponseStop extends RpcPayload<RcpMethod.stop> {
+    result: boolean;
+}
+
 export interface RpcError extends RpcPayload<RcpMethod> {
     error: string;
 }
 
-export type RpcRequest = RpcRequestInitialize | RpcRequestOpenSession;
+export type RpcRequest = RpcRequestInitialize | RpcRequestOpenSession | RpcRequestStart | RpcRequestStop;
 
-export type RpcResponse = RpcResponseInitialize | RpcResponseOpenSession;
+export type RpcResponse = RpcResponseInitialize | RpcResponseOpenSession | RpcResponseStart | RpcResponseStop;
 
 export type RpcRequestForMethod<M extends RcpMethod> = M extends RcpMethod.initialize
     ? RpcRequestInitialize
     : M extends RcpMethod.openSession
       ? RpcRequestOpenSession
-      : never;
+      : M extends RcpMethod.start
+        ? RpcRequestStart
+        : M extends RcpMethod.stop
+          ? RpcRequestStop
+          : never;
 
 export type RpcResponseForMethod<M extends RcpMethod> = M extends RcpMethod.initialize
     ? RpcResponseInitialize
     : M extends RcpMethod.openSession
       ? RpcResponseOpenSession
-      : never;
+      : M extends RcpMethod.start
+        ? RpcResponseStart
+        : M extends RcpMethod.stop
+          ? RpcResponseStop
+          : never;
 
 export type RpcArgsForMethod<M extends RcpMethod> = RpcRequestForMethod<M>['args'];
 

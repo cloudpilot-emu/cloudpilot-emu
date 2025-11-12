@@ -42,7 +42,9 @@ rpcClient
     })
     .register(RcpMethod.openSession, ({ rom, memory, nand, state, card }) =>
         unwrapEmulator().openSession(rom, nand, memory, state, card),
-    );
+    )
+    .register(RcpMethod.start, () => unwrapEmulator().start())
+    .register(RcpMethod.stop, () => unwrapEmulator().stop());
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;

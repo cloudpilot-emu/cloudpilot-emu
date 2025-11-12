@@ -3301,6 +3301,11 @@
     "@types/node" "*"
     "@types/send" "*"
 
+"@types/setimmediate@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@types/setimmediate/-/setimmediate-1.0.4.tgz#c863c763c284ceaf8d31ec1b29362a889864da4f"
+  integrity sha512-rWPw1drMVf5zInxNpgH3nn/h6KkWqwgLT2y/ciAYQ16RAsbXOXe0AmtZ/HyzwPNw+r4GMJuI7IV7YNKO7Fs/xA==
+
 "@types/sinon@^17.0.3":
   version "17.0.4"
   resolved "https://registry.yarnpkg.com/@types/sinon/-/sinon-17.0.4.tgz#fd9a3e8e07eea1a3f4a6f82a972c899e5778f369"
@@ -9894,6 +9899,11 @@ set-proto@^1.0.0:
     dunder-proto "^1.0.1"
     es-errors "^1.3.0"
     es-object-atoms "^1.0.0"
+
+setimmediate@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/setimmediate/-/setimmediate-1.0.5.tgz#290cbb232e306942d7d7ea9b83732ab7856f8285"
+  integrity sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==
 
 setprototypeof@1.1.0:
   version "1.1.0"
