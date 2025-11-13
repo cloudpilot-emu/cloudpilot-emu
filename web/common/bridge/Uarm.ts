@@ -161,6 +161,21 @@ export class Uarm {
         this.uarm.ResetFrame();
     }
 
+    @guard()
+    setDisablePcm(disableAudio: boolean): void {
+        this.uarm.SetPcmOutputEnabled(disableAudio);
+    }
+
+    @guard()
+    setTargetMips(targetMips: number): void {
+        this.uarm.SetCyclesPerSecondLimit(targetMips * 1000000);
+    }
+
+    @guard()
+    setMaxHostLoad(maxHostLoad: number): void {
+        this.uarm.SetMaxLoad(maxHostLoad * 100);
+    }
+
     dead(): boolean {
         return this.amIdead;
     }

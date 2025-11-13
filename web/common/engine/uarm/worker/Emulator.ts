@@ -50,6 +50,10 @@ export class Emulator {
 
     updateSettings(settings: EngineSettings): void {
         this.settings = settings;
+
+        this.uarm.setMaxHostLoad(settings.maxHostLoad);
+        this.uarm.setDisablePcm(settings.disableAudio);
+        this.uarm.setTargetMips(settings.targetMips);
     }
 
     buttonUp(button: PalmButton): void {
