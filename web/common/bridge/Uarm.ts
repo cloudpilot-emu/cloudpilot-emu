@@ -279,6 +279,16 @@ export class Uarm {
         return this.module.HEAPU8.subarray(ptr, ptr + this.uarm.GetSavestateSize());
     }
 
+    @guard()
+    getCurrentIps(): number {
+        return this.uarm.CurrentIps();
+    }
+
+    @guard()
+    getCurrentIpsMax(): number {
+        return Number(this.uarm.CurrentIpsMax());
+    }
+
     dead(): boolean {
         return this.amIdead;
     }

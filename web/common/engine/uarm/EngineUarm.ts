@@ -84,7 +84,11 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     getStatistics(): EmulationStatisticsUarm {
-        throw new Error('Method not implemented.');
+        return {
+            type: 'uarm',
+            currentSpeedMips: (this.currentIps / 1000000) | 0,
+            currentMaxSpeedMips: (this.currentIpsMax / 1000000) | 0,
+        };
     }
 
     getPcmPort(): MessagePort {
@@ -306,6 +310,8 @@ export class EngineUarmImpl implements EngineUarm {
 
             case ClientMessageType.timeslice:
                 this.timesliceEvent.dispatch(message.sizeSeconds);
+                this.currentIps = message.currentIps;
+                this.currentIpsMax = message.currentIpsMax;
 
                 if (message.frame) {
                     this.returnPendingFrame();
@@ -348,6 +354,9 @@ export class EngineUarmImpl implements EngineUarm {
     private deviceId: DeviceId | undefined;
     private running = false;
     private slowdown = false;
+
+    private currentIps = 0;
+    private currentIpsMax = 0;
 
     private pendingFrame: ArrayBuffer | undefined;
 

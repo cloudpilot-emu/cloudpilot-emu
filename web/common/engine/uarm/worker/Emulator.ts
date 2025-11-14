@@ -11,6 +11,9 @@ import { UarmSnapshot } from './Snapshot';
 interface TimesliceProperties {
     sizeSeconds: number;
     frame: ArrayBuffer | undefined;
+
+    currentIps: number;
+    currentIpsMax: number;
 }
 
 export class Emulator {
@@ -237,7 +240,12 @@ export class Emulator {
             this.lastSnapshotAt = timestamp;
         }
 
-        this.timesliceEvent.dispatch({ sizeSeconds, frame: this.getFrame() });
+        this.timesliceEvent.dispatch({
+            sizeSeconds,
+            frame: this.getFrame(),
+            currentIps: this.uarm.getCurrentIps(),
+            currentIpsMax: this.uarm.getCurrentIpsMax(),
+        });
     };
 
     private getFrame(): ArrayBuffer | undefined {

@@ -17,7 +17,7 @@ class MainLoop {
     uint64_t GetTimesliceSizeUsec() const;
 
     uint32_t GetCurrentIps() const;
-    uint32_t GetCurrentIpsMax() const;
+    uint64_t GetCurrentIpsMax() const;
 
     void SetMaxLoad(uint32_t maxLoad);
     void SetCyclesPerSecondLimit(uint32_t cyclesPerSecondLimit);
@@ -35,7 +35,7 @@ class MainLoop {
     double lastDeltaUsec{0};
 
     uint32_t currentIps{0};
-    uint32_t currentIpsMax{0};
+    uint64_t currentIpsMax{0};
 
     Average<uint64_t> cyclesPerSecondAverage;
 

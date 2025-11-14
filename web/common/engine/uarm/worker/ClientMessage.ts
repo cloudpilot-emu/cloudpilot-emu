@@ -24,8 +24,12 @@ export type ClientMessageRpcSuccess = RpcResponse & {
 
 export interface ClientMessageTimeslice {
     type: ClientMessageType.timeslice;
+
     sizeSeconds: number;
     frame: ArrayBuffer | undefined;
+
+    currentIps: number;
+    currentIpsMax: number;
 }
 
 export interface ClientMessageFatalError {

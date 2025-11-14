@@ -38,7 +38,7 @@ export interface Uarm {
     PenUp(): void;
 
     CurrentIps(): number;
-    CurrentIpsMax(): number;
+    CurrentIpsMax(): bigint;
     SetMaxLoad(maxLoad: number): void;
     SetCyclesPerSecondLimit(cyclesPerSecondLimit: number): void;
 

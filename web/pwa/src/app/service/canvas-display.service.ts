@@ -124,6 +124,13 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
                       `average FPS            : ${emulationStatistics.averageFps.toFixed(2)}`,
                   ]
                 : []),
+            ...(emulationStatistics?.type === 'uarm'
+                ? [
+                      `current MIPS           : ${emulationStatistics.currentSpeedMips.toFixed(2)}x`,
+                      `current MIPS limit     : ${emulationStatistics.currentMaxSpeedMips.toFixed(2)}x`,
+                      `current load           : ${((emulationStatistics.currentSpeedMips / emulationStatistics.currentMaxSpeedMips) * 100).toFixed(2)}%`,
+                  ]
+                : []),
         ].forEach((line, i) =>
             this.ctx!.fillText(
                 line,

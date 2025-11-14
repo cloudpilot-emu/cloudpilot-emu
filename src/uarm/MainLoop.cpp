@@ -78,7 +78,7 @@ uint64_t MainLoop::GetTimesliceSizeUsec() const { return TIMESLICE_SIZE_USEC; }
 
 uint32_t MainLoop::GetCurrentIps() const { return currentIps; }
 
-uint32_t MainLoop::GetCurrentIpsMax() const { return currentIpsMax; }
+uint64_t MainLoop::GetCurrentIpsMax() const { return currentIpsMax; }
 
 void MainLoop::SetMaxLoad(uint32_t maxLoad) {
     if (maxLoad < MAX_LOAD_CATCHUP_MARGIN) maxLoad = MAX_LOAD_CATCHUP_MARGIN;
