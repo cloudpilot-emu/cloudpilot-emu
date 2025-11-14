@@ -299,14 +299,14 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             this.setupSdCardTracker();
 
-            const ramSize = uarm.GetRamDataSize();
+            const ramSize = uarm.GetMemoryDataSize();
             this.ramTracker = new DirtyPageTracker({
                 pageSize: 1024,
                 pageCount: (ramSize / 1024) | 0,
                 name: 'RAM snapshot',
                 crcCheck,
-                getDataPtr: () => module.getPointer(uarm.GetRamData()),
-                getDirtyPagesPtr: () => module.getPointer(uarm.GetRamDirtyPages()),
+                getDataPtr: () => module.getPointer(uarm.GetMemoryData()),
+                getDirtyPagesPtr: () => module.getPointer(uarm.GetMemoryDirtyPages()),
                 isDirty: () => true,
                 setDirty: () => undefined,
                 module,
@@ -573,13 +573,13 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             const romPtr = this.module.getPointer(this.uarm.GetRomData());
             const nandPtr = this.module.getPointer(this.uarm.GetNandData());
-            const ramPtr = this.module.getPointer(this.uarm.GetRamData());
+            const ramPtr = this.module.getPointer(this.uarm.GetMemoryData());
             const savestatePtr = this.module.getPointer(this.uarm.GetSavestateData());
 
             const deviceId = this.uarm.GetDeviceType();
             const nor = this.module.HEAPU8.subarray(romPtr, romPtr + this.uarm.GetRomDataSize());
             const nand = this.module.HEAPU8.subarray(nandPtr, nandPtr + this.uarm.GetNandDataSize());
-            const ram = this.module.HEAPU8.subarray(ramPtr, ramPtr + this.uarm.GetRamDataSize());
+            const ram = this.module.HEAPU8.subarray(ramPtr, ramPtr + this.uarm.GetMemoryDataSize());
             const savestate = this.module.HEAPU8.subarray(savestatePtr, savestatePtr + this.uarm.GetSavestateSize());
             const ramSize = this.uarm.GetRamSize();
 

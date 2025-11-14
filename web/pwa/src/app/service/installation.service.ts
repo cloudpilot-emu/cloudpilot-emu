@@ -213,7 +213,7 @@ export class InstallationService {
 
         const [filesSuccess, filesRequireReset, filesFail] = await this.emulatorLock.runGuarded(async () => {
             await loader.present();
-            await this.snapshotService.waitForPendingSnapshot();
+            await this.emulationService.waitForPendingSnapshot();
 
             try {
                 const installationContext = new InstallationContext(

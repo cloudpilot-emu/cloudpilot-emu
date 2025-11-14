@@ -1,83 +1,73 @@
 import { EngineSettings } from '@common/engine/EngineSettings';
 
-export const enum RcpMethod {
-    initialize = 'initialize',
-    openSession = 'openSession',
-    start = 'start',
-    stop = 'stop',
-}
+import { UarmSnapshot } from './Snapshot';
 
-interface RpcPayload<M extends RcpMethod> {
-    id: number;
-    method: M;
-}
+interface RpcSchema {
+    initialize: {
+        args: { module: WebAssembly.Module; settings: EngineSettings };
+        result: void;
+    };
 
-export interface RpcRequestInitialize extends RpcPayload<RcpMethod.initialize> {
-    args: { module: WebAssembly.Module; settings: EngineSettings };
-}
+    openSession: {
+        args: {
+            rom: Uint8Array;
+            nand?: Uint8Array;
+            memory?: Uint8Array;
+            state?: Uint8Array;
+            card?: [Uint8Array, string];
+        };
+        result: boolean;
+    };
 
-export interface RpcResponseInitialize extends RpcPayload<RcpMethod.initialize> {
-    result: void;
-}
+    start: {
+        args: void;
+        result: boolean;
+    };
 
-export interface RpcRequestOpenSession extends RpcPayload<RcpMethod.openSession> {
-    args: {
-        rom: Uint8Array;
-        nand?: Uint8Array;
-        memory?: Uint8Array;
-        state?: Uint8Array;
-        card?: [Uint8Array, string];
+    stop: {
+        args: void;
+        result: boolean;
+    };
+
+    takeSnapshot: {
+        args: void;
+        result: UarmSnapshot;
+    };
+
+    waitForPendingSnapshot: {
+        args: void;
+        result: void;
+    };
+
+    getMemorySize: {
+        args: void;
+        result: {
+            memory: number;
+            nand: number;
+        };
     };
 }
 
-export interface RpcResponseOpenSession extends RpcPayload<RcpMethod.openSession> {
-    result: boolean;
-}
+export type RpcMethod = keyof RpcSchema;
 
-export interface RpcRequestStart extends RpcPayload<RcpMethod.start> {
-    args: void;
-}
-
-export interface RpcResponseStart extends RpcPayload<RcpMethod.start> {
-    result: boolean;
-}
-
-export interface RpcRequestStop extends RpcPayload<RcpMethod.stop> {
-    args: void;
-}
-
-export interface RpcResponseStop extends RpcPayload<RcpMethod.stop> {
-    result: boolean;
-}
-
-export interface RpcError extends RpcPayload<RcpMethod> {
+export interface RpcError {
+    method: RpcMethod;
+    id: number;
     error: string;
 }
 
-export type RpcRequest = RpcRequestInitialize | RpcRequestOpenSession | RpcRequestStart | RpcRequestStop;
+export type RpcRequestForMethod<M extends RpcMethod> = {
+    [K in RpcMethod]: { method: K; id: number; args: RpcSchema[K]['args'] };
+}[M];
 
-export type RpcResponse = RpcResponseInitialize | RpcResponseOpenSession | RpcResponseStart | RpcResponseStop;
+export type RpcResponseForMethod<M extends RpcMethod> = {
+    [K in RpcMethod]: { method: K; id: number; result: RpcSchema[K]['result'] };
+}[M];
 
-export type RpcRequestForMethod<M extends RcpMethod> = M extends RcpMethod.initialize
-    ? RpcRequestInitialize
-    : M extends RcpMethod.openSession
-      ? RpcRequestOpenSession
-      : M extends RcpMethod.start
-        ? RpcRequestStart
-        : M extends RcpMethod.stop
-          ? RpcRequestStop
-          : never;
+export type RpcRequest = RpcRequestForMethod<RpcMethod>;
 
-export type RpcResponseForMethod<M extends RcpMethod> = M extends RcpMethod.initialize
-    ? RpcResponseInitialize
-    : M extends RcpMethod.openSession
-      ? RpcResponseOpenSession
-      : M extends RcpMethod.start
-        ? RpcResponseStart
-        : M extends RcpMethod.stop
-          ? RpcResponseStop
-          : never;
+export type RpcResponse = RpcResponseForMethod<RpcMethod>;
 
-export type RpcArgsForMethod<M extends RcpMethod> = RpcRequestForMethod<M>['args'];
+export type RpcArgsForMethod<M extends RpcMethod> = RpcRequestForMethod<M>['args'];
 
-export type RpcResultForMethod<M extends RcpMethod> = RpcResponseForMethod<M>['result'];
+export type RpcResultForMethod<M extends RpcMethod> = RpcResponseForMethod<M>['result'];

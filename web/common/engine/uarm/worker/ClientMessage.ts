@@ -1,3 +1,4 @@
+import { UarmSnapshot } from './Snapshot';
 import { RpcError, RpcResponse } from './rpc';
 
 export const enum ClientMessageType {
@@ -5,7 +6,8 @@ export const enum ClientMessageType {
     rpcError = 'rpcError',
     rpcSuccess = 'rpcSuccess',
     timeslice = 'timeslice',
-    fatalError = 'fatalErro',
+    fatalError = 'fatalError',
+    snapshot = 'snapshot',
 }
 
 export interface ClientMessageReady {
@@ -31,9 +33,15 @@ export interface ClientMessageFatalError {
     error: string;
 }
 
+export interface ClientMessageSnapshot {
+    type: ClientMessageType.snapshot;
+    snapshot: UarmSnapshot;
+}
+
 export type ClientMessage =
     | ClientMessageReady
     | ClientMessageRpcError
     | ClientMessageRpcSuccess
     | ClientMessageTimeslice
-    | ClientMessageFatalError;
+    | ClientMessageFatalError
+    | ClientMessageSnapshot;

@@ -50,9 +50,9 @@ interface Uarm {
     boolean IsSdCardDirty();
     void SetSdCardDirty(boolean isDirty);
 
-    unsigned long GetRamDataSize();
-    VoidPtr GetRamData();
-    VoidPtr GetRamDirtyPages();
+    unsigned long GetMemoryDataSize();
+    VoidPtr GetMemoryData();
+    VoidPtr GetMemoryDirtyPages();
 
     unsigned long GetDeviceType();
 

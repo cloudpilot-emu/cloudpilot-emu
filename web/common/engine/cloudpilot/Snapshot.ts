@@ -105,22 +105,26 @@ export class SnapshotContainerImpl implements SnapshotContainer {
             return true;
         });
 
-    async release(persistenceSuccess: boolean, timeBlocking: number, timeBackground: number): Promise<void> {
-        this.timed.exec(() => {
-            const oldState = this.state;
-            this.state = SnapshotState.idle;
+    release(persistenceSuccess: boolean, timeBlocking: number, timeBackground: number): void {
+        try {
+            this.timed.exec(() => {
+                const oldState = this.state;
+                this.state = SnapshotState.idle;
 
-            if (oldState !== SnapshotState.materialized) return;
+                if (oldState !== SnapshotState.materialized) return;
 
-            if (!persistenceSuccess) this.mergeBack();
-        });
+                if (!persistenceSuccess) this.mergeBack();
+            });
 
-        this.snapshotSuccessEvent.dispatch({
-            size: this.size,
-            timeBlocking: timeBlocking + this.timed.get(),
-            timeTotal: timeBlocking + timeBackground + this.timed.get(),
-            timestamp: this.timestampStart,
-        });
+            this.snapshotSuccessEvent.dispatch({
+                size: this.size,
+                timeBlocking: timeBlocking + this.timed.get(),
+                timeTotal: timeBlocking + timeBackground + this.timed.get(),
+                timestamp: this.timestampStart,
+            });
+        } finally {
+            this.snapshotReleaseEvent.dispatch();
+        }
     }
 
     getSnapshotMemory(): Snapshot {
@@ -243,6 +247,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
     }
 
     snapshotSuccessEvent = new Event<SnapshotStatistics>();
+    snapshotReleaseEvent = new Event<void>();
 
     private state = SnapshotState.idle;
     private memoryCrcCheck = false;

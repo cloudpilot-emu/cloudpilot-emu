@@ -9,9 +9,9 @@ import { BackupResult, EngineUarm, FullState, StorageCardProvider } from '../Eng
 import { EngineSettings } from '../EngineSettings';
 import { SnapshotContainer } from '../Snapshot';
 import { RpcHost } from './RpcHost';
+import { SnapshotContainerImpl } from './Snapshot';
 import { ClientMessage, ClientMessageType } from './worker/ClientMessage';
 import { HostMessage, HostMessageType } from './worker/HostMessage';
-import { RcpMethod } from './worker/rpc';
 
 const enum CardState {
     none,
@@ -161,25 +161,38 @@ export class EngineUarmImpl implements EngineUarm {
                 ? [new Uint8Array(this.card.data.buffer), this.card.key]
                 : undefined;
 
-        return this.rpcHost.call(
-            RcpMethod.openSession,
-            { rom, nand, memory, state, card },
-            [
-                rom.buffer,
-                nand?.buffer,
-                memory?.buffer,
-                state?.buffer,
-                this.card.state === CardState.allocated ? this.card.data.buffer : undefined,
-            ].filter((x) => x !== undefined),
+        if (
+            !(await this.rpcHost.call(
+                'openSession',
+                { rom, nand, memory, state, card },
+                [
+                    rom.buffer,
+                    nand?.buffer,
+                    memory?.buffer,
+                    state?.buffer,
+                    this.card.state === CardState.allocated ? this.card.data.buffer : undefined,
+                ].filter((x) => x !== undefined),
+            ))
+        ) {
+            return false;
+        }
+
+        const sizes = await this.rpcHost.call('getMemorySize', undefined);
+
+        this.snapshotContainer = new SnapshotContainerImpl(sizes.memory, sizes.nand, this.dispatchMessage);
+        this.snapshotContainer.snapshotSuccessEvent.addHandler((statistics) =>
+            this.snapshotSuccessEvent.dispatch(statistics),
         );
+
+        return true;
     }
 
     async resume(): Promise<void> {
-        this.running = await this.rpcHost.call(RcpMethod.start, undefined);
+        this.running = await this.rpcHost.call('start', undefined);
     }
 
     async stop(): Promise<void> {
-        this.running = await this.rpcHost.call(RcpMethod.stop, undefined);
+        this.running = await this.rpcHost.call('stop', undefined);
 
         this.returnPendingFrame();
     }
@@ -189,6 +202,10 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     requestSnapshot(): Promise<SnapshotContainer> {
+        throw new Error('Method not implemented.');
+    }
+
+    waitForPendingSnapshot(): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
@@ -256,7 +273,7 @@ export class EngineUarmImpl implements EngineUarm {
     };
 
     private async initialize(module: WebAssembly.Module, settings: EngineSettings): Promise<this> {
-        await this.rpcHost.call(RcpMethod.initialize, { module, settings });
+        await this.rpcHost.call('initialize', { module, settings });
 
         return this;
     }
@@ -299,6 +316,17 @@ export class EngineUarmImpl implements EngineUarm {
 
                 break;
 
+            case ClientMessageType.snapshot:
+                try {
+                    this.snapshotContainer?.schedule(message.snapshot);
+                } catch (e) {
+                    this.fatal(`${e}`);
+
+                    throw e;
+                }
+
+                break;
+
             default:
                 message satisfies never;
         }
@@ -319,6 +347,8 @@ export class EngineUarmImpl implements EngineUarm {
     private pendingFrame: ArrayBuffer | undefined;
 
     private card: Card = { state: CardState.none };
+
+    private snapshotContainer: SnapshotContainerImpl | undefined;
 
     private rpcHost: RpcHost;
 }

@@ -34,6 +34,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         private settings: EngineSettings,
     ) {
         this.snapshotContainer = new SnapshotContainerImpl(cloudpilotInstance);
+        this.snapshotContainer.snapshotReleaseEvent.addHandler(this.onSnapshotRelease);
 
         cloudpilotInstance.clearExternalStorage();
 
@@ -208,6 +209,12 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
 
     async requestSnapshot(): Promise<SnapshotContainer> {
         return this.snapshotContainer.schedule(this.settings.memoryCrc);
+    }
+
+    async waitForPendingSnapshot(): Promise<void> {
+        if (this.snapshotContainer.isIdle()) return;
+
+        return new Promise((resolve) => this.snapshotReleaseCallbacks.push(resolve));
     }
 
     blitFrame(canvas: HTMLCanvasElement): void {
@@ -644,6 +651,13 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.schedule();
     };
 
+    private onSnapshotRelease = () => {
+        if (this.snapshotReleaseCallbacks.length === 0) return;
+
+        this.snapshotReleaseCallbacks.forEach((cb) => cb());
+        this.snapshotReleaseCallbacks = [];
+    };
+
     readonly pwmUpdateEvent = new Event<PwmUpdate>();
     readonly configuredHotsyncNameUpdateEvent = new Event<string>();
     readonly newFrameEvent = new Event<void>();
@@ -685,4 +699,6 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
 
     private snapshotContainer: SnapshotContainerImpl;
     private lastSnapshotAt = 0;
+
+    private snapshotReleaseCallbacks: Array<() => void> = [];
 }

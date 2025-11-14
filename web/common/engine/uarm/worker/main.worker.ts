@@ -14,7 +14,6 @@ import { ClientMessage, ClientMessageType } from './ClientMessage';
 import { Emulator } from './Emulator';
 import { HostMessage, HostMessageType } from './HostMessage';
 import { RpcClient } from './RpcClient';
-import { RcpMethod } from './rpc';
 
 let emulator: Emulator | undefined;
 
@@ -30,7 +29,7 @@ function dispatchMessage(message: ClientMessage, transferables?: Array<Transfera
 
 const rpcClient = new RpcClient(dispatchMessage);
 rpcClient
-    .register(RcpMethod.initialize, async ({ module, settings }) => {
+    .register('initialize', async ({ module, settings }) => {
         if (emulator) throw new Error('worker already initialized');
 
         const uarm = await Uarm.create(module);
@@ -43,11 +42,25 @@ rpcClient
             dispatchMessage({ type: ClientMessageType.timeslice, ...props }, props.frame ? [props.frame] : undefined),
         );
     })
-    .register(RcpMethod.openSession, ({ rom, memory, nand, state, card }) =>
+    .register('openSession', ({ rom, memory, nand, state, card }) =>
         unwrapEmulator().openSession(rom, nand, memory, state, card),
     )
-    .register(RcpMethod.start, () => unwrapEmulator().start())
-    .register(RcpMethod.stop, () => unwrapEmulator().stop());
+    .register('start', () => unwrapEmulator().start())
+    .register('stop', () => unwrapEmulator().stop())
+    .register('takeSnapshot', (args, rpcComplete, addTransferables) => {
+        const snapshotResult = unwrapEmulator().takeSnapshot();
+        if (!snapshotResult) throw new Error(`unable to take snapshot`);
+
+        const [snapshot, transferrables] = snapshotResult;
+        addTransferables(transferrables);
+
+        return snapshot;
+    })
+    .register('waitForPendingSnapshot', () => unwrapEmulator().waitForPendingSnapshot())
+    .register('getMemorySize', () => ({
+        memory: unwrapEmulator().getMemorySize(),
+        nand: unwrapEmulator().getNandSize(),
+    }));
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;
@@ -79,6 +92,10 @@ async function onMessage(e: MessageEvent) {
 
         case HostMessageType.returnFrame:
             emulator?.returnFrame(message.frame);
+            break;
+
+        case HostMessageType.returnSnapshot:
+            emulator?.returnSnapshot(message.snapshot, message.success);
             break;
 
         default:

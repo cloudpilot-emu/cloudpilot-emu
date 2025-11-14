@@ -1,6 +1,6 @@
 import { ClientMessageRpcError, ClientMessageRpcSuccess } from './worker/ClientMessage';
 import { HostMessage, HostMessageRpcCall, HostMessageType } from './worker/HostMessage';
-import { RcpMethod, RpcArgsForMethod, RpcResultForMethod } from './worker/rpc';
+import { RpcArgsForMethod, RpcMethod, RpcResultForMethod } from './worker/rpc';
 
 interface RpcContext<T, E> {
     resolve(result: T): void;
@@ -10,7 +10,7 @@ interface RpcContext<T, E> {
 export class RpcHost {
     constructor(private dispatchMessage: (message: HostMessage, transferables?: Array<Transferable>) => void) {}
 
-    call<M extends RcpMethod>(
+    call<M extends RpcMethod>(
         method: M,
         args: RpcArgsForMethod<M>,
         transferables?: Array<Transferable>,

@@ -176,6 +176,109 @@ export class Uarm {
         this.uarm.SetMaxLoad(maxHostLoad * 100);
     }
 
+    @guard()
+    getMemorySize(): number {
+        return this.uarm.GetMemoryDataSize();
+    }
+
+    @guard()
+    getMemoryData(): Uint8Array {
+        const ptr = this.module.getPointer(this.uarm.GetMemoryData());
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.uarm.GetMemoryDataSize());
+    }
+
+    @guard()
+    getMemoryDirtyPages(): Uint32Array {
+        const ptr = this.module.getPointer(this.uarm.GetMemoryDirtyPages());
+        const pageCount = this.uarm.GetMemoryDataSize() >>> 10;
+
+        const ptr4 = ptr >>> 2;
+        let size4 = pageCount >>> 5;
+        if (size4 * 32 < pageCount) size4++;
+
+        return this.module.HEAPU32.subarray(ptr4, ptr4 + size4);
+    }
+
+    @guard()
+    getSdCardSize(): number {
+        return this.uarm.GetSdCardDataSize();
+    }
+
+    @guard()
+    getSdCardData(): Uint8Array | undefined {
+        const ptr = this.module.getPointer(this.uarm.GetSdCardData());
+        if (ptr === 0) return undefined;
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.uarm.GetSdCardDataSize());
+    }
+
+    @guard()
+    getSdCardDirtyPages(): Uint32Array | undefined {
+        const ptr = this.module.getPointer(this.uarm.GetSdCardDirtyPages());
+        if (ptr === 0) return undefined;
+
+        const pageCount = this.uarm.GetSdCardDataSize() >>> 13;
+
+        const ptr4 = ptr >>> 2;
+        let size4 = pageCount >>> 5;
+        if (size4 * 32 < pageCount) size4++;
+
+        return this.module.HEAPU32.subarray(ptr4, ptr4 + size4);
+    }
+
+    @guard()
+    isSdCardDirty(): boolean {
+        return this.uarm.IsSdCardDirty();
+    }
+
+    @guard()
+    setSdCardDirty(dirty: boolean): void {
+        this.uarm.SetSdCardDirty(dirty);
+    }
+
+    @guard()
+    getNandSize(): number {
+        return this.uarm.GetNandDataSize();
+    }
+
+    @guard()
+    getNandData(): Uint8Array {
+        const ptr = this.module.getPointer(this.uarm.GetNandData());
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.uarm.GetNandDataSize());
+    }
+
+    @guard()
+    getNandDirtyPages(): Uint32Array {
+        const ptr = this.module.getPointer(this.uarm.GetNandDirtyPages());
+        const pageCount = (this.uarm.GetNandDataSize() / 4224) | 0;
+
+        const ptr4 = ptr >>> 2;
+        let size4 = pageCount >>> 5;
+        if (size4 * 32 < pageCount) size4++;
+
+        return this.module.HEAPU32.subarray(ptr4, ptr4 + size4);
+    }
+
+    @guard()
+    isNandDirty(): boolean {
+        return this.uarm.IsNandDirty();
+    }
+
+    @guard()
+    setNandDirty(dirty: boolean): void {
+        this.uarm.SetNandDirty(dirty);
+    }
+
+    @guard()
+    saveState(): Uint8Array {
+        this.uarm.Save();
+
+        const ptr = this.module.getPointer(this.uarm.GetSavestateData());
+        return this.module.HEAPU8.subarray(ptr, ptr + this.uarm.GetSavestateSize());
+    }
+
     dead(): boolean {
         return this.amIdead;
     }

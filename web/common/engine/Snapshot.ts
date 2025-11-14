@@ -10,7 +10,7 @@ export interface Snapshot {
 
 export interface SnapshotContainer {
     materialize(): boolean;
-    release(persistenceSuccess: boolean, timeBlocking: number, timeBackground: number): Promise<void>;
+    release(persistenceSuccess: boolean, timeBlocking: number, timeBackground: number): void;
 
     getStorageKey(): string | undefined;
     getSnapshotMemory(): Snapshot;

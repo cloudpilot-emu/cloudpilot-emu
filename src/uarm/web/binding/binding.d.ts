@@ -67,9 +67,9 @@ export interface Uarm {
     IsSdCardDirty(): boolean;
     SetSdCardDirty(isDirty: boolean): void;
 
-    GetRamDataSize(): number;
-    GetRamData(): VoidPtr;
-    GetRamDirtyPages(): VoidPtr;
+    GetMemoryDataSize(): number;
+    GetMemoryData(): VoidPtr;
+    GetMemoryDirtyPages(): VoidPtr;
 
     GetDeviceType(): number;
 

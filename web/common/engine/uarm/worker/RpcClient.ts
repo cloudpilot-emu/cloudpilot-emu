@@ -1,9 +1,10 @@
 import { ClientMessage, ClientMessageRpcSuccess, ClientMessageType } from './ClientMessage';
-import { RcpMethod, RpcArgsForMethod, RpcRequest, RpcResultForMethod } from './rpc';
+import { RpcArgsForMethod, RpcMethod, RpcRequest, RpcResultForMethod } from './rpc';
 
-export type RpcHandler<M extends RcpMethod> = (
+export type RpcHandler<M extends RpcMethod> = (
     args: RpcArgsForMethod<M>,
     rpcComplete: Promise<void>,
+    addTransferables: (transferables: Array<Transferable>) => void,
 ) => Promise<RpcResultForMethod<M>> | RpcResultForMethod<M>;
 
 export class RpcClient {
@@ -32,8 +33,17 @@ export class RpcClient {
         });
 
         try {
-            const result = await callback(args, rpcComplete);
-            this.dispatchMessage({ type: ClientMessageType.rpcSuccess, method, id, result } as ClientMessageRpcSuccess);
+            let transferables: Array<Transferable> | undefined = undefined;
+            const result = await callback(
+                args,
+                rpcComplete,
+                (t) => void (transferables = [...(transferables ?? []), ...t]),
+            );
+
+            this.dispatchMessage(
+                { type: ClientMessageType.rpcSuccess, method, id, result } as ClientMessageRpcSuccess,
+                transferables,
+            );
 
             onRpcSuccess!();
         } catch (e) {
@@ -44,11 +54,11 @@ export class RpcClient {
         }
     }
 
-    register<M extends RcpMethod>(method: M, handler: RpcHandler<M>) {
-        this.registeredMethods.set(method, handler);
+    register<M extends RpcMethod>(method: M, handler: RpcHandler<M>) {
+        this.registeredMethods.set(method, handler as unknown as RpcHandler<RpcMethod>);
 
         return this;
     }
 
-    private registeredMethods = new Map<string, RpcHandler<RcpMethod>>();
+    private registeredMethods = new Map<string, RpcHandler<RpcMethod>>();
 }

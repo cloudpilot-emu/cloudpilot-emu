@@ -1,6 +1,7 @@
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { PalmButton } from '@native/cloudpilot_web';
 
+import { UarmSnapshot } from './Snapshot';
 import { RpcRequest } from './rpc';
 
 export const enum HostMessageType {
@@ -11,6 +12,7 @@ export const enum HostMessageType {
     penUp = 'penUp',
     penDown = 'penDown',
     returnFrame = 'returnFrame',
+    returnSnapshot = 'returnSnapshot',
 }
 
 export type HostMessageRpcCall = RpcRequest & {
@@ -47,6 +49,12 @@ export interface HostMessageReturnFrame {
     frame: ArrayBuffer;
 }
 
+export interface HostMessageReturnSnapshot {
+    type: HostMessageType.returnSnapshot;
+    snapshot: UarmSnapshot;
+    success: boolean;
+}
+
 export type HostMessage =
     | HostMessageRpcCall
     | HostMessageUpdateSettings
@@ -54,4 +62,5 @@ export type HostMessage =
     | HostMessageButtonDown
     | HostMessagePenUp
     | HostMessagePenDown
-    | HostMessageReturnFrame;
+    | HostMessageReturnFrame
+    | HostMessageReturnSnapshot;

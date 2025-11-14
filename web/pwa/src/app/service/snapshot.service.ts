@@ -90,7 +90,10 @@ export class SnapshotService {
     async initialize(session: Session): Promise<void> {
         if (this.errorService.hasFatalError()) return;
 
-        await this.waitForPendingSnapshot();
+        if (this.snapshotInProgress) {
+            this.errorService.fatalBug('Attempt to reinitialize snapshots while snapshot is still in progress');
+            return;
+        }
 
         this.sessionId = session.id;
         this.clonePoolMemory.clear();
@@ -108,12 +111,11 @@ export class SnapshotService {
             if (this.snapshotInProgress) throw new Error('cannot happen: snapshot while snapshot is in progress');
 
             this.snapshotInProgress = true;
-
-            this.pendingSnapshotPromise = this.storeSnapshotUnguarded(snapshotContainer).finally(
-                () => (this.snapshotInProgress = false),
-            );
-
-            return this.pendingSnapshotPromise;
+            try {
+                await this.storeSnapshotUnguarded(snapshotContainer);
+            } finally {
+                this.snapshotInProgress = false;
+            }
         });
 
     triggerSnapshot(): Promise<void> {
@@ -125,20 +127,13 @@ export class SnapshotService {
         );
     }
 
-    waitForPendingSnapshot(): Promise<void> {
-        if (this.snapshotInProgress) return this.pendingSnapshotPromise;
-        if (this.errorService.hasFatalError()) return Promise.reject();
-
-        return Promise.resolve();
-    }
-
     private async storeSnapshotUnguarded(snapshotContainer: SnapshotContainer): Promise<void> {
         this.timeBlocking = this.timeBackground = 0;
         this.timeoutDeltaMsecPerKb = this.timeoutDeltaMsecPerKbStart;
 
         while (true) {
             try {
-                await snapshotContainer.release(
+                snapshotContainer.release(
                     await this.attemptToStoreSnapshot(snapshotContainer),
                     this.timeBlocking,
                     this.timeBackground,
@@ -386,7 +381,6 @@ export class SnapshotService {
     private timeBackground = 0;
     private snapshotInProgress = false;
     private loader: HTMLIonLoadingElement | undefined;
-    private pendingSnapshotPromise = Promise.resolve<void>(undefined);
 
     private clonePoolMemory = new ClonePool();
     private clonePoolNand = new ClonePool();

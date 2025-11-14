@@ -66,9 +66,9 @@ class Uarm {
     bool IsSdCardDirty();
     void SetSdCardDirty(bool isDirty);
 
-    uint32_t GetRamDataSize();
-    void* GetRamData();
-    void* GetRamDirtyPages();
+    uint32_t GetMemoryDataSize();
+    void* GetMemoryData();
+    void* GetMemoryDirtyPages();
 
     uint32_t GetDeviceType();
 

@@ -63,6 +63,7 @@ export interface EngineCommon {
     processTimesliceNow(): void;
 
     requestSnapshot(): Promise<SnapshotContainer>;
+    waitForPendingSnapshot(): Promise<void>;
 
     blitFrame(canvas: HTMLCanvasElement): void;
 

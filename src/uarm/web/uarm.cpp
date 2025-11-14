@@ -185,12 +185,14 @@ bool Uarm::IsSdCardDirty() { return sdCardIsDirty(); }
 
 void Uarm::SetSdCardDirty(bool isDirty) { sdCardSetDirty(isDirty); }
 
-uint32_t Uarm::GetRamDataSize() { return socGetMemoryData(soc).size; }
+uint32_t Uarm::GetMemoryDataSize() { return socGetMemoryData(soc).size; }
 
-void* Uarm::GetRamData() { return socGetMemoryData(soc).data; }
+void* Uarm::GetMemoryData() { return socGetMemoryData(soc).data; }
 
-void* Uarm::GetRamDirtyPages() { return socGetMemoryDirtyPages(soc).data; }
+void* Uarm::GetMemoryDirtyPages() { return socGetMemoryDirtyPages(soc).data; }
+
 uint32_t Uarm::GetDeviceType() { return static_cast<uint32_t>(deviceType); }
+
 bool Uarm::SdCardInsert(void* data, int length, const char* id) {
     if (socSdInserted(soc)) return false;
 

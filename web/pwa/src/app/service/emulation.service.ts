@@ -153,6 +153,10 @@ export class EmulationService extends AbstractEmulationService {
 
     stop = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 
+    async waitForPendingSnapshot(): Promise<void> {
+        return this.engine?.waitForPendingSnapshot();
+    }
+
     protected override updateConfiguredHotsyncName(hotsyncName: string): void {
         const session = this.emulationContext.session();
         if (!session) return;
@@ -211,7 +215,14 @@ export class EmulationService extends AbstractEmulationService {
     private async snapshotNow(): Promise<void> {
         if (!this.engine) return;
 
-        await this.snapshotService.waitForPendingSnapshot();
+        if (this.isRunning()) {
+            const error = new Error('Immediate snapshot request while emulator is running');
+            this.errorService.fatalBug(error.message);
+
+            throw error;
+        }
+
+        await this.engine.waitForPendingSnapshot();
 
         const snapshot = await this.requestSnapshot();
         if (!snapshot) {
@@ -220,6 +231,7 @@ export class EmulationService extends AbstractEmulationService {
         }
 
         await this.snapshotService.storeSnapshot(snapshot);
+        await this.engine?.waitForPendingSnapshot();
     }
 
     private async stopUnchecked(): Promise<void> {
