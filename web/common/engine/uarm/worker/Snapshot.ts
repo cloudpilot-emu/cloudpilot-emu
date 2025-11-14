@@ -7,7 +7,7 @@ export interface Snapshot {
 
 export interface UarmSnapshot {
     memory: Snapshot;
-    nand: Snapshot;
+    nand?: Snapshot;
     sd?: {
         snapshot: Snapshot;
         key: string;

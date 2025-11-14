@@ -318,7 +318,12 @@ export class EngineUarmImpl implements EngineUarm {
 
             case ClientMessageType.snapshot:
                 try {
-                    this.snapshotContainer?.schedule(message.snapshot);
+                    if (!this.snapshotContainer) {
+                        throw new Error('Unreachable: emulator runs, but snapshots are not initialized');
+                    }
+
+                    this.snapshotContainer.schedule(message.snapshot);
+                    this.snapshotEvent.dispatch(this.snapshotContainer);
                 } catch (e) {
                     this.fatal(`${e}`);
 

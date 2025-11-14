@@ -38,9 +38,16 @@ rpcClient
         );
 
         emulator = new Emulator(uarm, settings);
+
         emulator.timesliceEvent.addHandler((props) =>
             dispatchMessage({ type: ClientMessageType.timeslice, ...props }, props.frame ? [props.frame] : undefined),
         );
+
+        emulator.snapshotEvent.addHandler((snapshotResult) => {
+            const [snapshot, transferables] = snapshotResult;
+
+            dispatchMessage({ type: ClientMessageType.snapshot, snapshot }, transferables);
+        });
     })
     .register('openSession', ({ rom, memory, nand, state, card }) =>
         unwrapEmulator().openSession(rom, nand, memory, state, card),

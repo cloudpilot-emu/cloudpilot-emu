@@ -18,26 +18,6 @@ export class Emulator {
         private uarm: Uarm,
         private settings: EngineSettings,
     ) {
-        this.pageTrackerMemory = new DirtyPageTracker(
-            1024,
-            this.uarm.getMemorySize() >>> 10,
-            'memory',
-            this.settings.memoryCrc,
-            {
-                getData: () => this.uarm.getMemoryData(),
-                getDirtyPages: () => this.uarm.getMemoryDirtyPages(),
-                isDirty: () => true,
-                setDirty: () => undefined,
-            },
-        );
-
-        this.pageTrackerNand = new DirtyPageTracker(4224, (this.uarm.getNandSize() / 4224) | 0, 'nand', false, {
-            getData: () => this.uarm.getNandData(),
-            getDirtyPages: () => this.uarm.getNandDirtyPages(),
-            isDirty: () => this.uarm.isNandDirty(),
-            setDirty: (dirty) => this.uarm.setNandDirty(dirty),
-        });
-
         uarm.fatalErrorEvent.addHandler(() => this.stop());
     }
 
@@ -69,6 +49,27 @@ export class Emulator {
         if (!this.uarm.launch(rom)) return false;
 
         this.deviceId = this.uarm.getDevice();
+
+        this.pageTrackerMemory = new DirtyPageTracker(
+            1024,
+            this.uarm.getMemorySize() >>> 10,
+            'memory',
+            this.settings.memoryCrc,
+            {
+                getData: () => this.uarm.getMemoryData(),
+                getDirtyPages: () => this.uarm.getMemoryDirtyPages(),
+                isDirty: () => true,
+                setDirty: () => undefined,
+            },
+        );
+
+        this.pageTrackerNand = new DirtyPageTracker(4224, (this.uarm.getNandSize() / 4224) | 0, 'nand', false, {
+            getData: () => this.uarm.getNandData(),
+            getDirtyPages: () => this.uarm.getNandDirtyPages(),
+            isDirty: () => this.uarm.isNandDirty(),
+            setDirty: (dirty) => this.uarm.setNandDirty(dirty),
+        });
+
         this.updatePageTrackerSd();
 
         return true;
@@ -80,7 +81,7 @@ export class Emulator {
         this.uarm.setMaxHostLoad(settings.maxHostLoad);
         this.uarm.setDisablePcm(settings.disableAudio);
         this.uarm.setTargetMips(settings.targetMips);
-        this.pageTrackerMemory.enableCrc(settings.memoryCrc);
+        this.pageTrackerMemory?.enableCrc(settings.memoryCrc);
     }
 
     buttonUp(button: PalmButton): void {
@@ -127,8 +128,8 @@ export class Emulator {
     returnSnapshot(snapshot: UarmSnapshot, success: boolean): void {
         if (!this.snapshotPending) return;
 
-        this.pageTrackerMemory.returnSnapshot(success, snapshot.memory);
-        this.pageTrackerNand.returnSnapshot(success, snapshot.nand);
+        this.pageTrackerMemory?.returnSnapshot(success, snapshot.memory);
+        this.pageTrackerNand?.returnSnapshot(success, snapshot.nand);
         if (this.pageTrackerSd && snapshot.sd) this.pageTrackerSd.returnSnapshot(success, snapshot.sd.snapshot);
 
         this.savestate = new Uint8Array(snapshot.savestate);
@@ -137,6 +138,8 @@ export class Emulator {
             this.returnSnapshotCallbacks.forEach((cb) => cb());
             this.returnSnapshotCallbacks = [];
         }
+
+        this.snapshotPending = false;
     }
 
     takeSnapshot(): [UarmSnapshot, Array<Transferable>] | undefined {
@@ -148,11 +151,13 @@ export class Emulator {
         if (!this.savestate) this.savestate = savestate.slice();
         else this.savestate.set(savestate);
 
+        if (!this.pageTrackerMemory || !this.pageTrackerNand) throw new Error('unreachable');
+
         const snapshotMemory = this.pageTrackerMemory.takeSnapshot();
         const snapshotNand = this.pageTrackerNand.takeSnapshot();
         const snapshotSd = this.pageTrackerSd?.takeSnapshot();
 
-        if (!(snapshotMemory && snapshotNand)) throw new Error('incpmplete snapshot');
+        if (!snapshotMemory) throw new Error('incpmplete snapshot');
 
         const now = Date.now();
         const uarmSnaphost: UarmSnapshot = {
@@ -162,7 +167,7 @@ export class Emulator {
                 snapshotSd && this.sdCardKey !== undefined
                     ? { snapshot: snapshotSd, key: this.sdCardKey, size: this.uarm.getSdCardSize() }
                     : undefined,
-            savestate: savestate.buffer,
+            savestate: this.savestate.buffer,
             time: now - timestampStart,
             timestamp: now,
         };
@@ -171,7 +176,7 @@ export class Emulator {
             ...this.pageTrackerMemory.getTransferables(),
             ...this.pageTrackerNand.getTransferables(),
             ...(this.pageTrackerSd?.getTransferables() ?? []),
-            savestate.buffer,
+            this.savestate.buffer,
         ];
 
         this.snapshotPending = true;
@@ -228,6 +233,8 @@ export class Emulator {
         ) {
             const snapshot = this.takeSnapshot();
             if (snapshot) this.snapshotEvent.dispatch(snapshot);
+
+            this.lastSnapshotAt = timestamp;
         }
 
         this.timesliceEvent.dispatch({ sizeSeconds, frame: this.getFrame() });
@@ -256,8 +263,8 @@ export class Emulator {
     private framePool: Array<ArrayBuffer> = [];
     private deviceId = DeviceId.te2;
 
-    private pageTrackerMemory: DirtyPageTracker;
-    private pageTrackerNand: DirtyPageTracker;
+    private pageTrackerMemory: DirtyPageTracker | undefined;
+    private pageTrackerNand: DirtyPageTracker | undefined;
     private pageTrackerSd: DirtyPageTracker | undefined;
 
     private sdCardKey: string | undefined;
