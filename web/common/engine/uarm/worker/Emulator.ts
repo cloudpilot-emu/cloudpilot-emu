@@ -168,6 +168,26 @@ export class Emulator {
         return this.uarm.getNandSize();
     }
 
+    sdCardInsert(data: Uint32Array, key: string): boolean {
+        const success = this.uarm.sdCardInsert(data, key);
+        this.updatePageTrackerSd();
+
+        return success;
+    }
+
+    sdCardEject(): void {
+        this.uarm.sdCardEject();
+        this.updatePageTrackerSd();
+    }
+
+    sdCardInserted(): boolean {
+        return this.uarm.sdCardInserted();
+    }
+
+    getSdCardKey(): string | undefined {
+        return this.uarm.getSdCardKey();
+    }
+
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {
         const timestampStart = Date.now();
         const savestate = this.uarm.saveState();

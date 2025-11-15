@@ -158,7 +158,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
                 offsets: new Uint32Array(),
                 pages: new Uint32Array(),
                 pageData: new Uint32Array(),
-                pageSize: 8192,
+                pageSize: 8192 >>> 2,
             };
         }
 
@@ -167,7 +167,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
             if (uarmSnapshot.sd.size > this.snapshotSd.pageCountTotal << 13) this.snapshotSd.pageCountTotal++;
 
             this.snapshotSd.offsets = new Uint32Array(this.snapshotSd.pageCountTotal);
-            for (let i = 0; i < this.snapshotSd.pageCountTotal; i++) this.snapshotSd.offsets[i] = i * 8192;
+            for (let i = 0; i < this.snapshotSd.pageCountTotal; i++) this.snapshotSd.offsets[i] = i * (8192 >>> 2);
 
             this.sdSize = uarmSnapshot.sd.size;
         }

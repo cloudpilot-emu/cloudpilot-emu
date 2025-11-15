@@ -73,7 +73,17 @@ rpcClient
     .register('getMemorySize', () => ({
         memory: unwrapEmulator().getMemorySize(),
         nand: unwrapEmulator().getNandSize(),
-    }));
+    }))
+    .register('sdCardInsert', ({ data, key }) => unwrapEmulator().sdCardInsert(data, key))
+    .register('sdCardEject', () => unwrapEmulator().sdCardEject())
+    .register('getSdCardState', () => {
+        if (!unwrapEmulator().sdCardInserted()) return { inserted: false };
+
+        const key = unwrapEmulator().getSdCardKey();
+        if (key === undefined) throw new Error('unreachable');
+
+        return { inserted: true, key };
+    });
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;

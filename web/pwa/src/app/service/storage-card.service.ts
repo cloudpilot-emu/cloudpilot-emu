@@ -197,7 +197,10 @@ export class StorageCardService {
 
         const card = await this.storageService.getCard(cardId);
         if (!card) {
-            throw new Error(`no card with id ${cardId}`);
+            console.warn(`no card with id ${cardId}`);
+            await this.storageService.updateSessionPartial(emulationContext.session.id, { mountedCard: undefined });
+
+            return;
         }
 
         await this.emulatorLock.runGuarded(async () => {

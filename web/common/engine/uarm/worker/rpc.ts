@@ -51,6 +51,24 @@ interface RpcSchema {
             nand: number;
         };
     };
+
+    sdCardInsert: {
+        args: {
+            data: Uint32Array;
+            key: string;
+        };
+        result: boolean;
+    };
+
+    sdCardEject: {
+        args: void;
+        result: void;
+    };
+
+    getSdCardState: {
+        args: void;
+        result: { inserted: false } | { inserted: true; key: string };
+    };
 }
 
 export type RpcMethod = keyof RpcSchema;

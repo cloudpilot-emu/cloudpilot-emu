@@ -294,6 +294,28 @@ export class Uarm {
         return this.uarm.SdCardInitialized() ? this.uarm.GetSdCardId() : undefined;
     }
 
+    @guard()
+    sdCardInsert(data: Uint32Array, key: string): boolean {
+        const ptr = this.copyIn(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+
+        if (!this.uarm.SdCardInsert(ptr, data.length * 4, key)) {
+            this.bridge.Free(ptr);
+            return false;
+        }
+
+        return true;
+    }
+
+    @guard()
+    sdCardEject(): void {
+        this.uarm.SdCardEject();
+    }
+
+    @guard()
+    sdCardInserted(): boolean {
+        return this.uarm.IsSdInserted();
+    }
+
     dead(): boolean {
         return this.amIdead;
     }

@@ -204,6 +204,9 @@ export class EngineUarmImpl implements EngineUarm {
             this.snapshotSuccessEvent.dispatch(statistics),
         );
 
+        const cardState = await this.rpcHost.call('getSdCardState', undefined);
+        this.card = cardState.inserted ? { state: CardState.mounted, key: cardState.key } : { state: CardState.none };
+
         return true;
     }
 
@@ -264,17 +267,26 @@ export class EngineUarmImpl implements EngineUarm {
     async releaseCard(key: string): Promise<void> {
         if (this.card.state === CardState.none) return;
 
-        // TODO: unmount
+        await this.rpcHost.call('sdCardEject', undefined);
 
         this.card = { state: CardState.none };
     }
 
-    mountCard(key: string): Promise<boolean> {
-        throw new Error('Method not implemented.');
+    async mountCard(key: string): Promise<boolean> {
+        if (this.card.state !== CardState.allocated) throw new Error('no card allocated');
+        if (this.card.key !== key) throw new Error(`wrong key: got ${key}, expected ${this.card.key}`);
+
+        if (await this.rpcHost.call('sdCardInsert', { data: this.card.data, key: this.card.key })) {
+            this.card = { state: CardState.mounted, key };
+            return true;
+        } else {
+            this.card = { state: CardState.none };
+            return false;
+        }
     }
 
-    getMountedKey(): Promise<string | undefined> {
-        throw new Error('Method not implemented.');
+    async getMountedKey(): Promise<string | undefined> {
+        return this.card.state === CardState.mounted ? this.card.key : undefined;
     }
 
     getCardData(key: string): Promise<Uint32Array | undefined> {
