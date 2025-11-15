@@ -122,6 +122,10 @@ export abstract class AbstractEmulationService {
         return this.engine?.type === 'cloudpilot' ? this.engine.isSuspended() : false;
     }
 
+    isBlocked(): boolean {
+        return this.blocked;
+    }
+
     getSerialPortSerial(): SerialPort | undefined {
         return this.engine?.type === 'cloudpilot' ? this.engine.getSerialPortSerial() : undefined;
     }
@@ -192,7 +196,7 @@ export abstract class AbstractEmulationService {
 
         this.resetCanvas();
 
-        this.engineChangeEvent.dispatch();
+        this.openSessionEvent.dispatch();
 
         return true;
     }
@@ -217,12 +221,12 @@ export abstract class AbstractEmulationService {
     }
 
     protected async doBlock() {
-        this.isBlocked = true;
+        this.blocked = true;
         await this.enforceRunState();
     }
 
     protected async doUnblock() {
-        this.isBlocked = false;
+        this.blocked = false;
         await this.enforceRunState();
     }
 
@@ -275,7 +279,7 @@ export abstract class AbstractEmulationService {
     private async enforceRunState(): Promise<void> {
         if (!this.engine) return;
 
-        if (this.shouldRun && !this.isBlocked) {
+        if (this.shouldRun && !this.blocked) {
             await this.engine.resume();
         } else {
             await this.engine.stop();
@@ -366,7 +370,7 @@ export abstract class AbstractEmulationService {
     newSessionEvent = new Event<void>();
     emulationStateChangeEvent = new Event<boolean>();
     palmosStateChangeEvent = new Event<void>();
-    engineChangeEvent = new Event<void>();
+    openSessionEvent = new Event<void>();
     snapshotSuccessEvent = new Event<SnapshotStatistics>();
 
     protected abstract readonly clandestineExecute: Executor;
@@ -380,5 +384,5 @@ export abstract class AbstractEmulationService {
 
     private engineSettings: EngineSettings = { ...DEFAULT_ENGINE_SETTINGS };
     private shouldRun = false;
-    private isBlocked = false;
+    private blocked = false;
 }

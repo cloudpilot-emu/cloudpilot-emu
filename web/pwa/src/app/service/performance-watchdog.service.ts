@@ -14,6 +14,7 @@ export class PerformanceWatchdogService implements OnDestroy {
         this.onEmulationStateChanged(this.emulationService.isRunning());
 
         this.emulationService.emulationStateChangeEvent.addHandler(this.onEmulationStateChanged);
+        this.emulationService.openSessionEvent.addHandler(this.onOpenSession);
     }
 
     isSlowdownDetected(): boolean {
@@ -45,8 +46,6 @@ export class PerformanceWatchdogService implements OnDestroy {
     };
 
     private onEmulationStateChanged = (running: boolean) => {
-        this.reset();
-
         if (running && this.intervalHandle === undefined) {
             this.onInterval();
             this.ngZone.runOutsideAngular(() => (this.intervalHandle = window.setInterval(this.onInterval, INTERVAL)));
@@ -56,6 +55,10 @@ export class PerformanceWatchdogService implements OnDestroy {
             clearInterval(this.intervalHandle);
             this.intervalHandle = undefined;
         }
+    };
+
+    private onOpenSession = (): void => {
+        this.reset();
     };
 
     private slowdownDetected = false;

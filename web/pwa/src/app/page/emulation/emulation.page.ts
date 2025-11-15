@@ -174,14 +174,26 @@ export class EmulationPage implements DragDropClient {
 
     @debounce()
     async showSlowdowndHint(): Promise<void> {
-        await this.alertService.message(
-            'Speed throttled',
-            `
+        if (this.emulationContext.engine()?.type === 'cloudpilot') {
+            await this.alertService.message(
+                'Speed throttled',
+                `
                 Your host is too slow to run your virtual device at full speed, and the clock
                 has been throttled in order to compensate. You can avoid this by reducing the speed of your
                 virtual device in the session settings.
         `,
-        );
+            );
+        }
+
+        if (this.emulationContext.engine()?.type === 'uarm') {
+            await this.alertService.message(
+                'Slow emulation',
+                `
+                Your host is too slow to run your virtual device at the configured minimum
+                speed.
+        `,
+            );
+        }
     }
 
     get installFileDisabled(): boolean {

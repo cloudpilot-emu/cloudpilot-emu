@@ -26,7 +26,7 @@ export abstract class AbstractAudioService {
     constructor(private emulationService: AbstractEmulationService) {
         this.bind();
 
-        this.emulationService.engineChangeEvent.addHandler(this.onEngineChange);
+        this.emulationService.openSessionEvent.addHandler(this.onOpenSession);
 
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
         this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
@@ -177,7 +177,7 @@ export abstract class AbstractAudioService {
         return this.context?.state === 'running';
     }
 
-    private onEngineChange = () => this.bind();
+    private onOpenSession = () => this.bind();
 
     private onPwmUpdate = async (pwmUpdate: PwmUpdate): Promise<void> => {
         this.pendingPwmUpdate = pwmUpdate;

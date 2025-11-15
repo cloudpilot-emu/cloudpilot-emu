@@ -42,6 +42,7 @@ export class EngineUarmImpl implements EngineUarm {
 
     private constructor(
         private worker: Worker,
+        private settings: EngineSettings,
         clandestineExecute: Executor,
     ) {
         this.rpcHost = new RpcHost(this.dispatchMessage);
@@ -71,7 +72,7 @@ export class EngineUarmImpl implements EngineUarm {
                 cleanupHandlers();
 
                 if ((e.data as ClientMessage).type === ClientMessageType.ready) {
-                    resolve(new EngineUarmImpl(worker, clandestineExecute));
+                    resolve(new EngineUarmImpl(worker, settings, clandestineExecute));
                 } else {
                     reject(new Error('invalid message from worker'));
                 }
@@ -83,7 +84,7 @@ export class EngineUarmImpl implements EngineUarm {
             handlers.push(['error', onError], ['message', onMessage]);
         });
 
-        return engine.initialize(uarmModule, settings);
+        return engine.initialize(uarmModule);
     }
 
     shutdown(): void {
@@ -146,7 +147,7 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     isSlowdown(): boolean {
-        return this.slowdown;
+        return this.currentIps / 1000000 < this.settings.targetMips * this.settings.warnSlowdownThreshold;
     }
 
     getDeviceId(): DeviceId {
@@ -234,6 +235,7 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     updateSettings(settings: EngineSettings): void {
+        this.settings = settings;
         this.dispatchMessage({ type: HostMessageType.updateSettings, settings });
     }
 
@@ -286,8 +288,8 @@ export class EngineUarmImpl implements EngineUarm {
         this.worker.postMessage(mesage, transferables as Array<Transferable>);
     };
 
-    private async initialize(module: WebAssembly.Module, settings: EngineSettings): Promise<this> {
-        await this.rpcHost.call('initialize', { module, settings });
+    private async initialize(module: WebAssembly.Module): Promise<this> {
+        await this.rpcHost.call('initialize', { module, settings: this.settings });
 
         return this;
     }
@@ -362,7 +364,6 @@ export class EngineUarmImpl implements EngineUarm {
 
     private deviceId: DeviceId | undefined;
     private running = false;
-    private slowdown = false;
 
     private currentIps = 0;
     private currentIpsMax = 0;
