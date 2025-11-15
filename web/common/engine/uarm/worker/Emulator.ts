@@ -73,11 +73,15 @@ export class Emulator {
 
         this.updatePageTrackerSd();
 
+        this.uarmInitialized = true;
+        this.updateSettings(this.settings);
+
         return true;
     }
 
     updateSettings(settings: EngineSettings): void {
         this.settings = settings;
+        if (!this.uarmInitialized) return;
 
         this.uarm.setMaxHostLoad(settings.maxHostLoad);
         this.uarm.setDisablePcm(settings.disableAudio);
@@ -278,6 +282,8 @@ export class Emulator {
         if (timesliceRemaining < 5) this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
         else this.timeoutHandle = setTimeout(this.timesliceTask, timesliceRemaining) as unknown as number;
 
+        this.uarm.clearAudioQueue();
+
         const timestamp = performance.now();
         if (
             this.settings.automaticSnapshotInterval > 0 &&
@@ -319,6 +325,7 @@ export class Emulator {
 
     private running = false;
     private backgrounded = false;
+    private uarmInitialized = false;
 
     private timeoutHandle: number | undefined;
     private immediateHandle: number | undefined;

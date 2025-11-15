@@ -163,7 +163,7 @@ export class Uarm {
 
     @guard()
     setDisablePcm(disableAudio: boolean): void {
-        this.uarm.SetPcmOutputEnabled(disableAudio);
+        this.uarm.SetPcmOutputEnabled(!disableAudio);
     }
 
     @guard()
@@ -314,6 +314,11 @@ export class Uarm {
     @guard()
     sdCardInserted(): boolean {
         return this.uarm.IsSdInserted();
+    }
+
+    @guard()
+    clearAudioQueue(): void {
+        this.uarm.PopQueuedSamples();
     }
 
     dead(): boolean {
