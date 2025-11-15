@@ -90,7 +90,7 @@ export class Vfs {
         return new Vfs(
             await createModule({
                 print: (x: string) => console.log(x),
-                printErr: (x: string) => console.error(x),
+                printErr: (x: string) => console.warn(x),
                 ...(wasmModuleUrl === undefined ? {} : { locateFile: () => wasmModuleUrl }),
             }),
         );

@@ -212,7 +212,7 @@ export class Cloudpilot {
         return new Cloudpilot(
             await createModule({
                 print: (x: string) => console.log(`${id}: ${x}`),
-                printErr: (x: string) => console.error(`${id}: ${x}`),
+                printErr: (x: string) => console.warn(`${id}: ${x}`),
                 ...(typeof urlOrFunction === 'string' ? { locateFile: () => urlOrFunction } : {}),
                 ...(typeof urlOrFunction === 'function' ? { instantiateWasm: urlOrFunction } : {}),
             }),

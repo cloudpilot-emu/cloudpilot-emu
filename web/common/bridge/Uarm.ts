@@ -59,7 +59,7 @@ export class Uarm {
         return new Uarm(
             await createModule({
                 print: (x: string) => console.log(`${id}: ${x}`),
-                printErr: (x: string) => console.error(`${id}: ${x}`),
+                printErr: (x: string) => console.warn(`${id}: ${x}`),
                 instantiateWasm: (imports, callback) =>
                     void WebAssembly.instantiate(wasmModule, imports).then((instance) => callback(instance)),
             }),

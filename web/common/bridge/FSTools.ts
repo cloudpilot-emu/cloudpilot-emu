@@ -49,7 +49,7 @@ export class CreateZipContext {
         return new CreateZipContext(
             await createModule({
                 print: (x: string) => console.log(x),
-                printErr: (x: string) => console.error(x),
+                printErr: (x: string) => console.warn(x),
                 instantiateWasm,
             }),
             compressionLevel,
@@ -97,7 +97,7 @@ export class MkfsContext {
         return new MkfsContext(
             await createModule({
                 print: (x: string) => console.log(x),
-                printErr: (x: string) => console.error(x),
+                printErr: (x: string) => console.warn(x),
                 instantiateWasm,
             }),
         );
@@ -129,7 +129,7 @@ export class FsckContext {
     static async create(size: number, instantiateWasm: Module['instantiateWasm']): Promise<FsckContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
-            printErr: (x: string) => console.error(x),
+            printErr: (x: string) => console.warn(x),
             instantiateWasm,
         });
 
@@ -183,7 +183,7 @@ export class GunzipContext {
     static async create(instantiateWasm: Module['instantiateWasm'], gzippedData?: Uint8Array): Promise<GunzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
-            printErr: (x: string) => console.error(x),
+            printErr: (x: string) => console.warn(x),
             instantiateWasm: instantiateWasm,
         });
 
@@ -255,7 +255,7 @@ export class GzipContext {
     ): Promise<GzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
-            printErr: (x: string) => console.error(x),
+            printErr: (x: string) => console.warn(x),
             instantiateWasm,
         });
 
@@ -381,7 +381,7 @@ export class FsTools {
     async createZipfileWalker(zipfile: Uint8Array): Promise<ZipfileWalker> {
         const module = await createModule({
             print: (x: string) => console.log(x),
-            printErr: (x: string) => console.error(x),
+            printErr: (x: string) => console.warn(x),
             instantiateWasm: this.instantiante,
         });
 
