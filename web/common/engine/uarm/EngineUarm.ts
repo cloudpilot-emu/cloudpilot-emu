@@ -2,6 +2,7 @@
 import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatisticsUarm } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
+import { Executor } from '@common/service/AbstractEmulationService';
 import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
 import { Event } from 'microevent.ts';
 
@@ -39,13 +40,20 @@ type Card = CardNone | CardAllocated | CardMounted;
 export class EngineUarmImpl implements EngineUarm {
     readonly type = 'uarm';
 
-    private constructor(private worker: Worker) {
+    private constructor(
+        private worker: Worker,
+        clandestineExecute: Executor,
+    ) {
         this.rpcHost = new RpcHost(this.dispatchMessage);
 
-        worker.addEventListener('message', this.onMessage);
+        clandestineExecute(() => worker.addEventListener('message', this.onMessage));
     }
 
-    static async create(uarmModule: WebAssembly.Module, settings: EngineSettings): Promise<EngineUarmImpl> {
+    static async create(
+        uarmModule: WebAssembly.Module,
+        settings: EngineSettings,
+        clandestineExecute: Executor,
+    ): Promise<EngineUarmImpl> {
         const worker = new Worker(new URL('./worker/main.worker', import.meta.url));
 
         const engine = await new Promise<EngineUarmImpl>((resolve, reject) => {
@@ -63,7 +71,7 @@ export class EngineUarmImpl implements EngineUarm {
                 cleanupHandlers();
 
                 if ((e.data as ClientMessage).type === ClientMessageType.ready) {
-                    resolve(new EngineUarmImpl(worker));
+                    resolve(new EngineUarmImpl(worker, clandestineExecute));
                 } else {
                     reject(new Error('invalid message from worker'));
                 }

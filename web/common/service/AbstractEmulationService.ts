@@ -294,7 +294,7 @@ export abstract class AbstractEmulationService {
                 );
 
             case 'uarm':
-                return EngineUarmImpl.create(await this.getUarmModule(), this.engineSettings);
+                return EngineUarmImpl.create(await this.getUarmModule(), this.engineSettings, this.clandestineExecute);
 
             default:
                 throw new Error('unreachable');
