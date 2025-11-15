@@ -40,9 +40,9 @@ export interface EngineCommon {
 
     keyStroke(key: number): void;
 
-    reset(): Promise<void>;
-    resetNoExtensions(): Promise<void>;
-    resetHard(): Promise<void>;
+    reset(): void;
+    resetNoExtensions(): void;
+    resetHard(): void;
 
     isRunning(): boolean;
     isPowerOff(): boolean;

@@ -6,6 +6,7 @@ import { Event } from 'microevent.ts';
 import 'setimmediate';
 
 import { DirtyPageTracker } from './DirtyPageTracker';
+import { ResetType } from './ResetType';
 import { UarmSnapshot } from './Snapshot';
 
 interface TimesliceProperties {
@@ -190,6 +191,11 @@ export class Emulator {
 
     getSdCardKey(): string | undefined {
         return this.uarm.getSdCardKey();
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    reset(type: ResetType): void {
+        this.uarm.reset();
     }
 
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {

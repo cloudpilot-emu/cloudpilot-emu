@@ -13,6 +13,7 @@ import { RpcHost } from './RpcHost';
 import { SnapshotContainerImpl } from './Snapshot';
 import { ClientMessage, ClientMessageType } from './worker/ClientMessage';
 import { HostMessage, HostMessageType } from './worker/HostMessage';
+import { ResetType } from './worker/ResetType';
 
 const enum CardState {
     none,
@@ -128,16 +129,16 @@ export class EngineUarmImpl implements EngineUarm {
 
     keyStroke(key: number, ctrl?: boolean): void {}
 
-    reset(): Promise<void> {
-        throw new Error('Method not implemented.');
+    reset(): void {
+        this.dispatchMessage({ type: HostMessageType.reset, resetType: ResetType.normal });
     }
 
-    resetNoExtensions(): Promise<void> {
-        throw new Error('Method not implemented.');
+    resetNoExtensions(): void {
+        this.dispatchMessage({ type: HostMessageType.reset, resetType: ResetType.noExtensions });
     }
 
-    resetHard(): Promise<void> {
-        throw new Error('Method not implemented.');
+    resetHard(): void {
+        this.dispatchMessage({ type: HostMessageType.reset, resetType: ResetType.hard });
     }
 
     isRunning(): boolean {

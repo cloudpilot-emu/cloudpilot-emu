@@ -1,6 +1,7 @@
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { PalmButton } from '@native/cloudpilot_web';
 
+import { ResetType } from './ResetType';
 import { UarmSnapshot } from './Snapshot';
 import { RpcRequest } from './rpc';
 
@@ -14,6 +15,7 @@ export const enum HostMessageType {
     returnFrame = 'returnFrame',
     returnSnapshot = 'returnSnapshot',
     setBackgrounded = 'setBackgrounded',
+    reset = 'reset',
 }
 
 export type HostMessageRpcCall = RpcRequest & {
@@ -61,6 +63,11 @@ export interface HostMessageSetBackgrounded {
     backgrounded: boolean;
 }
 
+export interface HostMessageReset {
+    type: HostMessageType.reset;
+    resetType: ResetType;
+}
+
 export type HostMessage =
     | HostMessageRpcCall
     | HostMessageUpdateSettings
@@ -70,4 +77,5 @@ export type HostMessage =
     | HostMessagePenDown
     | HostMessageReturnFrame
     | HostMessageReturnSnapshot
-    | HostMessageSetBackgrounded;
+    | HostMessageSetBackgrounded
+    | HostMessageReset;

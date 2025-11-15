@@ -89,15 +89,15 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.cloudpilotInstance.queueKeyboardEvent(key);
     }
 
-    async reset(): Promise<void> {
+    reset(): void {
         this.cloudpilotInstance.reset();
     }
 
-    async resetNoExtensions(): Promise<void> {
+    resetNoExtensions(): void {
         this.cloudpilotInstance.resetNoExtensions();
     }
 
-    async resetHard(): Promise<void> {
+    resetHard(): void {
         this.cloudpilotInstance.resetHard();
     }
 

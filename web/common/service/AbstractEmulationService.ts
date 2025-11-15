@@ -83,16 +83,16 @@ export abstract class AbstractEmulationService {
         this.engine?.keyStroke(key);
     }
 
-    async reset(): Promise<void> {
-        await this.engine?.reset();
+    reset(): void {
+        this.engine?.reset();
     }
 
-    async resetNoExtensions(): Promise<void> {
-        await this.engine?.resetNoExtensions();
+    resetNoExtensions(): void {
+        this.engine?.resetNoExtensions();
     }
 
-    async resetHard(): Promise<void> {
-        await this.engine?.resetHard();
+    resetHard(): void {
+        this.engine?.resetHard();
     }
 
     isRunning(): boolean {

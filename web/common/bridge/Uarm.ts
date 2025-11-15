@@ -321,6 +321,11 @@ export class Uarm {
         this.uarm.PopQueuedSamples();
     }
 
+    @guard()
+    reset(): void {
+        this.uarm.Reset();
+    }
+
     dead(): boolean {
         return this.amIdead;
     }
