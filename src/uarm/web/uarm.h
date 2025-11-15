@@ -74,6 +74,8 @@ class Uarm {
 
     bool SdCardInsert(void* data, int length, const char* id);
     void SdCardEject();
+    bool SdCardInitialized();
+    const char* GetSdCardId();
     void Reset();
 
     void Save();

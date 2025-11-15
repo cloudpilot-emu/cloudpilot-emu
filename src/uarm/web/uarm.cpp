@@ -207,6 +207,10 @@ void Uarm::SdCardEject() {
     sdCardReset();
 }
 
+bool Uarm::SdCardInitialized() { return ::sdCardInitialized(); }
+
+const char* Uarm::GetSdCardId() { return sdCardGetId(); }
+
 void Uarm::Reset() { socReset(soc); }
 
 void Uarm::Save() { socSave(soc); }

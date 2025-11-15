@@ -58,6 +58,8 @@ interface Uarm {
 
     boolean SdCardInsert(VoidPtr data, long length, [Const] DOMString id);
     void SdCardEject();
+    boolean SdCardInitialized();
+    [Const] DOMString GetSdCardId();
     void Reset();
 
     void Save();

@@ -75,6 +75,8 @@ export interface Uarm {
 
     SdCardInsert(data: VoidPtr, length: number, id: string): boolean;
     SdCardEject(): void;
+    SdCardInitialized(): boolean;
+    GetSdCardId(): string;
     Reset(): void;
 
     Save(): void;

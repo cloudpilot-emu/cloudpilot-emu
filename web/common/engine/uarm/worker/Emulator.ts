@@ -44,8 +44,6 @@ export class Emulator {
 
         if (card) {
             const [cardData, key] = card;
-
-            this.sdCardKey = key;
             this.uarm.setSd(cardData, key);
         }
 
@@ -186,12 +184,14 @@ export class Emulator {
         if (!snapshotMemory) throw new Error('incpmplete snapshot');
 
         const now = Date.now();
+
+        const sdCardKey = this.uarm.getSdCardKey();
         const uarmSnaphost: UarmSnapshot = {
             memory: snapshotMemory,
             nand: snapshotNand,
             sd:
-                snapshotSd && this.sdCardKey !== undefined
-                    ? { snapshot: snapshotSd, key: this.sdCardKey, size: this.uarm.getSdCardSize() }
+                snapshotSd && sdCardKey !== undefined
+                    ? { snapshot: snapshotSd, key: sdCardKey, size: this.uarm.getSdCardSize() }
                     : undefined,
             savestate: this.savestate.buffer,
             time: now - timestampStart + timeOffset,
@@ -309,8 +309,6 @@ export class Emulator {
     private pageTrackerMemory: DirtyPageTracker | undefined;
     private pageTrackerNand: DirtyPageTracker | undefined;
     private pageTrackerSd: DirtyPageTracker | undefined;
-
-    private sdCardKey: string | undefined;
 
     private savestate: Uint8Array | undefined;
     private snapshotPending = false;

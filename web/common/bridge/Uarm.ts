@@ -289,6 +289,11 @@ export class Uarm {
         return Number(this.uarm.CurrentIpsMax());
     }
 
+    @guard()
+    getSdCardKey(): string | undefined {
+        return this.uarm.SdCardInitialized() ? this.uarm.GetSdCardId() : undefined;
+    }
+
     dead(): boolean {
         return this.amIdead;
     }
