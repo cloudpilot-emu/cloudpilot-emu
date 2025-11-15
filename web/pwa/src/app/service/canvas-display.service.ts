@@ -126,8 +126,8 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
                 : []),
             ...(emulationStatistics?.type === 'uarm'
                 ? [
-                      `current MIPS           : ${emulationStatistics.currentSpeedMips.toFixed(2)}x`,
-                      `current MIPS limit     : ${emulationStatistics.currentMaxSpeedMips.toFixed(2)}x`,
+                      `current MIPS           : ${emulationStatistics.currentSpeedMips.toFixed(2)}`,
+                      `current MIPS limit     : ${emulationStatistics.currentMaxSpeedMips.toFixed(2)}`,
                       `current load           : ${((emulationStatistics.currentSpeedMips / emulationStatistics.currentMaxSpeedMips) * 100).toFixed(2)}%`,
                   ]
                 : []),
