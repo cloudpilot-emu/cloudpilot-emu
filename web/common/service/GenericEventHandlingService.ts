@@ -322,7 +322,7 @@ export class GenericEventHandlingService {
         }
 
         const keyCode = this.keyCodeFromEvent(e);
-        if (keyCode !== undefined) {
+        if (keyCode !== undefined && !e.ctrlKey && !e.metaKey) {
             this.emulationService.handleKeyDown(keyCode);
             e.preventDefault();
         }

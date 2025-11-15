@@ -334,8 +334,8 @@ export class Cloudpilot {
     }
 
     @guard()
-    queueKeyboardEvent(char: number, ctrl: boolean): void {
-        this.cloudpilot.QueueKeyboardEvent(char, ctrl);
+    queueKeyboardEvent(char: number): void {
+        this.cloudpilot.QueueKeyboardEvent(char);
     }
 
     @guard()

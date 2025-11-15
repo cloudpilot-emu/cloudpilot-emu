@@ -5,15 +5,12 @@
 
 class KeyboardEvent {
    public:
-    KeyboardEvent(uint16 key, bool ctrl = false) : key(key), ctrl(ctrl) {}
+    KeyboardEvent(uint16 key) : key(key) {}
 
     uint16 GetKey() const { return key; }
 
-    bool hasCtrl() const { return ctrl; }
-
    private:
     uint16 key;
-    bool ctrl;
 };
 
 #endif  // _KEYBOARD_EVENT_H_

@@ -173,9 +173,7 @@ void Cloudpilot::QueueButtonUp(int id) {
     gSession->QueueButtonEvent(ButtonEvent(buttonFromId(id), ButtonEvent::Type::release));
 }
 
-void Cloudpilot::QueueKeyboardEvent(uint16 c, bool ctrl) {
-    gSession->QueueKeyboardEvent(KeyboardEvent(c, ctrl));
-}
+void Cloudpilot::QueueKeyboardEvent(uint16 c) { gSession->QueueKeyboardEvent(KeyboardEvent(c)); }
 
 bool Cloudpilot::IsPowerOff() { return !gSession->IsPowerOn(); }
 

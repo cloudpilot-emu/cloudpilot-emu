@@ -36,7 +36,7 @@ export interface EngineCommon {
     buttonDown(button: PalmButton): void;
     buttonUp(button: PalmButton): void;
 
-    keyStroke(key: number, ctrl?: boolean): void;
+    keyStroke(key: number): void;
 
     reset(): Promise<void>;
     resetNoExtensions(): Promise<void>;

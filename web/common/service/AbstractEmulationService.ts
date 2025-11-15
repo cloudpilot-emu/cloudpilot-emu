@@ -76,10 +76,10 @@ export abstract class AbstractEmulationService {
         this.engine?.buttonUp(button);
     }
 
-    handleKeyDown(key: number, ctrl = false) {
+    handleKeyDown(key: number) {
         if (!this.engine?.isRunning()) return;
 
-        this.engine?.keyStroke(key, ctrl);
+        this.engine?.keyStroke(key);
     }
 
     async reset(): Promise<void> {

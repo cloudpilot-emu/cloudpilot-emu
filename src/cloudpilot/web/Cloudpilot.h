@@ -42,7 +42,7 @@ class Cloudpilot {
     void QueueButtonDown(int id);
     void QueueButtonUp(int id);
 
-    void QueueKeyboardEvent(uint16 c, bool ctrl);
+    void QueueKeyboardEvent(uint16 c);
 
     bool IsPowerOff();
     bool IsUIInitialized();

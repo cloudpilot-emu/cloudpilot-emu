@@ -81,8 +81,8 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.cloudpilotInstance.queueButtonUp(button);
     }
 
-    keyStroke(key: number, ctrl: boolean = false): void {
-        this.cloudpilotInstance.queueKeyboardEvent(key, ctrl);
+    keyStroke(key: number): void {
+        this.cloudpilotInstance.queueKeyboardEvent(key);
     }
 
     async reset(): Promise<void> {
