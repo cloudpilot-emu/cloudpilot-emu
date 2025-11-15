@@ -281,7 +281,11 @@ export class EngineUarmImpl implements EngineUarm {
         if (this.card.state !== CardState.allocated) throw new Error('no card allocated');
         if (this.card.key !== key) throw new Error(`wrong key: got ${key}, expected ${this.card.key}`);
 
-        if (await this.rpcHost.call('sdCardInsert', { data: this.card.data, key: this.card.key })) {
+        if (
+            await this.rpcHost.call('sdCardInsert', { data: this.card.data, key: this.card.key }, [
+                this.card.data.buffer,
+            ])
+        ) {
             this.card = { state: CardState.mounted, key };
             return true;
         } else {
