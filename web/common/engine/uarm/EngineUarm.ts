@@ -194,7 +194,12 @@ export class EngineUarmImpl implements EngineUarm {
 
         const sizes = await this.rpcHost.call('getMemorySize', undefined);
 
-        this.snapshotContainer = new SnapshotContainerImpl(sizes.memory, sizes.nand, this.dispatchMessage);
+        this.snapshotContainer = new SnapshotContainerImpl(
+            sizes.memory,
+            sizes.nand,
+            this.rpcHost,
+            this.dispatchMessage,
+        );
         this.snapshotContainer.snapshotSuccessEvent.addHandler((statistics) =>
             this.snapshotSuccessEvent.dispatch(statistics),
         );

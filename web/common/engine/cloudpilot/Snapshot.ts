@@ -105,6 +105,8 @@ export class SnapshotContainerImpl implements SnapshotContainer {
             return true;
         });
 
+    async refresh(): Promise<void> {}
+
     release(persistenceSuccess: boolean, timeBlocking: number, timeBackground: number): void {
         try {
             this.timed.exec(() => {

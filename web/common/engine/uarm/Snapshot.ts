@@ -2,6 +2,7 @@ import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { Event } from 'microevent.ts';
 
 import { Snapshot, SnapshotContainer } from '../Snapshot';
+import { RpcHost } from './RpcHost';
 import { HostMessage, HostMessageType } from './worker/HostMessage';
 import { Snapshot as RemoteSnapshot, UarmSnapshot } from './worker/Snapshot';
 
@@ -15,6 +16,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
     constructor(
         memorySize: number,
         nandSize: number,
+        private rpcHost: RpcHost,
         private dispatch: (message: HostMessage, transferrables?: Array<Transferable>) => void,
     ) {
         if (memorySize % 1024 !== 0) throw new Error('invalid memory size');
@@ -65,6 +67,15 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         if (!this.uarmSnapshot) throw new Error('no pending snapshot');
 
         return true;
+    }
+
+    async refresh(): Promise<void> {
+        if (!this.uarmSnapshot) throw new Error('no pending snapshot');
+
+        const oldSnapshot = this.uarmSnapshot;
+        this.uarmSnapshot = undefined;
+
+        this.schedule(await this.rpcHost.call('refreshSnapshot', oldSnapshot));
     }
 
     release(persistenceSuccess: boolean, timeStorageBlocking: number, timeStorageBackground: number): void {

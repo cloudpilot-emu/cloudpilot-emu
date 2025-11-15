@@ -184,6 +184,8 @@ export class SnapshotService {
 
                     throw e;
                 }
+
+                await snapshotContainer.refresh();
             }
         }
     }

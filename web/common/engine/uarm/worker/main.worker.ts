@@ -63,6 +63,12 @@ rpcClient
 
         return snapshot;
     })
+    .register('refreshSnapshot', (snapshot, rpcComplete, addTransferables) => {
+        const [updatedSnapshot, transferables] = unwrapEmulator().refreshSnapshot(snapshot);
+        addTransferables(transferables);
+
+        return updatedSnapshot;
+    })
     .register('waitForPendingSnapshot', () => unwrapEmulator().waitForPendingSnapshot())
     .register('getMemorySize', () => ({
         memory: unwrapEmulator().getMemorySize(),

@@ -126,23 +126,51 @@ export class Emulator {
     returnSnapshot(snapshot: UarmSnapshot, success: boolean): void {
         if (!this.snapshotPending) return;
 
-        this.pageTrackerMemory?.returnSnapshot(success, snapshot.memory);
-        this.pageTrackerNand?.returnSnapshot(success, snapshot.nand);
-        if (this.pageTrackerSd && snapshot.sd) this.pageTrackerSd.returnSnapshot(success, snapshot.sd.snapshot);
+        try {
+            this.returnSnapshotUnguarded(snapshot, success);
 
-        this.savestate = new Uint8Array(snapshot.savestate);
-
-        if (this.returnSnapshotCallbacks.length > 0) {
-            this.returnSnapshotCallbacks.forEach((cb) => cb());
-            this.returnSnapshotCallbacks = [];
+            if (this.returnSnapshotCallbacks.length > 0) {
+                this.returnSnapshotCallbacks.forEach((cb) => cb());
+                this.returnSnapshotCallbacks = [];
+            }
+        } finally {
+            this.snapshotPending = false;
         }
-
-        this.snapshotPending = false;
     }
 
     takeSnapshot(): [UarmSnapshot, Array<Transferable>] | undefined {
         if (this.snapshotPending) return undefined;
 
+        try {
+            return this.takeSnapshotUnguarded();
+        } finally {
+            this.snapshotPending = true;
+        }
+    }
+
+    refreshSnapshot(snapshot: UarmSnapshot): [UarmSnapshot, Array<Transferable>] {
+        if (!this.snapshotPending) throw new Error('refresh snapshot called, but no pending snapshot!');
+
+        this.returnSnapshotUnguarded(snapshot, false);
+
+        return this.takeSnapshotUnguarded(snapshot.timestamp, snapshot.time);
+    }
+
+    async waitForPendingSnapshot(): Promise<void> {
+        if (!this.snapshotPending) return;
+
+        return new Promise((resolve) => this.returnSnapshotCallbacks.push(resolve));
+    }
+
+    getMemorySize(): number {
+        return this.uarm.getMemorySize();
+    }
+
+    getNandSize(): number {
+        return this.uarm.getNandSize();
+    }
+
+    private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {
         const timestampStart = Date.now();
         const savestate = this.uarm.saveState();
 
@@ -166,8 +194,8 @@ export class Emulator {
                     ? { snapshot: snapshotSd, key: this.sdCardKey, size: this.uarm.getSdCardSize() }
                     : undefined,
             savestate: this.savestate.buffer,
-            time: now - timestampStart,
-            timestamp: now,
+            time: now - timestampStart + timeOffset,
+            timestamp: timestamp ?? now,
         };
 
         const transferrables = [
@@ -177,23 +205,15 @@ export class Emulator {
             this.savestate.buffer,
         ];
 
-        this.snapshotPending = true;
-
         return [uarmSnaphost, transferrables];
     }
 
-    async waitForPendingSnapshot(): Promise<void> {
-        if (!this.snapshotPending) return;
+    private returnSnapshotUnguarded(snapshot: UarmSnapshot, success: boolean): void {
+        this.pageTrackerMemory?.returnSnapshot(success, snapshot.memory);
+        this.pageTrackerNand?.returnSnapshot(success, snapshot.nand);
+        if (this.pageTrackerSd && snapshot.sd) this.pageTrackerSd.returnSnapshot(success, snapshot.sd.snapshot);
 
-        return new Promise((resolve) => this.returnSnapshotCallbacks.push(resolve));
-    }
-
-    getMemorySize(): number {
-        return this.uarm.getMemorySize();
-    }
-
-    getNandSize(): number {
-        return this.uarm.getNandSize();
+        this.savestate = new Uint8Array(snapshot.savestate);
     }
 
     private updateRunState(): void {

@@ -34,6 +34,11 @@ interface RpcSchema {
         result: UarmSnapshot;
     };
 
+    refreshSnapshot: {
+        args: UarmSnapshot;
+        result: UarmSnapshot;
+    };
+
     waitForPendingSnapshot: {
         args: void;
         result: void;
