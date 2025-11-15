@@ -6,7 +6,7 @@ import { SlotType } from '@common/model/SlotType';
 import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
-import { fixmeAssertSessionHasEngine, mergeSettings, settingsFromSession } from '@pwa/model/Session';
+import { SessionSettings, mergeSettings, settingsFromSession } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { AlertService } from '@pwa/service/alert.service';
 import { AudioService } from '@pwa/service/audio.service';
@@ -41,6 +41,22 @@ function rotate(oldOrientation: DeviceOrientation): DeviceOrientation {
         default:
             throw new Error('cannot happen');
     }
+}
+
+function performanceSettingsChanged(settingsOld: SessionSettings, settingsNew: SessionSettings): boolean {
+    if (settingsOld.engine === 'cloudpilot' && settingsNew.engine === 'cloudpilot') {
+        return settingsOld.speed !== settingsNew.speed;
+    }
+
+    if (settingsOld.engine === 'uarm' && settingsNew.engine === 'uarm') {
+        return (
+            settingsOld.targetMips !== settingsNew.targetMips ||
+            settingsOld.maxHostLoad !== settingsNew.maxHostLoad ||
+            settingsOld.warnSlowdownThreshold !== settingsNew.warnSlowdownThreshold
+        );
+    }
+
+    throw new Error('unreachable');
 }
 
 @Component({
@@ -199,15 +215,12 @@ export class ContextMenuComponent {
 
     async editSettings(): Promise<void> {
         const session = this.emulationContext.session();
-        fixmeAssertSessionHasEngine(session, 'cloudpilot');
         if (!session) {
             return;
         }
 
         const settings = settingsFromSession(session);
-
-        const oldSpeed = settings.speed;
-        const oldOrientation = settings.deviceOrientation;
+        const oldSettings = { ...settings };
 
         const modal = await this.modalController.create({
             component: SessionSettingsComponent,
@@ -219,8 +232,8 @@ export class ContextMenuComponent {
                 onSave: async () => {
                     const updatedSession = mergeSettings(session, settings);
 
-                    if (oldSpeed !== settings.speed) this.performanceWatchdogService.reset();
-                    if (oldOrientation !== settings.deviceOrientation) {
+                    if (performanceSettingsChanged(oldSettings, settings)) this.performanceWatchdogService.reset();
+                    if (oldSettings.deviceOrientation !== settings.deviceOrientation) {
                         void this.canvasDisplayService.initialize(undefined, updatedSession);
                         this.canvasDisplayService.updateEmulationCanvas();
                     }

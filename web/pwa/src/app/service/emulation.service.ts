@@ -348,23 +348,22 @@ Sorry for the inconvenience.`,
         return true;
     }
 
-    private onSessionChange = ([sessionId, session]: [number, Session | undefined]): Promise<void> =>
-        this.mutex.runExclusive(async () => {
-            const ctx = this.emulationContext.context();
+    private onSessionChange = ([sessionId, session]: [number, Session | undefined]): void => {
+        const ctx = this.emulationContext.context();
+        if (sessionId !== ctx?.session?.id) return;
 
-            if (sessionId !== ctx?.session?.id) return;
+        if (ctx?.session?.mountedCard !== undefined && session === undefined) {
+            this.storageCardContext.release(ctx.session.mountedCard, CardOwner.cloudpilot);
+        }
 
-            if (ctx?.session?.mountedCard !== undefined && session === undefined) {
-                this.storageCardContext.release(ctx.session.mountedCard, CardOwner.cloudpilot);
-            }
-
-            if (session === undefined) {
-                clearStoredSession();
-                void this.stop();
-            } else {
-                if (ctx) this.emulationContext.setContext(session, ctx.engine);
-            }
-        });
+        if (session === undefined) {
+            clearStoredSession();
+            void this.stop();
+        } else {
+            if (ctx) this.emulationContext.setContext(session, ctx.engine);
+            this.updateSettings();
+        }
+    };
 
     private onEmergencySave = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
