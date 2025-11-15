@@ -13,6 +13,7 @@ export const enum HostMessageType {
     penDown = 'penDown',
     returnFrame = 'returnFrame',
     returnSnapshot = 'returnSnapshot',
+    setBackgrounded = 'setBackgrounded',
 }
 
 export type HostMessageRpcCall = RpcRequest & {
@@ -55,6 +56,11 @@ export interface HostMessageReturnSnapshot {
     success: boolean;
 }
 
+export interface HostMessageSetBackgrounded {
+    type: HostMessageType.setBackgrounded;
+    backgrounded: boolean;
+}
+
 export type HostMessage =
     | HostMessageRpcCall
     | HostMessageUpdateSettings
@@ -63,4 +69,5 @@ export type HostMessage =
     | HostMessagePenUp
     | HostMessagePenDown
     | HostMessageReturnFrame
-    | HostMessageReturnSnapshot;
+    | HostMessageReturnSnapshot
+    | HostMessageSetBackgrounded;

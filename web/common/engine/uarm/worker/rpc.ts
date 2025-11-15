@@ -21,12 +21,12 @@ interface RpcSchema {
 
     start: {
         args: void;
-        result: boolean;
+        result: void;
     };
 
     stop: {
         args: void;
-        result: boolean;
+        result: void;
     };
 
     takeSnapshot: {

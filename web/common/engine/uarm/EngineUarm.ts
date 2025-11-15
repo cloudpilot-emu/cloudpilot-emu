@@ -90,6 +90,8 @@ export class EngineUarmImpl implements EngineUarm {
     shutdown(): void {
         this.worker.removeEventListener('message', this.onMessage);
         this.worker.terminate();
+
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
     }
 
     getStatistics(): EmulationStatisticsUarm {
@@ -201,11 +203,13 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     async resume(): Promise<void> {
-        this.running = await this.rpcHost.call('start', undefined);
+        await this.rpcHost.call('start', undefined);
+        this.running = true;
     }
 
     async stop(): Promise<void> {
-        this.running = await this.rpcHost.call('stop', undefined);
+        await this.rpcHost.call('stop', undefined);
+        this.running = false;
 
         this.returnPendingFrame();
     }
@@ -290,6 +294,7 @@ export class EngineUarmImpl implements EngineUarm {
 
     private async initialize(module: WebAssembly.Module): Promise<this> {
         await this.rpcHost.call('initialize', { module, settings: this.settings });
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
 
         return this;
     }
@@ -305,6 +310,14 @@ export class EngineUarmImpl implements EngineUarm {
 
         this.pendingFrame = undefined;
     }
+
+    private onVisibilityChange = (): void => {
+        if (document.visibilityState === 'hidden') {
+            this.dispatchMessage({ type: HostMessageType.setBackgrounded, backgrounded: true });
+        } else {
+            this.dispatchMessage({ type: HostMessageType.setBackgrounded, backgrounded: false });
+        }
+    };
 
     private onMessage = (e: MessageEvent): void => {
         const message = e.data as ClientMessage;

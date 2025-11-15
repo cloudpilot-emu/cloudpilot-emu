@@ -105,6 +105,10 @@ async function onMessage(e: MessageEvent) {
             emulator?.returnSnapshot(message.snapshot, message.success);
             break;
 
+        case HostMessageType.setBackgrounded:
+            emulator?.setBackgrounded(message.backgrounded);
+            break;
+
         default:
             message satisfies never;
     }

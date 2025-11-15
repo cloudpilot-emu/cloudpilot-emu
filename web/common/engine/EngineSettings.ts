@@ -13,6 +13,7 @@ export interface EngineSettings {
     networkIntegration: boolean;
 
     disableAudio: boolean;
+    runInBackground: boolean;
     targetMips: number;
     warnSlowdownThreshold: number;
     maxHostLoad: number;

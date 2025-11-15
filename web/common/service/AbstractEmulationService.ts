@@ -31,6 +31,7 @@ const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
     maxHostLoad: 1,
     targetMips: 100,
     warnSlowdownThreshold: 0.5,
+    runInBackground: false,
 };
 
 export type Executor = <T>(fn: () => T) => T;

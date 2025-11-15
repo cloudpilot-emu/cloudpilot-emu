@@ -271,6 +271,7 @@ export class EmulationService extends AbstractEmulationService {
                       targetMips: session.targetMips,
                       warnSlowdownThreshold: session.warnSlowdownThreshold,
                       maxHostLoad: session.maxHostLoad,
+                      runInBackground: this.kvsService.kvs.runHidden,
                   };
 
         this.updateEngineSettings({

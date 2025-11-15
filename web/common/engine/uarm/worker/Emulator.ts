@@ -103,25 +103,20 @@ export class Emulator {
         this.uarm.penUp();
     }
 
-    start(): boolean {
-        if (!this.isRunning() || !this.uarm.dead()) {
-            this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
-        }
-
-        return this.isRunning();
+    start(): void {
+        this.running = true;
+        this.updateRunState();
     }
 
-    stop(): boolean {
-        if (this.timeoutHandle !== undefined) clearTimeout(this.timeoutHandle);
-        if (this.immediateHandle !== undefined) clearImmediate(this.immediateHandle);
-
-        this.timeoutHandle = this.immediateHandle = undefined;
-
-        return this.isRunning();
+    stop(): void {
+        this.running = false;
+        this.updateRunState();
     }
 
-    isRunning(): boolean {
-        return this.timeoutHandle !== undefined || this.immediateHandle !== undefined;
+    setBackgrounded(backgrounded: boolean): void {
+        this.backgrounded = backgrounded;
+
+        this.updateRunState();
     }
 
     returnFrame(frame: ArrayBuffer): void {
@@ -201,6 +196,23 @@ export class Emulator {
         return this.uarm.getNandSize();
     }
 
+    private updateRunState(): void {
+        if (this.uarm.dead()) return;
+
+        const shoulBeRunning = this.running && (!this.backgrounded || this.settings.runInBackground);
+
+        if (shoulBeRunning && this.timeoutHandle === undefined && this.immediateHandle === undefined) {
+            this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
+        }
+
+        if (!shoulBeRunning) {
+            if (this.timeoutHandle !== undefined) clearTimeout(this.timeoutHandle);
+            if (this.immediateHandle !== undefined) clearImmediate(this.immediateHandle);
+
+            this.timeoutHandle = this.immediateHandle = undefined;
+        }
+    }
+
     private updatePageTrackerSd(): void {
         this.pageTrackerSd = undefined;
         if (this.uarm.getSdCardSize() === 0) return;
@@ -218,8 +230,6 @@ export class Emulator {
         const now = Number(now64);
 
         const sizeSeconds = this.uarm.cycle(now64);
-
-        //        this.processAudio();
 
         const timesliceRemaining =
             (this.uarm.getTimesliceSizeUsec() - Number(this.uarm.getTimestampUsec()) + now) / 1000;
@@ -239,6 +249,8 @@ export class Emulator {
 
             this.lastSnapshotAt = timestamp;
         }
+
+        if (this.backgrounded) return;
 
         this.timesliceEvent.dispatch({
             sizeSeconds,
@@ -264,6 +276,9 @@ export class Emulator {
 
     timesliceEvent = new Event<TimesliceProperties>();
     snapshotEvent = new Event<[UarmSnapshot, Array<Transferable>]>();
+
+    private running = false;
+    private backgrounded = false;
 
     private timeoutHandle: number | undefined;
     private immediateHandle: number | undefined;
