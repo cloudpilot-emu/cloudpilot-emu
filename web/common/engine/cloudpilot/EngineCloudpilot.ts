@@ -47,6 +47,10 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         cloudpilotInstance.pwmUpdateEvent.addHandler(this.onPwmUpdate);
     }
 
+    supportsKeyboardIO(): boolean {
+        return true;
+    }
+
     shutdown(): void {
         this.serialPortIR.unbind();
         this.serialPortSerial.unbind();

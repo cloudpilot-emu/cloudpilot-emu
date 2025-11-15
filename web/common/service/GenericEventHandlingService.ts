@@ -384,7 +384,11 @@ export class GenericEventHandlingService {
     }
 
     private isGameModeActive(e: KeyboardEvent): boolean {
-        return (!this.gameMode && e.ctrlKey) || (this.gameMode && !e.ctrlKey);
+        return (
+            (!this.gameMode && e.ctrlKey) ||
+            (this.gameMode && !e.ctrlKey) ||
+            !this.emulationService.supportsKeyboardIO()
+        );
     }
 
     private buttonFromEvent(e: KeyboardEvent): PalmButton | undefined {

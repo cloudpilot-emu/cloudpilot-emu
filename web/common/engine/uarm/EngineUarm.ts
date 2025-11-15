@@ -87,6 +87,10 @@ export class EngineUarmImpl implements EngineUarm {
         return engine.initialize(uarmModule);
     }
 
+    supportsKeyboardIO(): boolean {
+        return false;
+    }
+
     shutdown(): void {
         this.worker.removeEventListener('message', this.onMessage);
         this.worker.terminate();

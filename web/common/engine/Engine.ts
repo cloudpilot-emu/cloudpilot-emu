@@ -30,6 +30,8 @@ export interface FullState {
 export interface EngineCommon {
     readonly type: EngineType;
 
+    supportsKeyboardIO(): boolean;
+
     penDown(x: number, y: number): void;
     penUp(): void;
 

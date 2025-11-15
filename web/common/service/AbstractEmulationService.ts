@@ -152,6 +152,10 @@ export abstract class AbstractEmulationService {
         return this.engine?.type === 'uarm' ? this.engine.getPcmPort() : undefined;
     }
 
+    supportsKeyboardIO(): boolean {
+        return this.engine?.supportsKeyboardIO() ?? false;
+    }
+
     protected abstract updateConfiguredHotsyncName(hotsyncName: string): void;
 
     protected abstract onAfterAdvanceEmulation(sliceSizeSeconds: number): void;
