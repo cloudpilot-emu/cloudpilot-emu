@@ -205,12 +205,14 @@ export class EngineUarmImpl implements EngineUarm {
         throw new Error('Method not implemented.');
     }
 
-    requestSnapshot(): Promise<SnapshotContainer> {
-        throw new Error('Method not implemented.');
+    async requestSnapshot(): Promise<SnapshotContainer> {
+        if (!this.snapshotContainer) throw new Error('emulator not initialized');
+
+        return this.snapshotContainer.schedule(await this.rpcHost.call('takeSnapshot', undefined));
     }
 
     waitForPendingSnapshot(): Promise<void> {
-        throw new Error('Method not implemented.');
+        return this.rpcHost.call('waitForPendingSnapshot', undefined);
     }
 
     blitFrame(canvas: HTMLCanvasElement): void {
@@ -328,8 +330,7 @@ export class EngineUarmImpl implements EngineUarm {
                         throw new Error('Unreachable: emulator runs, but snapshots are not initialized');
                     }
 
-                    this.snapshotContainer.schedule(message.snapshot);
-                    this.snapshotEvent.dispatch(this.snapshotContainer);
+                    this.snapshotEvent.dispatch(this.snapshotContainer.schedule(message.snapshot));
                 } catch (e) {
                     this.fatal(`${e}`);
 

@@ -47,7 +47,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         };
     }
 
-    schedule(uarmSnapshot: UarmSnapshot): void {
+    schedule(uarmSnapshot: UarmSnapshot): this {
         if (this.uarmSnapshot) throw new Error('snapshot already pending');
 
         this.updateSnapshot(this.snapshotMemory, uarmSnapshot.memory);
@@ -57,6 +57,8 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         this.savestate = new Uint8Array(uarmSnapshot.savestate);
 
         this.uarmSnapshot = uarmSnapshot;
+
+        return this;
     }
 
     materialize(): boolean {
