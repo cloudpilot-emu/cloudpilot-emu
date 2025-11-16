@@ -213,7 +213,7 @@ export class Emulator {
         while (backup.getState() === BackupState.inProgress) {
             if (!backup.continue()) {
                 const lastProcessed = backup.getLastProcessedDb();
-                if (lastProcessed) failedDatabases.push(lastProcessed);
+                if (lastProcessed !== undefined) failedDatabases.push(lastProcessed);
             }
         }
 
