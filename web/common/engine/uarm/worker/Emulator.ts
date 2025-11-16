@@ -223,6 +223,12 @@ export class Emulator {
         }
     }
 
+    getSdCardData(): Uint32Array | undefined {
+        const data = this.uarm.getSdCardData();
+
+        return data ? new Uint32Array(data.buffer, data.byteOffset, data.byteLength).slice() : undefined;
+    }
+
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {
         const timestampStart = Date.now();
         const savestate = this.uarm.saveState();

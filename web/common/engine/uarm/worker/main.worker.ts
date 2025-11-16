@@ -85,6 +85,12 @@ rpcClient
 
         if (backup) addTransferables([backup.archive.buffer]);
         return backup;
+    })
+    .register('getSdCardData', (args, addTransferables) => {
+        const data = unwrapEmulator().getSdCardData();
+
+        if (data) addTransferables([data.buffer]);
+        return data;
     });
 
 async function onMessage(e: MessageEvent) {

@@ -81,6 +81,10 @@ interface RpcSchema {
         args: { includeRom: boolean };
         result: BackupResult | undefined;
     };
+    getSdCardData: {
+        args: void;
+        result: Uint32Array | undefined;
+    };
 }
 
 export type RpcMethod = keyof RpcSchema;

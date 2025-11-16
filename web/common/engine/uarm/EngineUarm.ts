@@ -299,7 +299,10 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     getCardData(key: string): Promise<Uint32Array | undefined> {
-        throw new Error('Method not implemented.');
+        if (this.card.state !== CardState.mounted) throw new Error('no card mounted');
+        if (this.card.key !== key) throw new Error(`invalid key: expected ${this.card.key}, got ${key}`);
+
+        return this.rpcHost.call('getSdCardData', undefined);
     }
 
     getFullState(): Promise<FullState | undefined> {
