@@ -203,22 +203,24 @@ export class Emulator {
         return this.uarm.installDb(data);
     }
 
-    backup(includeRom: boolean, release: Promise<void>): BackupResult | undefined {
+    backup(includeRom: boolean): BackupResult | undefined {
         const backup = this.uarm.createDbBackup(includeRom);
         if (!backup) return;
 
-        void release.then(() => backup.destroy());
-
-        const failedDatabases: Array<string> = [];
-        while (backup.getState() === BackupState.inProgress) {
-            if (!backup.continue()) {
-                const lastProcessed = backup.getLastProcessedDb();
-                if (lastProcessed !== undefined) failedDatabases.push(lastProcessed);
+        try {
+            const failedDatabases: Array<string> = [];
+            while (backup.getState() === BackupState.inProgress) {
+                if (!backup.continue()) {
+                    const lastProcessed = backup.getLastProcessedDb();
+                    if (lastProcessed !== undefined) failedDatabases.push(lastProcessed);
+                }
             }
-        }
 
-        const archive = backup.getArchive();
-        return archive ? { archive, failedDatabases } : undefined;
+            const archive = backup.getArchive();
+            return archive ? { archive: archive.slice(), failedDatabases } : undefined;
+        } finally {
+            backup.destroy();
+        }
     }
 
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {

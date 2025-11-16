@@ -49,7 +49,7 @@ rpcClient
     )
     .register('start', () => unwrapEmulator().start())
     .register('stop', () => unwrapEmulator().stop())
-    .register('takeSnapshot', (args, rpcComplete, addTransferables) => {
+    .register('takeSnapshot', (args, addTransferables) => {
         const snapshotResult = unwrapEmulator().takeSnapshot();
         if (!snapshotResult) throw new Error(`unable to take snapshot`);
 
@@ -58,7 +58,7 @@ rpcClient
 
         return snapshot;
     })
-    .register('refreshSnapshot', (snapshot, rpcComplete, addTransferables) => {
+    .register('refreshSnapshot', (snapshot, addTransferables) => {
         const [updatedSnapshot, transferables] = unwrapEmulator().refreshSnapshot(snapshot);
         addTransferables(transferables);
 
@@ -80,7 +80,12 @@ rpcClient
         return { inserted: true, key };
     })
     .register('installDb', (data) => unwrapEmulator().installDb(data))
-    .register('backup', ({ includeRom }, rpcComplete) => unwrapEmulator().backup(includeRom, rpcComplete));
+    .register('backup', ({ includeRom }, addTransferables) => {
+        const backup = unwrapEmulator().backup(includeRom);
+
+        if (backup) addTransferables([backup.archive.buffer]);
+        return backup;
+    });
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;
