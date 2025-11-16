@@ -244,7 +244,7 @@ export class InstallationService {
                     this.emulationContext,
                 );
 
-                return installationContext.run();
+                return await installationContext.run();
             } finally {
                 void loader.dismiss();
             }

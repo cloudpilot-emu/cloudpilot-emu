@@ -1,3 +1,4 @@
+import { BackupResult } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DbInstallResult } from '@native/cloudpilot_web';
 
@@ -74,6 +75,11 @@ interface RpcSchema {
     installDb: {
         args: Uint8Array;
         result: DbInstallResult;
+    };
+
+    backup: {
+        args: { includeRom: boolean };
+        result: BackupResult | undefined;
     };
 }
 

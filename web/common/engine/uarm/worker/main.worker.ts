@@ -1,12 +1,7 @@
-// This is a nasty hack. The web worker has no Navigator type available, but the
-// Emscripten typings insist on testing it for WebGPU support. The following
-// stub installs a type alias that forces Navigator to never. We have to put it here
-// as an ambient type in order to make sure that the stub is available when the
-// Emscripten typings are evaluated further down the lane.
-//
 /// <reference lib="webworker" />
+// This is a hack to be able to use types that rely on DOM types.
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="./stub-navigator.worker.d.ts"/>
+/// <reference path="./dom-stubs.worker.d.ts"/>
 //
 import { Uarm } from '@common/bridge/Uarm';
 
@@ -84,7 +79,8 @@ rpcClient
 
         return { inserted: true, key };
     })
-    .register('installDb', (data) => unwrapEmulator().installDb(data));
+    .register('installDb', (data) => unwrapEmulator().installDb(data))
+    .register('backup', ({ includeRom }, rpcComplete) => unwrapEmulator().backup(includeRom, rpcComplete));
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;

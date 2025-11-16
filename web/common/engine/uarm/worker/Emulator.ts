@@ -1,7 +1,8 @@
-import { Uarm } from '@common/bridge/Uarm';
+import { DbInstallResult, PalmButton } from '@common/bridge/Cloudpilot';
+import { BackupState, Uarm } from '@common/bridge/Uarm';
+import { BackupResult } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DeviceId } from '@common/model/DeviceId';
-import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
 import { Event } from 'microevent.ts';
 import 'setimmediate';
 
@@ -200,6 +201,24 @@ export class Emulator {
 
     installDb(data: Uint8Array): DbInstallResult {
         return this.uarm.installDb(data);
+    }
+
+    backup(includeRom: boolean, release: Promise<void>): BackupResult | undefined {
+        const backup = this.uarm.createDbBackup(includeRom);
+        if (!backup) return;
+
+        void release.then(() => backup.destroy());
+
+        const failedDatabases: Array<string> = [];
+        while (backup.getState() === BackupState.inProgress) {
+            if (!backup.continue()) {
+                const lastProcessed = backup.getLastProcessedDb();
+                if (lastProcessed) failedDatabases.push(lastProcessed);
+            }
+        }
+
+        const archive = backup.getArchive();
+        return archive ? { archive, failedDatabases } : undefined;
     }
 
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {

@@ -312,8 +312,8 @@ export class EngineUarmImpl implements EngineUarm {
         return this.rpcHost.call('installDb', data);
     }
 
-    backup(includeRomDatabases: boolean): Promise<BackupResult | undefined> {
-        throw new Error('Method not implemented.');
+    backup(includeRom: boolean): Promise<BackupResult | undefined> {
+        return this.rpcHost.call('backup', { includeRom });
     }
 
     private dispatchMessage = (mesage: HostMessage, transferables?: Array<Transferable>) => {

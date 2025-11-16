@@ -5,6 +5,8 @@
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { DeviceId } from '@common/model/DeviceId';
 import {
+    BackupState,
+    BackupType,
     Bridge,
     DbInstallResult as DbInstallResultUarm,
     DeviceType5,
@@ -16,7 +18,19 @@ import {
 import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
 import { Event } from 'microevent.ts';
 
+export { BackupState } from '@native-uarm/index';
+
 let nextId = 0;
+
+export interface DbBackup {
+    getState(): BackupState;
+    continue(): boolean;
+    getLastProcessedDb(): string | undefined;
+
+    getArchive(): Uint8Array | undefined;
+
+    destroy(): void;
+}
 
 function mapDbInstallResult(result: DbInstallResultUarm): DbInstallResult {
     switch (result) {
@@ -51,18 +65,6 @@ function mapDbInstallResult(result: DbInstallResultUarm): DbInstallResult {
     result satisfies never;
 }
 
-function guard(): MethodDecorator {
-    return (target: unknown, propertyKey: string | symbol, desc: PropertyDescriptor) => {
-        const oldMethod = desc.value;
-
-        desc.value = function (this: Uarm, p1: unknown, p2: unknown) {
-            return this.guard(() => oldMethod.call(this, p1, p2));
-        };
-
-        return desc;
-    };
-}
-
 export function mapButton(button: PalmButton): number {
     switch (button) {
         case PalmButton.cal:
@@ -86,6 +88,18 @@ export function mapButton(button: PalmButton): number {
         default:
             return -1;
     }
+}
+
+function guard(): MethodDecorator {
+    return (target: unknown, propertyKey: string | symbol, desc: PropertyDescriptor) => {
+        const oldMethod = desc.value;
+
+        desc.value = function (this: Uarm, p1: unknown, p2: unknown) {
+            return this.guard(() => oldMethod.call(this, p1, p2));
+        };
+
+        return desc;
+    };
 }
 
 export class Uarm {
@@ -375,6 +389,30 @@ export class Uarm {
         this.bridge.Free(ptr);
 
         return mapDbInstallResult(result);
+    }
+
+    @guard()
+    createDbBackup(includeRom: boolean): DbBackup | undefined {
+        const nativeBackup = this.uarm.NewDbBackup(includeRom ? BackupType.ramRom : BackupType.ram);
+        if (!nativeBackup.Init()) {
+            this.module.destroy(nativeBackup);
+            return undefined;
+        }
+
+        return {
+            getState: () => this.guard(() => nativeBackup.GetState()),
+            continue: () => this.guard(() => nativeBackup.Continue()),
+            getLastProcessedDb: () =>
+                this.guard(() => (nativeBackup.HasLastProcessedDb() ? nativeBackup.GetLastProcessedDb() : undefined)),
+            getArchive: () =>
+                this.guard(() => {
+                    const ptr = this.module.getPointer(nativeBackup.GetArchiveData());
+                    if (ptr === 0) return undefined;
+
+                    return this.module.HEAPU8.subarray(ptr, ptr + nativeBackup.GetArchiveSize());
+                }),
+            destroy: () => this.guard(() => this.module.destroy(nativeBackup)),
+        };
     }
 
     dead(): boolean {
