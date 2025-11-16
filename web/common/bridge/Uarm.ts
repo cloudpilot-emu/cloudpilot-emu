@@ -415,6 +415,13 @@ export class Uarm {
         };
     }
 
+    @guard()
+    getRomData(): Uint8Array {
+        const ptr = this.module.getPointer(this.uarm.GetRomData());
+
+        return new Uint8Array(this.module.HEAPU8.subarray(ptr, ptr + this.uarm.GetRomDataSize()));
+    }
+
     dead(): boolean {
         return this.amIdead;
     }

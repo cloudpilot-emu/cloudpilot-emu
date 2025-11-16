@@ -1,4 +1,4 @@
-import { BackupResult } from '@common/engine/Engine';
+import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DbInstallResult } from '@native/cloudpilot_web';
 
@@ -81,9 +81,15 @@ interface RpcSchema {
         args: { includeRom: boolean };
         result: BackupResult | undefined;
     };
+
     getSdCardData: {
         args: void;
         result: Uint32Array | undefined;
+    };
+
+    getFullState: {
+        args: void;
+        result: FullState;
     };
 }
 

@@ -228,7 +228,9 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     processTimesliceNow(): void {
-        throw new Error('Method not implemented.');
+        // We currently need this only for network I/O which is not implemented
+        // for uARM anyway.
+        console.log('processTimesliceNow not implemented for uARM');
     }
 
     async requestSnapshot(): Promise<SnapshotContainer> {
@@ -305,8 +307,8 @@ export class EngineUarmImpl implements EngineUarm {
         return this.rpcHost.call('getSdCardData', undefined);
     }
 
-    getFullState(): Promise<FullState | undefined> {
-        throw new Error('Method not implemented.');
+    async getFullState(): Promise<FullState | undefined> {
+        return this.deviceId === undefined ? undefined : this.rpcHost.call('getFullState', undefined);
     }
 
     installDb(data: Uint8Array): Promise<DbInstallResult> {

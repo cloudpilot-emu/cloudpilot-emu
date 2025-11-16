@@ -1,6 +1,6 @@
 import { DbInstallResult, PalmButton } from '@common/bridge/Cloudpilot';
 import { BackupState, Uarm } from '@common/bridge/Uarm';
-import { BackupResult } from '@common/engine/Engine';
+import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DeviceId } from '@common/model/DeviceId';
 import { Event } from 'microevent.ts';
@@ -17,6 +17,8 @@ interface TimesliceProperties {
     currentIps: number;
     currentIpsMax: number;
 }
+
+type All<T> = { [P in keyof T]-?: T[P] };
 
 export class Emulator {
     constructor(
@@ -227,6 +229,15 @@ export class Emulator {
         const data = this.uarm.getSdCardData();
 
         return data ? new Uint32Array(data.buffer, data.byteOffset, data.byteLength).slice() : undefined;
+    }
+
+    getFullState(): All<FullState> {
+        return {
+            rom: this.uarm.getRomData().slice(),
+            memory: this.uarm.getMemoryData().slice(),
+            nand: this.uarm.getNandData().slice(),
+            savestate: this.uarm.saveState().slice(),
+        };
     }
 
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {

@@ -91,6 +91,12 @@ rpcClient
 
         if (data) addTransferables([data.buffer]);
         return data;
+    })
+    .register('getFullState', (args, addTransferables) => {
+        const state = unwrapEmulator().getFullState();
+
+        addTransferables([state.rom.buffer, state.memory.buffer, state.nand.buffer, state.savestate.buffer]);
+        return state;
     });
 
 async function onMessage(e: MessageEvent) {
