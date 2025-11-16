@@ -4,11 +4,52 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { DeviceId } from '@common/model/DeviceId';
-import { Bridge, DeviceType5, Module, Uarm as UarmNative, VoidPtr, default as createModule } from '@native-uarm/index';
-import { PalmButton } from '@native/cloudpilot_web';
+import {
+    Bridge,
+    DbInstallResult as DbInstallResultUarm,
+    DeviceType5,
+    Module,
+    Uarm as UarmNative,
+    VoidPtr,
+    default as createModule,
+} from '@native-uarm/index';
+import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
 import { Event } from 'microevent.ts';
 
 let nextId = 0;
+
+function mapDbInstallResult(result: DbInstallResultUarm): DbInstallResult {
+    switch (result) {
+        case DbInstallResultUarm.ok:
+            return DbInstallResult.success;
+
+        case DbInstallResultUarm.needsReset:
+            return DbInstallResult.success;
+
+        case DbInstallResultUarm.errCorrupt:
+            return DbInstallResult.failureDbIsCorrupt;
+
+        case DbInstallResultUarm.errIsOpen:
+            return DbInstallResult.failureDbIsOpen;
+
+        case DbInstallResultUarm.errCouldNotOverwrite:
+            return DbInstallResult.failedCouldNotOverwrite;
+
+        case DbInstallResultUarm.errNotCurrentlyPossible:
+            return DbInstallResult.failureInstallationNotPossible;
+
+        case DbInstallResultUarm.errNotSupported:
+            return DbInstallResult.failureInstallationNotPossible;
+
+        case DbInstallResultUarm.errOom:
+            return DbInstallResult.failureNotEnoughMemory;
+
+        case DbInstallResultUarm.errUnknown:
+            return DbInstallResult.failureUnknownReason;
+    }
+
+    result satisfies never;
+}
 
 function guard(): MethodDecorator {
     return (target: unknown, propertyKey: string | symbol, desc: PropertyDescriptor) => {
@@ -324,6 +365,16 @@ export class Uarm {
     @guard()
     reset(): void {
         this.uarm.Reset();
+    }
+
+    @guard()
+    installDb(data: Uint8Array): DbInstallResult {
+        const ptr = this.copyIn(data);
+
+        const result = this.uarm.InstallDatabase(data.length, ptr);
+        this.bridge.Free(ptr);
+
+        return mapDbInstallResult(result);
     }
 
     dead(): boolean {

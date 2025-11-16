@@ -83,7 +83,8 @@ rpcClient
         if (key === undefined) throw new Error('unreachable');
 
         return { inserted: true, key };
-    });
+    })
+    .register('installDb', (data) => unwrapEmulator().installDb(data));
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;

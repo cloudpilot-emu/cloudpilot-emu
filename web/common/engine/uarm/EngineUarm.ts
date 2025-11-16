@@ -307,7 +307,9 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     installDb(data: Uint8Array): Promise<DbInstallResult> {
-        throw new Error('Method not implemented.');
+        // We copy rather than transfer data on purpose --- our code operates on the buffer
+        // after installation.
+        return this.rpcHost.call('installDb', data);
     }
 
     backup(includeRomDatabases: boolean): Promise<BackupResult | undefined> {

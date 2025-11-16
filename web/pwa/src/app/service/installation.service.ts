@@ -22,6 +22,8 @@ function isInstallable(filename: string) {
     return /\.(prc|pdb|pqa)$/i.test(filename);
 }
 
+class InstallationNotPossibleError extends Error {}
+
 function describeError(code: DbInstallResult): string {
     switch (code) {
         case DbInstallResult.failedCouldNotOverwrite:
@@ -112,6 +114,9 @@ class InstallationContext {
                 this.filesSuccess.push(name);
                 this.sizeInstalledSinceLastsnapshot += content.length;
                 break;
+
+            case DbInstallResult.failureInstallationNotPossible:
+                throw new InstallationNotPossibleError('DB installation not currently possible');
 
             default:
                 this.filesFail.push(name);
@@ -207,11 +212,26 @@ export class InstallationService {
     ) {}
 
     async installFiles(files: Array<FileDescriptor>): Promise<void> {
-        const loader = await this.loadingController.create({
-            message: 'Installing...',
-        });
+        try {
+            await this.installFilesUnguarded(files);
+        } catch (e) {
+            if (e instanceof InstallationNotPossibleError) {
+                void this.alertService.errorMessage(
+                    'Installation is not currently possible. Navigate to the PalmOS launcher and try again.',
+                );
+                return;
+            }
 
+            throw e;
+        }
+    }
+
+    private async installFilesUnguarded(files: Array<FileDescriptor>): Promise<void> {
         const [filesSuccess, filesRequireReset, filesFail] = await this.emulatorLock.runGuarded(async () => {
+            const loader = await this.loadingController.create({
+                message: 'Installing...',
+            });
+
             await loader.present();
             await this.emulationService.waitForPendingSnapshot();
 

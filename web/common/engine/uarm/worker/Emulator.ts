@@ -1,7 +1,7 @@
 import { Uarm } from '@common/bridge/Uarm';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DeviceId } from '@common/model/DeviceId';
-import { PalmButton } from '@native/cloudpilot_web';
+import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
 import { Event } from 'microevent.ts';
 import 'setimmediate';
 
@@ -196,6 +196,10 @@ export class Emulator {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     reset(type: ResetType): void {
         this.uarm.reset();
+    }
+
+    installDb(data: Uint8Array): DbInstallResult {
+        return this.uarm.installDb(data);
     }
 
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {

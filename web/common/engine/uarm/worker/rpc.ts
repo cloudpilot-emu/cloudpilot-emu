@@ -1,4 +1,5 @@
 import { EngineSettings } from '@common/engine/EngineSettings';
+import { DbInstallResult } from '@native/cloudpilot_web';
 
 import { UarmSnapshot } from './Snapshot';
 
@@ -68,6 +69,11 @@ interface RpcSchema {
     getSdCardState: {
         args: void;
         result: { inserted: false } | { inserted: true; key: string };
+    };
+
+    installDb: {
+        args: Uint8Array;
+        result: DbInstallResult;
     };
 }
 

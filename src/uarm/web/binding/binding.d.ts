@@ -17,6 +17,18 @@ export const enum BackupState {
     error = -1,
 }
 
+export const enum DbInstallResult {
+    needsReset = 1,
+    ok = 0,
+    errCorrupt = -2,
+    errOom = -3,
+    errIsOpen = -4,
+    errCouldNotOverwrite = -5,
+    errNotSupported = -6,
+    errNotCurrentlyPossible = -7,
+    errUnknown = -8,
+}
+
 export interface Uarm {
     SetRamSize(size: number): Uarm;
     SetNand(size: number, data: VoidPtr): Uarm;
@@ -86,7 +98,7 @@ export interface Uarm {
 
     GetRamSize(): number;
 
-    InstallDatabase(len: number, data: VoidPtr): number;
+    InstallDatabase(len: number, data: VoidPtr): DbInstallResult;
 
     NewDbBackup(type: BackupType): DbBackup;
 }
