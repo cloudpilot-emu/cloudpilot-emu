@@ -194,6 +194,8 @@ class PcmProcessor extends AudioWorkletProcessor implements AudioWorkletProcesso
 
     private clearStreamPort(): void {
         if (this.streamPort) this.streamPort.removeEventListener('message', this.onStreamMessage);
+        this.streamPort = undefined;
+
         this.flush();
     }
 
