@@ -578,6 +578,7 @@ export abstract class AbstractCanvasDisplayService {
 
             case DeviceId.i710:
             case DeviceId.te2:
+            case DeviceId.frankene2:
                 return SkinElement.HARD_BUTTONS_TUNGSTEN_W;
 
             case DeviceId.iii:
