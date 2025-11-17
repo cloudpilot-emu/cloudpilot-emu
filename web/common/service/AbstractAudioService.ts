@@ -17,7 +17,7 @@ declare global {
 
 const audioContextCtor = window.AudioContext || window.webkitAudioContext;
 
-function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
+function withTimeout<T>(v: Promise<T>, timeout = 500): Promise<T> {
     return new Promise((resolve, reject) => {
         setTimeout(() => reject(new Error('timeout')), timeout);
 

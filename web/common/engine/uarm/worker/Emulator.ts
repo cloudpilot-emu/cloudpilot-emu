@@ -278,7 +278,7 @@ export class Emulator {
         const snapshotNand = this.pageTrackerNand.takeSnapshot();
         const snapshotSd = this.pageTrackerSd?.takeSnapshot();
 
-        if (!snapshotMemory) throw new Error('incpmplete snapshot');
+        if (!snapshotMemory) throw new Error('incomplete snapshot');
 
         const now = Date.now();
 
