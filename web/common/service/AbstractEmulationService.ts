@@ -152,6 +152,14 @@ export abstract class AbstractEmulationService {
         return this.engine?.type === 'uarm' ? this.engine.getPcmPort() : undefined;
     }
 
+    enablePcmStreaming(): void {
+        if (this.engine?.type === 'uarm') this.engine.enablePcmStreaming();
+    }
+
+    disablePcmStreaming(): void {
+        if (this.engine?.type === 'uarm') this.engine.disablePcmStreaming();
+    }
+
     supportsKeyboardIO(): boolean {
         return this.engine?.supportsKeyboardIO() ?? false;
     }

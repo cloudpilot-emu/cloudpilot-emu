@@ -3,6 +3,12 @@ import { BackupState, Uarm } from '@common/bridge/Uarm';
 import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DeviceId } from '@common/model/DeviceId';
+import {
+    StreamMessageClient,
+    StreamMessageClientType,
+    StreamMessageHost,
+    StreamMessageHostType,
+} from '@common/service/audioworklet/messages';
 import { Event } from 'microevent.ts';
 import 'setimmediate';
 
@@ -18,14 +24,21 @@ interface TimesliceProperties {
     currentIpsMax: number;
 }
 
+const MAX_PCM_SUSPEND_MSEC = 500;
+
 type All<T> = { [P in keyof T]-?: T[P] };
 
 export class Emulator {
     constructor(
         private uarm: Uarm,
         private settings: EngineSettings,
+        private pcmPort: MessagePort,
     ) {
         uarm.fatalErrorEvent.addHandler(() => this.stop());
+
+        this.sampleQueueSize = uarm.getSampleQueueSize();
+        this.pcmPort.addEventListener('message', this.onPcmPortMessage);
+        this.pcmPort.start();
     }
 
     openSession(
@@ -88,7 +101,7 @@ export class Emulator {
         if (!this.uarmInitialized) return;
 
         this.uarm.setMaxHostLoad(settings.maxHostLoad);
-        this.uarm.setDisablePcm(settings.disableAudio);
+        this.uarm.disablePcm(settings.disableAudio);
         this.uarm.setTargetMips(settings.targetMips);
         this.pageTrackerMemory?.enableCrc(settings.memoryCrc);
     }
@@ -240,6 +253,18 @@ export class Emulator {
         };
     }
 
+    enablePcmStreaming(): void {
+        this.pcmStreaming = true;
+
+        this.dispatchPcmPortMessage({ type: StreamMessageHostType.flush });
+        this.suspendPcm(false);
+    }
+
+    disablePcmStreaming(): void {
+        this.pcmStreaming = false;
+        this.suspendPcm(false);
+    }
+
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {
         const timestampStart = Date.now();
         const savestate = this.uarm.saveState();
@@ -295,6 +320,9 @@ export class Emulator {
 
         if (shoulBeRunning && this.timeoutHandle === undefined && this.immediateHandle === undefined) {
             this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
+
+            this.dispatchPcmPortMessage({ type: StreamMessageHostType.flush });
+            this.suspendPcm(false);
         }
 
         if (!shoulBeRunning) {
@@ -330,8 +358,6 @@ export class Emulator {
         if (timesliceRemaining < 5) this.immediateHandle = setImmediate(this.timesliceTask) as unknown as number;
         else this.timeoutHandle = setTimeout(this.timesliceTask, timesliceRemaining) as unknown as number;
 
-        this.uarm.clearAudioQueue();
-
         const timestamp = performance.now();
         if (
             this.settings.automaticSnapshotInterval > 0 &&
@@ -344,6 +370,7 @@ export class Emulator {
             this.lastSnapshotAt = timestamp;
         }
 
+        this.processSamples(sizeSeconds);
         if (this.backgrounded) return;
 
         this.timesliceEvent.dispatch({
@@ -353,6 +380,39 @@ export class Emulator {
             currentIpsMax: this.uarm.getCurrentIpsMax(),
         });
     };
+
+    private processSamples(timesliceSizeSeconds: number): void {
+        if (!this.pcmStreaming || this.settings.disableAudio) {
+            this.uarm.clearSampleQueue();
+            return;
+        }
+
+        if (this.pcmSuspended) {
+            this.pcmSuspendedForMsec += timesliceSizeSeconds * 1000;
+            if (this.pcmSuspendedForMsec > MAX_PCM_SUSPEND_MSEC) this.suspendPcm(false);
+        }
+
+        const samples = this.uarm.getQueuedSamples();
+        if (!samples) return;
+
+        const sampleBuffer = this.getSampleBuffer();
+        sampleBuffer.set(samples);
+
+        this.dispatchPcmPortMessage(
+            {
+                type: StreamMessageHostType.sampleData,
+                buffer: sampleBuffer.buffer,
+                count: samples.length,
+            },
+            [sampleBuffer.buffer],
+        );
+    }
+
+    private getSampleBuffer(): Uint32Array {
+        if (this.sampleBufferPool.length > 0) return new Uint32Array(this.sampleBufferPool.pop()!);
+
+        return new Uint32Array(this.sampleQueueSize);
+    }
 
     private getFrame(): ArrayBuffer | undefined {
         const frame = this.uarm.getFrame(this.deviceId === DeviceId.frankene2 ? 480 : 320);
@@ -367,6 +427,41 @@ export class Emulator {
             return frameCopy.buffer;
         }
     }
+
+    private suspendPcm(suspended: boolean): void {
+        this.uarm.suspendPcm(suspended);
+
+        this.pcmSuspended = suspended;
+        if (suspended) this.pcmSuspendedForMsec = 0;
+    }
+
+    private dispatchPcmPortMessage(message: StreamMessageHost, transferables?: Array<Transferable>): void {
+        this.pcmPort.postMessage(message, transferables as Array<Transferable>);
+    }
+
+    private onPcmPortMessage = (e: MessageEvent): void => {
+        if (!this.pcmStreaming || this.settings.disableAudio) return;
+
+        const message: StreamMessageClient = e.data;
+        switch (message.type) {
+            case StreamMessageClientType.resumePcm:
+                this.suspendPcm(false);
+
+                break;
+
+            case StreamMessageClientType.suspendPcm:
+                this.uarm.suspendPcm(true);
+
+                break;
+
+            case StreamMessageClientType.returnBuffer:
+                this.sampleBufferPool.push(message.buffer);
+                break;
+
+            default:
+                message satisfies never;
+        }
+    };
 
     timesliceEvent = new Event<TimesliceProperties>();
     snapshotEvent = new Event<[UarmSnapshot, Array<Transferable>]>();
@@ -388,6 +483,12 @@ export class Emulator {
     private savestate: Uint8Array | undefined;
     private snapshotPending = false;
     private lastSnapshotAt = 0;
+
+    private readonly sampleQueueSize: number;
+    private pcmStreaming = false;
+    private pcmSuspended = false;
+    private pcmSuspendedForMsec = 0;
+    private sampleBufferPool: Array<ArrayBufferLike> = [];
 
     private returnSnapshotCallbacks: Array<() => void> = [];
 }

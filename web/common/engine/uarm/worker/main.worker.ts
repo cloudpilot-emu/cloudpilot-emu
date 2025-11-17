@@ -24,7 +24,7 @@ function dispatchMessage(message: ClientMessage, transferables?: Array<Transfera
 
 const rpcClient = new RpcClient(dispatchMessage);
 rpcClient
-    .register('initialize', async ({ module, settings }) => {
+    .register('initialize', async ({ module, settings, pcmPort }) => {
         if (emulator) throw new Error('worker already initialized');
 
         const uarm = await Uarm.create(module);
@@ -32,7 +32,7 @@ rpcClient
             dispatchMessage({ type: ClientMessageType.fatalError, error: error.message }),
         );
 
-        emulator = new Emulator(uarm, settings);
+        emulator = new Emulator(uarm, settings, pcmPort);
 
         emulator.timesliceEvent.addHandler((props) =>
             dispatchMessage({ type: ClientMessageType.timeslice, ...props }, props.frame ? [props.frame] : undefined),
@@ -141,6 +141,11 @@ async function onMessage(e: MessageEvent) {
 
         case HostMessageType.reset:
             emulator?.reset(message.resetType);
+            break;
+
+        case HostMessageType.setPcmStreaming:
+            if (message.pcmStreaming) emulator?.enablePcmStreaming();
+            else emulator?.disablePcmStreaming();
             break;
 
         default:

@@ -108,7 +108,17 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     getPcmPort(): MessagePort {
-        throw new Error('Method not implemented.');
+        return this.pcmChannel.port1;
+    }
+
+    enablePcmStreaming(): void {
+        console.log('streaming enabled');
+        this.dispatchMessage({ type: HostMessageType.setPcmStreaming, pcmStreaming: true });
+    }
+
+    disablePcmStreaming(): void {
+        console.log('streaming disabled');
+        this.dispatchMessage({ type: HostMessageType.setPcmStreaming, pcmStreaming: false });
     }
 
     penDown(x: number, y: number): void {
@@ -326,7 +336,9 @@ export class EngineUarmImpl implements EngineUarm {
     };
 
     private async initialize(module: WebAssembly.Module): Promise<this> {
-        await this.rpcHost.call('initialize', { module, settings: this.settings });
+        await this.rpcHost.call('initialize', { module, settings: this.settings, pcmPort: this.pcmChannel.port2 }, [
+            this.pcmChannel.port2,
+        ]);
         document.addEventListener('visibilitychange', this.onVisibilityChange);
 
         return this;
@@ -421,4 +433,6 @@ export class EngineUarmImpl implements EngineUarm {
     private snapshotContainer: SnapshotContainerImpl | undefined;
 
     private rpcHost: RpcHost;
+
+    private pcmChannel = new MessageChannel();
 }

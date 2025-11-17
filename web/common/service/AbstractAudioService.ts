@@ -4,6 +4,8 @@ import { AbstractEmulationService } from '@common/service/AbstractEmulationServi
 import { Mutex } from 'async-mutex';
 import { EventInterface } from 'microevent.ts';
 
+import { ControlMessageHost, ControlMessageHostType } from './audioworklet/messages';
+
 type AudioContextType = typeof AudioContext;
 
 declare global {
@@ -22,6 +24,7 @@ function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
         v.then(resolve, reject);
     });
 }
+
 export abstract class AbstractAudioService {
     constructor(private emulationService: AbstractEmulationService) {
         this.bind();
@@ -62,11 +65,19 @@ export abstract class AbstractAudioService {
 
         this.pwmUpdateEvent = this.emulationService.pwmUpdateEvent();
         this.pwmUpdateEvent?.addHandler(this.onPwmUpdate);
+
+        const pcmPort = this.emulationService.pcmPort();
+        if (!pcmPort) return;
+
+        this.bindWorkletNode();
     }
 
     protected unbind(): void {
         this.pwmUpdateEvent?.removeHandler(this.onPwmUpdate);
+        this.disconnectPwmSource();
         this.pwmUpdateEvent = undefined;
+
+        this.unbindWorkletNode();
     }
 
     protected abstract getVolume(): number;
@@ -97,6 +108,7 @@ export abstract class AbstractAudioService {
                     this.updateGain();
 
                     await withTimeout(this.context.resume());
+                    this.emulationService.enablePcmStreaming();
 
                     console.log('resume audio context');
                 } catch (e) {
@@ -104,6 +116,7 @@ export abstract class AbstractAudioService {
                 }
             } else {
                 try {
+                    this.emulationService.disablePcmStreaming();
                     await withTimeout(this.context.suspend());
 
                     console.log('suspend audio context');
@@ -119,6 +132,25 @@ export abstract class AbstractAudioService {
         if (this.gainNode) {
             this.gainNode.gain.value = this.gain();
         }
+    }
+
+    private async registerWorklet(context: AudioContext): Promise<void> {
+        // Trick webpack into bundling the worklet as a worker. Abomination.
+        const savedWorker = window.Worker;
+        window.Worker = class {
+            constructor(url: URL) {
+                this.ready = context.audioWorklet.addModule(url);
+            }
+
+            ready: Promise<void>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any;
+
+        const loader = new Worker(new URL('./audioworklet/pcm-worklet.worker.ts', import.meta.url));
+        window.Worker = savedWorker;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (loader as any).ready;
     }
 
     private async initializeAudioUnguarded(): Promise<boolean> {
@@ -146,20 +178,32 @@ export abstract class AbstractAudioService {
             return false;
         }
 
+        await this.registerWorklet(this.context);
+
         this.context.addEventListener('statechange', () => {
             if ((this.context?.state as string) === 'interrupted') void this.updateState();
         });
 
+        this.workletNode = new AudioWorkletNode(this.context, 'pcm-processor', {
+            channelCount: 2,
+            numberOfOutputs: 1,
+            outputChannelCount: [2],
+            processorOptions: {
+                sampleRateTo: this.context.sampleRate,
+            },
+        });
+
         this.gainNode = this.context.createGain();
-        this.gainNode.channelCount = 1;
+        // this.gainNode.channelCount = 1;
         this.gainNode.channelInterpretation = 'speakers';
         this.gainNode.gain.value = this.gain();
 
         this.gainNode.connect(this.context.destination);
 
-        this.applyPwmUpdate();
-
         this.initialized = true;
+
+        this.applyPwmUpdate();
+        this.bindWorkletNode();
 
         return true;
     }
@@ -185,7 +229,6 @@ export abstract class AbstractAudioService {
         if (!this.initialized) return;
 
         if (this.shouldRun() !== this.isRunning()) void this.updateState(true);
-
         if (!this.shouldRun()) return;
 
         this.applyPwmUpdate();
@@ -193,6 +236,7 @@ export abstract class AbstractAudioService {
 
     private applyPwmUpdate(): void {
         if (!this.context || !this.pendingPwmUpdate) return;
+        if (!this.gainNode) throw new Error('unreachable');
 
         const { frequency, dutyCycle } = this.pendingPwmUpdate;
         const sampleRate = this.context.sampleRate;
@@ -200,7 +244,7 @@ export abstract class AbstractAudioService {
         this.pendingPwmUpdate = undefined;
 
         if (frequency <= 0 || dutyCycle <= 0 || frequency >= sampleRate) {
-            this.disconnectSource();
+            this.disconnectPwmSource();
 
             return;
         }
@@ -218,7 +262,7 @@ export abstract class AbstractAudioService {
         bufferSourceNode.loop = true;
         bufferSourceNode.buffer = buffer;
 
-        this.disconnectSource();
+        this.disconnectPwmSource();
 
         bufferSourceNode.connect(this.gainNode);
         bufferSourceNode.start();
@@ -227,7 +271,7 @@ export abstract class AbstractAudioService {
         this.pendingPwmUpdate = undefined;
     }
 
-    private disconnectSource(): void {
+    private disconnectPwmSource(): void {
         if (this.bufferSourceNode) {
             this.bufferSourceNode.stop();
             this.bufferSourceNode.disconnect();
@@ -239,14 +283,48 @@ export abstract class AbstractAudioService {
         return this.getVolume() / 2;
     }
 
+    private dispatchPcmControlMessage(message: ControlMessageHost, transferables?: Array<Transferable>): void {
+        this.workletNode?.port.postMessage(message, transferables as Array<Transferable>);
+    }
+
+    private bindWorkletNode(): void {
+        if (this.workletBound || !this.initialized) return;
+        if (!this.workletNode || !this.gainNode) throw new Error('unreachable');
+
+        const pcmPort = this.emulationService.pcmPort();
+        if (!pcmPort) return;
+
+        this.workletNode.connect(this.gainNode);
+        this.dispatchPcmControlMessage({ type: ControlMessageHostType.setStreamMessagePort, port: pcmPort }, [pcmPort]);
+
+        if (this.shouldRun()) this.emulationService.enablePcmStreaming();
+        else this.emulationService.disablePcmStreaming();
+
+        this.workletBound = true;
+        console.log('bound worklet');
+    }
+
+    private unbindWorkletNode(): void {
+        if (!this.workletBound) return;
+        this.workletNode?.disconnect();
+
+        this.dispatchPcmControlMessage({ type: ControlMessageHostType.reset });
+        this.emulationService.disablePcmStreaming();
+
+        this.workletBound = false;
+        console.log('unbound worklet');
+    }
+
     private mutex = new Mutex();
     private context: AudioContext | undefined;
 
     private bufferSourceNode: AudioBufferSourceNode | undefined;
-    private gainNode!: GainNode;
+    private gainNode: GainNode | undefined;
+    private workletNode: AudioWorkletNode | undefined;
 
     private initialized = false;
     private muted = false;
+    private workletBound = false;
 
     private pwmUpdateEvent: EventInterface<PwmUpdate> | undefined;
     private pendingPwmUpdate: PwmUpdate | undefined;

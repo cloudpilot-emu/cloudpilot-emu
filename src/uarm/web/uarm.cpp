@@ -157,6 +157,8 @@ uint32_t* Uarm::PopQueuedSamples() {
     return samples;
 }
 
+uint32_t Uarm::GetSampleQueueSize() { return AUDIO_QUEUE_SIZE; }
+
 void Uarm::SetPcmOutputEnabled(bool enabled) { socSetPcmOutputEnabled(soc, enabled); }
 
 void Uarm::SetPcmSuspended(bool suspended) { socSetPcmSuspended(soc, suspended); }

@@ -6,7 +6,7 @@ import { UarmSnapshot } from './Snapshot';
 
 interface RpcSchema {
     initialize: {
-        args: { module: WebAssembly.Module; settings: EngineSettings };
+        args: { module: WebAssembly.Module; settings: EngineSettings; pcmPort: MessagePort };
         result: void;
     };
 

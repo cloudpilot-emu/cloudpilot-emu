@@ -61,6 +61,7 @@ export interface Uarm {
 
     PendingSamples(): number;
     PopQueuedSamples(): VoidPtr;
+    GetSampleQueueSize(): number;
     SetPcmOutputEnabled(enabled: boolean): void;
     SetPcmSuspended(suspended: boolean): void;
 

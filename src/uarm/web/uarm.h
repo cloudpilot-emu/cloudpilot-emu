@@ -48,6 +48,7 @@ class Uarm {
 
     uint32_t PendingSamples();
     uint32_t* PopQueuedSamples();
+    uint32_t GetSampleQueueSize();
     void SetPcmOutputEnabled(bool enabled);
     void SetPcmSuspended(bool suspended);
 

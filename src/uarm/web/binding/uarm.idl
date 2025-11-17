@@ -32,6 +32,7 @@ interface Uarm {
 
     unsigned long PendingSamples();
     VoidPtr PopQueuedSamples();
+    unsigned long GetSampleQueueSize();
     void SetPcmOutputEnabled(boolean enabled);
     void SetPcmSuspended(boolean suspended);
 

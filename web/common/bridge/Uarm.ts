@@ -217,11 +217,6 @@ export class Uarm {
     }
 
     @guard()
-    setDisablePcm(disableAudio: boolean): void {
-        this.uarm.SetPcmOutputEnabled(!disableAudio);
-    }
-
-    @guard()
     setTargetMips(targetMips: number): void {
         this.uarm.SetCyclesPerSecondLimit(targetMips * 1000000);
     }
@@ -372,8 +367,32 @@ export class Uarm {
     }
 
     @guard()
-    clearAudioQueue(): void {
+    clearSampleQueue(): void {
         this.uarm.PopQueuedSamples();
+    }
+
+    @guard()
+    getQueuedSamples(): Uint32Array | undefined {
+        const count = this.uarm.PendingSamples();
+        if (count === 0) return undefined;
+
+        const ptr = this.module.getPointer(this.uarm.PopQueuedSamples()) >>> 2;
+        return this.module.HEAPU32.subarray(ptr, ptr + count);
+    }
+
+    @guard()
+    getSampleQueueSize(): number {
+        return this.uarm.GetSampleQueueSize();
+    }
+
+    @guard()
+    disablePcm(disable: boolean): void {
+        this.uarm.SetPcmOutputEnabled(!disable);
+    }
+
+    @guard()
+    suspendPcm(suspend: boolean): void {
+        this.uarm.SetPcmSuspended(suspend);
     }
 
     @guard()
