@@ -161,6 +161,10 @@ export class ContextMenuComponent {
         return !this.audioService.isInitialized() || this.audioService.isMuted();
     }
 
+    get isInitialized(): boolean {
+        return this.audioService.isInitialized();
+    }
+
     get isAudioOff(): boolean {
         return this.kvsService.kvs.volume <= 0;
     }

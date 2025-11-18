@@ -4,6 +4,8 @@ export const isIOS =
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 export const isIOSSafari = isIOS && !navigator.userAgent.match(/(crios)|(fxios)/i);
 export const isIOSNative = !!navigator.userAgent.match(/pwashell/i);
+export const isWebkit =
+    isMacOSSafari || isIOS || (!!navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/));
 
 export const isAndroid = !!navigator.userAgent.match(/android/i);
 

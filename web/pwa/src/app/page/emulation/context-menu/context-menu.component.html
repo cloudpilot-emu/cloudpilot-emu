@@ -47,11 +47,11 @@
         <ion-icon name="log-out-outline" slot="end"></ion-icon>
     </ion-item>
     <ion-item lines="full" button [detail]="false" *ngIf="isMuted && !isAudioOff" (click)="mute(false)">
-        <ion-label>Enable audio</ion-label>
+        <ion-label>{{ isInitialized ? 'Unmute' : 'Enable' }} audio</ion-label>
         <ion-icon name="volume-high-outline" slot="end"></ion-icon>
     </ion-item>
     <ion-item lines="full" button [detail]="false" *ngIf="!isMuted && !isAudioOff" (click)="mute(true)">
-        <ion-label>Disable audio</ion-label>
+        <ion-label>Mute audio</ion-label>
         <ion-icon name="volume-mute-outline" slot="end"></ion-icon>
     </ion-item>
     <ion-item

@@ -8,6 +8,7 @@ import { HelpComponent } from '@pwa/component/help/help.component';
 import { debounce } from '@pwa/helper/debounce';
 import { Session } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
+import { AudioService } from '@pwa/service/audio.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
 import { EmulationContextService } from '@pwa/service/emulation-context.service';
@@ -52,6 +53,7 @@ export class EmulationPage implements DragDropClient {
         private dragDropService: DragDropService,
         private sessionService: SessionService,
         private loadingController: LoadingController,
+        private audioService: AudioService,
         public config: Config,
     ) {}
 
@@ -72,6 +74,8 @@ export class EmulationPage implements DragDropClient {
             await this.emulationService.bootstrapComplete();
             this.bootstrapComplete = true;
 
+            this.audioService.activate();
+
             const session = this.emulationContext.session();
 
             if (session && !session.wasResetForcefully) {
@@ -86,6 +90,7 @@ export class EmulationPage implements DragDropClient {
 
     ionViewWillLeave = () =>
         this.mutex.runExclusive(() => {
+            this.audioService.suspend();
             this.dragDropService.unregisterClient(this);
 
             this.linkApi.installation.requestEvent.removeHandler(this.handleLinkApiInstallationRequest);

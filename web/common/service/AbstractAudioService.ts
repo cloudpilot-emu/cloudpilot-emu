@@ -1,5 +1,5 @@
 import { PwmUpdate } from '@common/bridge/Cloudpilot';
-import { isIOS } from '@common/helper/browser';
+import { isIOS, isWebkit } from '@common/helper/browser';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Mutex } from 'async-mutex';
 import { EventInterface } from 'microevent.ts';
@@ -13,6 +13,12 @@ declare global {
         webkitAudioContext: AudioContextType;
         AudioContext: AudioContextType;
     }
+}
+
+interface Audio {
+    context: AudioContext;
+    gainNode: GainNode;
+    workletNode: AudioWorkletNode;
 }
 
 const audioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -29,25 +35,24 @@ export abstract class AbstractAudioService {
     constructor(private emulationService: AbstractEmulationService) {
         this.bind();
 
-        this.emulationService.openSessionEvent.addHandler(this.onOpenSession);
+        this.emulationService.openSessionEvent.addHandler(() => this.bind());
 
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
         this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
-
         if (!isIOS) document.addEventListener('visibilitychange', () => this.updateState());
     }
 
     initialize = (): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
             for (let i = 0; i < 3; i++) {
-                if (await this.initializeAudioUnguarded()) return false;
+                if (await this.initializeAudioUnguarded()) return true;
             }
 
-            return true;
+            return false;
         });
 
     isInitialized(): boolean {
-        return this.initialized;
+        return this.audio !== undefined;
     }
 
     mute(muted: boolean): void {
@@ -60,7 +65,53 @@ export abstract class AbstractAudioService {
         return this.muted;
     }
 
-    protected bind(): void {
+    protected abstract getVolume(): number;
+
+    protected abstract runHidden(): boolean;
+
+    protected shouldRun(): boolean {
+        return this.gain() > 0 && (document.visibilityState !== 'hidden' || isIOS || this.runHidden());
+    }
+
+    protected shouldMute(): boolean {
+        return !this.emulationService.isRunning() || this.emulationService.isPowerOff() || this.muted;
+    }
+
+    protected updateState = () =>
+        this.mutex.runExclusive(async () => {
+            if (!this.audio) return;
+            this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+
+            if (this.isRunning() === this.shouldRun()) return;
+
+            const oldState = this.audio.context.state;
+
+            if (this.shouldRun()) {
+                try {
+                    await withTimeout(this.audio.context.resume());
+
+                    this.emulationService.enablePcmStreaming();
+                    this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+
+                    console.log('resume audio context');
+                } catch (e) {
+                    console.error(`failed to resume audio from state ${oldState}`, e);
+                }
+            } else {
+                try {
+                    this.emulationService.disablePcmStreaming();
+                    await withTimeout(this.audio.context.suspend());
+
+                    console.log('suspend audio context');
+                } catch (e) {
+                    console.error(`failed to suspend audio from state ${oldState}`, e);
+                }
+            }
+
+            console.log(`audio context state change ${oldState} -> ${this.audio.context.state}`);
+        });
+
+    private bind(): void {
         this.unbind();
 
         this.pwmUpdateEvent = this.emulationService.pwmUpdateEvent();
@@ -72,66 +123,12 @@ export abstract class AbstractAudioService {
         this.bindWorkletNode();
     }
 
-    protected unbind(): void {
+    private unbind(): void {
         this.pwmUpdateEvent?.removeHandler(this.onPwmUpdate);
         this.disconnectPwmSource();
         this.pwmUpdateEvent = undefined;
 
         this.unbindWorkletNode();
-    }
-
-    protected abstract getVolume(): number;
-
-    protected abstract runHidden(): boolean;
-
-    protected shouldRun(): boolean {
-        return (
-            this.emulationService.isRunning() &&
-            !this.emulationService.isPowerOff() &&
-            !this.muted &&
-            this.gain() > 0 &&
-            (document.visibilityState !== 'hidden' || isIOS || this.runHidden())
-        );
-    }
-
-    protected updateState = (skipPwmUpdate = false) =>
-        this.mutex.runExclusive(async () => {
-            if (!this.context) return;
-
-            if (this.isRunning() === this.shouldRun()) return;
-            if (!skipPwmUpdate && !this.isRunning() && this.shouldRun()) this.applyPwmUpdate();
-
-            const oldState = this.context.state;
-
-            if (this.shouldRun()) {
-                try {
-                    this.updateGain();
-
-                    await withTimeout(this.context.resume());
-                    this.emulationService.enablePcmStreaming();
-
-                    console.log('resume audio context');
-                } catch (e) {
-                    console.error(`failed to resume audio from state ${oldState}`, e);
-                }
-            } else {
-                try {
-                    this.emulationService.disablePcmStreaming();
-                    await withTimeout(this.context.suspend());
-
-                    console.log('suspend audio context');
-                } catch (e) {
-                    console.error(`failed to suspend audio from state ${oldState}`, e);
-                }
-            }
-
-            console.log(`audio context state change ${oldState} -> ${this.context.state}`);
-        });
-
-    protected updateGain(): void {
-        if (this.gainNode) {
-            this.gainNode.gain.value = this.gain();
-        }
     }
 
     private async registerWorklet(context: AudioContext): Promise<void> {
@@ -154,92 +151,76 @@ export abstract class AbstractAudioService {
     }
 
     private async initializeAudioUnguarded(): Promise<boolean> {
-        if (this.initialized) return true;
+        if (this.audio) return true;
+        let context: AudioContext | undefined;
 
         try {
-            this.context = new audioContextCtor();
+            context = new audioContextCtor({ sampleRate: isWebkit ? undefined : 44100, latencyHint: 'interactive' });
         } catch (e) {
             console.error('web audio not available', e);
-
             return false;
         }
 
         try {
-            this.context.destination.channelCount = 1;
+            context.destination.channelCount = 2;
         } catch (e) {
             console.warn('audio driver: failed to set channel count', e);
         }
 
         try {
-            await this.start();
+            await withTimeout(context.resume());
         } catch (e) {
             console.error('failed to initialize audio context', e);
-
             return false;
         }
 
-        await this.registerWorklet(this.context);
+        await this.registerWorklet(context);
 
-        this.context.addEventListener('statechange', () => {
-            if ((this.context?.state as string) === 'interrupted') void this.updateState();
-        });
-
-        this.workletNode = new AudioWorkletNode(this.context, 'pcm-processor', {
+        const workletNode = new AudioWorkletNode(context, 'pcm-processor', {
             channelCount: 2,
             numberOfOutputs: 1,
             outputChannelCount: [2],
             processorOptions: {
-                sampleRateTo: this.context.sampleRate,
+                sampleRateTo: context.sampleRate,
             },
         });
 
-        this.gainNode = this.context.createGain();
-        // this.gainNode.channelCount = 1;
-        this.gainNode.channelInterpretation = 'speakers';
-        this.gainNode.gain.value = this.gain();
+        const gainNode = context.createGain();
+        gainNode.channelInterpretation = 'speakers';
+        gainNode.gain.value = this.gain();
 
-        this.gainNode.connect(this.context.destination);
+        gainNode.connect(context.destination);
 
-        this.initialized = true;
+        this.audio = { context, gainNode, workletNode };
+
+        context.addEventListener('statechange', () => {
+            if ((context?.state as string) === 'interrupted') void this.updateState();
+        });
 
         this.applyPwmUpdate();
         this.bindWorkletNode();
+        void this.updateState();
+
+        console.log(`audio initialised at ${context.sampleRate}Hz`);
 
         return true;
     }
 
-    private async start(): Promise<void> {
-        if (!this.context) return;
-
-        await withTimeout(this.context.resume());
-        void this.updateState();
-
-        console.log('audio context initialized');
-    }
-
     private isRunning(): boolean {
-        return this.context?.state === 'running';
+        return this.audio?.context.state === 'running';
     }
-
-    private onOpenSession = () => this.bind();
 
     private onPwmUpdate = async (pwmUpdate: PwmUpdate): Promise<void> => {
         this.pendingPwmUpdate = pwmUpdate;
-
-        if (!this.initialized) return;
-
-        if (this.shouldRun() !== this.isRunning()) void this.updateState(true);
-        if (!this.shouldRun()) return;
 
         this.applyPwmUpdate();
     };
 
     private applyPwmUpdate(): void {
-        if (!this.context || !this.pendingPwmUpdate) return;
-        if (!this.gainNode) throw new Error('unreachable');
+        if (!this.audio || !this.pendingPwmUpdate) return;
 
         const { frequency, dutyCycle } = this.pendingPwmUpdate;
-        const sampleRate = this.context.sampleRate;
+        const sampleRate = this.audio.context.sampleRate;
 
         this.pendingPwmUpdate = undefined;
 
@@ -249,14 +230,14 @@ export abstract class AbstractAudioService {
             return;
         }
 
-        const buffer = this.context.createBuffer(1, Math.round(sampleRate / frequency), sampleRate);
+        const buffer = this.audio.context.createBuffer(1, Math.round(sampleRate / frequency), sampleRate);
         const data = buffer.getChannelData(0);
 
         for (let i = 0; i < data.length; i++) {
             data[i] = i / data.length < dutyCycle ? 1 : 0;
         }
 
-        const bufferSourceNode = this.context.createBufferSource();
+        const bufferSourceNode = this.audio.context.createBufferSource();
         bufferSourceNode.channelCount = 1;
         bufferSourceNode.channelInterpretation = 'speakers';
         bufferSourceNode.loop = true;
@@ -264,7 +245,7 @@ export abstract class AbstractAudioService {
 
         this.disconnectPwmSource();
 
-        bufferSourceNode.connect(this.gainNode);
+        bufferSourceNode.connect(this.audio.gainNode);
         bufferSourceNode.start();
         this.bufferSourceNode = bufferSourceNode;
 
@@ -284,17 +265,16 @@ export abstract class AbstractAudioService {
     }
 
     private dispatchPcmControlMessage(message: ControlMessageHost, transferables?: Array<Transferable>): void {
-        this.workletNode?.port.postMessage(message, transferables as Array<Transferable>);
+        this.audio?.workletNode.port.postMessage(message, transferables as Array<Transferable>);
     }
 
     private bindWorkletNode(): void {
-        if (this.workletBound || !this.initialized) return;
-        if (!this.workletNode || !this.gainNode) throw new Error('unreachable');
+        if (this.workletBound || !this.audio) return;
 
         const pcmPort = this.emulationService.pcmPort();
         if (!pcmPort) return;
 
-        this.workletNode.connect(this.gainNode);
+        this.audio.workletNode.connect(this.audio.gainNode);
         this.dispatchPcmControlMessage({ type: ControlMessageHostType.setStreamMessagePort, port: pcmPort }, [pcmPort]);
 
         if (this.shouldRun()) this.emulationService.enablePcmStreaming();
@@ -306,7 +286,7 @@ export abstract class AbstractAudioService {
 
     private unbindWorkletNode(): void {
         if (!this.workletBound) return;
-        this.workletNode?.disconnect();
+        this.audio?.workletNode.disconnect();
 
         this.dispatchPcmControlMessage({ type: ControlMessageHostType.reset });
         this.emulationService.disablePcmStreaming();
@@ -316,13 +296,10 @@ export abstract class AbstractAudioService {
     }
 
     private mutex = new Mutex();
-    private context: AudioContext | undefined;
 
     private bufferSourceNode: AudioBufferSourceNode | undefined;
-    private gainNode: GainNode | undefined;
-    private workletNode: AudioWorkletNode | undefined;
+    private audio: Audio | undefined;
 
-    private initialized = false;
     private muted = false;
     private workletBound = false;
 
