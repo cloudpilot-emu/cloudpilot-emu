@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { isIOS } from '@common/helper/browser';
 import { AbstractAudioService } from '@common/service/AbstractAudioService';
 
 import { EmulationService } from './emulation.service';
@@ -25,8 +26,8 @@ export class AudioService extends AbstractAudioService {
         void this.updateState();
     }
 
-    protected override shouldMute(): boolean {
-        return super.shouldMute() || !this.activated;
+    protected override shouldRun(): boolean {
+        return super.shouldRun() && (this.activated || isIOS);
     }
 
     protected getVolume(): number {

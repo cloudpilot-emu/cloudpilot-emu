@@ -70,7 +70,7 @@ export abstract class AbstractAudioService {
     protected abstract runHidden(): boolean;
 
     protected shouldRun(): boolean {
-        return this.gain() > 0 && (document.visibilityState !== 'hidden' || isIOS || this.runHidden());
+        return (this.gain() > 0 && (document.visibilityState !== 'hidden' || this.runHidden())) || isIOS;
     }
 
     protected shouldMute(): boolean {
@@ -155,7 +155,7 @@ export abstract class AbstractAudioService {
         let context: AudioContext | undefined;
 
         try {
-            context = new audioContextCtor({ sampleRate: isWebkit ? undefined : 44100, latencyHint: 'interactive' });
+            context = this.createAudioContext();
         } catch (e) {
             console.error('web audio not available', e);
             return false;
@@ -204,6 +204,28 @@ export abstract class AbstractAudioService {
         console.log(`audio initialised at ${context.sampleRate}Hz`);
 
         return true;
+    }
+
+    private createAudioContext(): AudioContext {
+        try {
+            return new audioContextCtor({ sampleRate: 44100, latencyHint: 'interactive' });
+        } catch (e: unknown) {
+            console.warn('failed to request context at 44100Hz , latency interactive', e);
+        }
+
+        try {
+            return new audioContextCtor({ latencyHint: 'interactive' });
+        } catch (e: unknown) {
+            console.warn('failed to request context at arbitrary rate, latency interactive', e);
+        }
+
+        try {
+            return new audioContextCtor();
+        } catch (e: unknown) {
+            console.error('failed to request context at arbitrary rate and latency', e);
+
+            throw e;
+        }
     }
 
     private isRunning(): boolean {
