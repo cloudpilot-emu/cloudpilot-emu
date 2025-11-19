@@ -1,3 +1,8 @@
+# Next version
+
+This version is a major release that adds support for emulating the Tunsten E2 (PalmOS 5!)
+through a fork of [uarm](https://github.com/uARM-Palm/uARM).
+
 # Version 1.10.16
 
 -   Minor styling fixes.
