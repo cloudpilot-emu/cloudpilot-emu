@@ -65,6 +65,15 @@ export abstract class AbstractAudioService {
         return this.muted;
     }
 
+    reactivateRequired(): boolean {
+        return this.resumeFailed;
+    }
+
+    reactivate(): void {
+        this.mute(false);
+        void this.updateState();
+    }
+
     protected abstract getVolume(): number;
 
     protected abstract runHidden(): boolean;
@@ -92,9 +101,11 @@ export abstract class AbstractAudioService {
 
                     this.emulationService.enablePcmStreaming();
                     this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+                    this.resumeFailed = false;
 
                     console.log('resume audio context');
                 } catch (e) {
+                    this.resumeFailed = true;
                     console.error(`failed to resume audio from state ${oldState}`, e);
                 }
             } else {
@@ -106,6 +117,8 @@ export abstract class AbstractAudioService {
                 } catch (e) {
                     console.error(`failed to suspend audio from state ${oldState}`, e);
                 }
+
+                this.resumeFailed = false;
             }
 
             console.log(`audio context state change ${oldState} -> ${this.audio.context.state}`);
@@ -324,6 +337,7 @@ export abstract class AbstractAudioService {
 
     private muted = false;
     private workletBound = false;
+    resumeFailed = false;
 
     private pwmUpdateEvent: EventInterface<PwmUpdate> | undefined;
     private pendingPwmUpdate: PwmUpdate | undefined;

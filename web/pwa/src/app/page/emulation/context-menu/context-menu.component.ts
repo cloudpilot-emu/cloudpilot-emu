@@ -169,11 +169,17 @@ export class ContextMenuComponent {
         return this.kvsService.kvs.volume <= 0;
     }
 
+    get audioRequiresReactivate(): boolean {
+        return this.audioService.reactivateRequired();
+    }
+
     mute(muted: boolean): void {
         if (muted) {
             this.audioService.mute(true);
         } else {
-            if (this.audioService.isInitialized()) {
+            if (this.audioService.reactivateRequired()) {
+                this.audioService.reactivate();
+            } else if (this.audioService.isInitialized()) {
                 this.audioService.mute(false);
             } else {
                 void this.audioService.initialize();
