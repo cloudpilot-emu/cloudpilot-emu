@@ -1,68 +1,68 @@
 name: Build and deploy preview release (PWA + CP embedded)
 on: workflow_dispatch
 env:
-    EM_VERSION: 4.0.10
-    NODE_VERSION: 24
-    EM_CACHE_FOLDER: emsdk
-    PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
+  EM_VERSION: 4.0.10
+  NODE_VERSION: 24
+  EM_CACHE_FOLDER: emsdk
+  PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
 jobs:
-    build_and_release:
-        runs-on: ubuntu-22.04
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v3
-              with:
-                  submodules: 'true'
-            - name: Setup cache
-              id: cache-system-libraries
-              uses: actions/cache@v4
-              with:
-                  path: ${{env.EM_CACHE_FOLDER}}
-                  key: ${{env.EM_VERSION}}-${{ runner.os }}
-            - name: Setup emscripten
-              uses: agriyakhetarpal/setup-emsdk@update-to-cache-v4
-              with:
-                  version: ${{env.EM_VERSION}}
-                  actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
-            - name: Build wasm
-              run: make -Csrc -j2 emscripten
-            - name: Setup node
-              uses: actions/setup-node@v3
-              with:
-                  node-version: ${{env.NODE_VERSION}}
-            - name: Install node deps
-              working-directory: web
-              run: yarn install
-            - name: Lint
-              working-directory: web
-              run: yarn lint
-            - name: Test
-              working-directory: web
-              run: yarn test
-            - name: Build CloudpilotEmu embedded
-              working-directory: web
-              run: yarn dist-embedded
-            - name: Build PWA
-              working-directory: web
-              run: |
-                  yarn run gen-revision
-                  yarn build-preview --base-href /app-preview/
-                  yarn generate-worker
-            - name: Setup SSH agent
-              uses: webfactory/ssh-agent@v0.7.0
-              with:
-                  ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
-            - name: Checkout pages source
-              run: git clone --depth 1 ${{env.PAGES_REPO_URL}}
-            - name: Copy and deploy
-              working-directory: cloudpilot-emu.github.io
-              run: |
-                  test -x app-preview && rm -fr app-preview
-                  test -x embedded-preview && rm -fr embedded-preview
-                  cp -r ../web/build-pwa ./app-preview
-                  cp -r ../web/dist-embedded ./embedded-preview
-                  git add .
-                  git config --global user.email "golem@nowhere.org"
-                  git config --global user.name "The Golem"
-                  git commit -m "Bump."
-                  git push
+  build_and_release:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+      - name: Setup cache
+        id: cache-system-libraries
+        uses: actions/cache@v4
+        with:
+          path: ${{env.EM_CACHE_FOLDER}}
+          key: ${{env.EM_VERSION}}-${{ runner.os }}
+      - name: Setup emscripten
+        uses: agriyakhetarpal/setup-emsdk@update-to-cache-v4
+        with:
+          version: ${{env.EM_VERSION}}
+          actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+      - name: Build wasm
+        run: make -Csrc -j2 emscripten
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{env.NODE_VERSION}}
+      - name: Install node deps
+        working-directory: web
+        run: yarn install
+      - name: Lint
+        working-directory: web
+        run: yarn lint
+      - name: Test
+        working-directory: web
+        run: yarn test
+      #            - name: Build CloudpilotEmu embedded
+      #              working-directory: web
+      #              run: yarn dist-embedded
+      - name: Build PWA
+        working-directory: web
+        run: |
+          yarn run gen-revision
+          yarn build-preview --base-href /app-preview/
+          yarn generate-worker
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
+      - name: Checkout pages source
+        run: git clone --depth 1 ${{env.PAGES_REPO_URL}}
+      - name: Copy and deploy
+        working-directory: cloudpilot-emu.github.io
+        run: |
+          test -x app-preview && rm -fr app-preview
+          # test -x embedded-preview && rm -fr embedded-preview
+          cp -r ../web/build-pwa ./app-preview
+          # cp -r ../web/dist-embedded ./embedded-preview
+          git add .
+          git config --global user.email "golem@nowhere.org"
+          git config --global user.name "The Golem"
+          git commit -m "Bump."
+          git push
