@@ -1,5 +1,5 @@
 import { PwmUpdate } from '@common/bridge/Cloudpilot';
-import { isIOS, isWebkit } from '@common/helper/browser';
+import { isIOS } from '@common/helper/browser';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Mutex } from 'async-mutex';
 import { EventInterface } from 'microevent.ts';

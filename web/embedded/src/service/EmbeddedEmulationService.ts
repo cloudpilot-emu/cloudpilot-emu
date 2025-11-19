@@ -11,12 +11,12 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
     }
 
     resume(): void {
-        this.doResume();
+        void this.doResume();
     }
 
     initWithRom(cloudpilot: Cloudpilot, rom: Uint8Array, device: DeviceId, session: Session): boolean {
         if (this.isRunning()) {
-            this.doStop();
+            void this.doStop();
             this.session = undefined;
         }
 
@@ -32,7 +32,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
 
     initWithSessionImage(cloudpilot: Cloudpilot, sessionImage: SessionImage<unknown>, session: Session): boolean {
         if (this.isRunning()) {
-            this.doStop();
+            void this.doStop();
             this.session = undefined;
         }
 
