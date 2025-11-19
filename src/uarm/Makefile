@@ -33,7 +33,7 @@ WASMOPT ?= wasm-opt
 WASMOPT_FLAGS = --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
 
-WASMSTRIP = wasm-strip
+WASMSTRIP ?= wasm-strip
 YARN = yarn
 
 SOURCE_C = 								\
