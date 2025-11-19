@@ -25,7 +25,7 @@ jobs:
           version: ${{env.EM_VERSION}}
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
       - name: Build wasm
-        run: make -Csrc -j2 emscripten
+        run: make -Csrc -j2 emscripten WASMOPT="$EMSDK/upstream/bin/wasm-opt"
       - name: Setup node
         uses: actions/setup-node@v3
         with:
