@@ -14,7 +14,7 @@ export interface SnapshotContainer {
     release(persistenceSuccess: boolean, timeBlocking: number, timeBackground: number): void;
 
     getStorageKey(): string | undefined;
-    getSnapshotMemory(): Snapshot;
+    getSnapshotMemory(): Snapshot | undefined;
     getSnapshotNand(): Snapshot | undefined;
     getSnapshotStorage(): Snapshot | undefined;
     getMemoryCrc(): number | undefined;

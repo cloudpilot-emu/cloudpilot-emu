@@ -52,7 +52,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
     schedule(uarmSnapshot: UarmSnapshot): this {
         if (this.uarmSnapshot) throw new Error('snapshot already pending');
 
-        this.updateSnapshot(this.snapshotMemory, uarmSnapshot.memory);
+        if (uarmSnapshot.memory) this.updateSnapshot(this.snapshotMemory, uarmSnapshot.memory);
         if (uarmSnapshot.nand) this.updateSnapshot(this.snapshotNand, uarmSnapshot.nand);
         this.updateSnapshotSd(uarmSnapshot);
 
@@ -82,7 +82,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         if (!this.uarmSnapshot) throw new Error('no pending snapshot');
 
         let size =
-            this.uarmSnapshot.memory.scheduledPageCount * 1024 +
+            (this.uarmSnapshot.memory?.scheduledPageCount ?? 0) * 1024 +
             (this.uarmSnapshot.nand?.scheduledPageCount ?? 0) * 4224 +
             this.uarmSnapshot.savestate.byteLength;
 
@@ -112,10 +112,10 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         return this.uarmSnapshot.sd?.key;
     }
 
-    getSnapshotMemory(): Snapshot {
+    getSnapshotMemory(): Snapshot | undefined {
         if (!this.uarmSnapshot) throw new Error('no pending snapshot');
 
-        return this.snapshotMemory;
+        return this.uarmSnapshot.memory ? this.snapshotMemory : undefined;
     }
 
     getSnapshotNand(): Snapshot | undefined {
@@ -133,7 +133,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
     getMemoryCrc(): number | undefined {
         if (!this.uarmSnapshot) throw new Error('no pending snapshot');
 
-        return this.uarmSnapshot.memory.crc;
+        return this.uarmSnapshot.memory?.crc;
     }
 
     getSavestate(): Uint8Array | undefined {

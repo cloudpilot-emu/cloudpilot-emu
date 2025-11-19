@@ -267,7 +267,7 @@ export class SnapshotService {
             try {
                 const timestampBlockingStart = performance.now();
 
-                this.saveSnapshotMemory(tx, snapshotMemory, memoryCrc);
+                if (snapshotMemory) this.saveSnapshotMemory(tx, snapshotMemory, memoryCrc);
 
                 if (snapshotNand) {
                     this.saveSnapshotOther(tx, snapshotNand, this.sessionId, OBJECT_STORE_NAND, this.clonePoolNand);
