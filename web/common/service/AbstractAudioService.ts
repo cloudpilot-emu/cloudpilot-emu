@@ -1,5 +1,4 @@
 import { PwmUpdate } from '@common/bridge/Cloudpilot';
-import { isIOS } from '@common/helper/browser';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Mutex } from 'async-mutex';
 import { EventInterface } from 'microevent.ts';
@@ -61,7 +60,12 @@ export abstract class AbstractAudioService {
     }
 
     reactivateRequired(): boolean {
-        return (this.audio ?? false) && this.audio?.context.state === 'suspended' && this.shouldRun();
+        return (
+            (this.audio ?? false) &&
+            (this.audio?.context.state === 'suspended' ||
+                this.audio?.context.state === ('interrupted' as AudioContextState)) &&
+            this.shouldRun()
+        );
     }
 
     reactivate(): void {
@@ -74,7 +78,7 @@ export abstract class AbstractAudioService {
     protected abstract runHidden(): boolean;
 
     protected shouldRun(): boolean {
-        return (this.gain() > 0 && (document.visibilityState !== 'hidden' || this.runHidden())) || isIOS;
+        return this.gain() > 0 && (document.visibilityState !== 'hidden' || this.runHidden());
     }
 
     protected shouldMute(): boolean {
