@@ -39,7 +39,7 @@ export abstract class AbstractAudioService {
 
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
         this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
-        if (!isIOS) document.addEventListener('visibilitychange', () => this.updateState());
+        document.addEventListener('visibilitychange', () => this.updateState());
     }
 
     initialize = (): Promise<boolean> => this.mutex.runExclusive(async () => this.initializeAudioUnguarded());
