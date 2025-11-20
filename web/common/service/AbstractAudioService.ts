@@ -36,6 +36,9 @@ export abstract class AbstractAudioService {
         this.bind();
 
         this.emulationService.openSessionEvent.addHandler(() => this.bind());
+
+        this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
+        this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
         if (!isIOS) document.addEventListener('visibilitychange', () => this.updateState());
     }
 
