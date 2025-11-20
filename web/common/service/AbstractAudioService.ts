@@ -40,6 +40,9 @@ export abstract class AbstractAudioService {
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
         this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
         document.addEventListener('visibilitychange', () => this.updateState());
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).__cpeAudioDriver = this;
     }
 
     initialize = (): Promise<boolean> => this.mutex.runExclusive(async () => this.initializeAudioUnguarded());
@@ -86,13 +89,9 @@ export abstract class AbstractAudioService {
             if (this.isRunning() === this.shouldRun()) return;
 
             const oldState = this.audio.context.state;
-            switch (oldState) {
-                case 'interrupted' as AudioContextState:
-                    return;
-
-                case 'closed':
-                    console.warn('audio context closed unexpectedly, no more audio will be played');
-                    return;
+            if (oldState === 'closed') {
+                console.warn('audio context closed unexpectedly, no more audio will be played');
+                return;
             }
 
             if (this.shouldRun()) {
