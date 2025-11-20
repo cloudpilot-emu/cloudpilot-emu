@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { isIOS } from '@common/helper/browser';
 import { AbstractAudioService } from '@common/service/AbstractAudioService';
 
 import { EmulationService } from './emulation.service';
@@ -27,7 +26,7 @@ export class AudioService extends AbstractAudioService {
     }
 
     protected override shouldRun(): boolean {
-        return super.shouldRun() && (this.activated || isIOS);
+        return super.shouldRun() && this.activated;
     }
 
     protected getVolume(): number {
