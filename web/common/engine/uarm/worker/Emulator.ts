@@ -254,6 +254,7 @@ export class Emulator {
     }
 
     enablePcmStreaming(): void {
+        if (this.pcmStreaming) return;
         this.pcmStreaming = true;
 
         this.dispatchPcmPortMessage({ type: StreamMessageHostType.flush });
@@ -261,7 +262,9 @@ export class Emulator {
     }
 
     disablePcmStreaming(): void {
+        if (!this.pcmStreaming) return;
         this.pcmStreaming = false;
+
         this.suspendPcm(false);
     }
 

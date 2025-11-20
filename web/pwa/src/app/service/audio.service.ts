@@ -18,12 +18,12 @@ export class AudioService extends AbstractAudioService {
 
     activate(): void {
         this.activated = true;
-        void this.updateState();
+        this.updateState();
     }
 
     suspend(): void {
         this.activated = false;
-        void this.updateState();
+        this.updateState();
     }
 
     protected override shouldRun(): boolean {

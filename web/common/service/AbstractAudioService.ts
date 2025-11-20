@@ -36,20 +36,10 @@ export abstract class AbstractAudioService {
         this.bind();
 
         this.emulationService.openSessionEvent.addHandler(() => this.bind());
-
-        this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
-        this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
         if (!isIOS) document.addEventListener('visibilitychange', () => this.updateState());
     }
 
-    initialize = (): Promise<boolean> =>
-        this.mutex.runExclusive(async () => {
-            for (let i = 0; i < 3; i++) {
-                if (await this.initializeAudioUnguarded()) return true;
-            }
-
-            return false;
-        });
+    initialize = (): Promise<boolean> => this.mutex.runExclusive(async () => this.initializeAudioUnguarded());
 
     isInitialized(): boolean {
         return this.audio !== undefined;
@@ -57,8 +47,7 @@ export abstract class AbstractAudioService {
 
     mute(muted: boolean): void {
         this.muted = muted;
-
-        void this.updateState();
+        this.updateState();
     }
 
     isMuted(): boolean {
@@ -66,12 +55,12 @@ export abstract class AbstractAudioService {
     }
 
     reactivateRequired(): boolean {
-        return this.resumeFailed;
+        return (this.audio ?? false) && this.audio?.context.state === 'suspended' && this.shouldRun();
     }
 
     reactivate(): void {
         this.mute(false);
-        void this.updateState();
+        this.updateState();
     }
 
     protected abstract getVolume(): number;
@@ -87,41 +76,37 @@ export abstract class AbstractAudioService {
     }
 
     protected updateState = () =>
-        this.mutex.runExclusive(async () => {
+        void this.mutex.runExclusive(async () => {
             if (!this.audio) return;
             this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
 
             if (this.isRunning() === this.shouldRun()) return;
 
             const oldState = this.audio.context.state;
+            switch (oldState) {
+                case 'interrupted' as AudioContextState:
+                    return;
+
+                case 'closed':
+                    console.warn('audio context closed unexpectedly, no more audio will be played');
+                    return;
+            }
 
             if (this.shouldRun()) {
                 try {
                     await withTimeout(this.audio.context.resume());
-
-                    this.emulationService.enablePcmStreaming();
-                    this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
-                    this.resumeFailed = false;
-
                     console.log('resume audio context');
                 } catch (e) {
-                    this.resumeFailed = true;
                     console.error(`failed to resume audio from state ${oldState}`, e);
                 }
             } else {
                 try {
-                    this.emulationService.disablePcmStreaming();
                     await withTimeout(this.audio.context.suspend());
-
                     console.log('suspend audio context');
                 } catch (e) {
                     console.error(`failed to suspend audio from state ${oldState}`, e);
                 }
-
-                this.resumeFailed = false;
             }
-
-            console.log(`audio context state change ${oldState} -> ${this.audio.context.state}`);
         });
 
     private bind(): void {
@@ -180,13 +165,6 @@ export abstract class AbstractAudioService {
             console.warn('audio driver: failed to set channel count', e);
         }
 
-        try {
-            await withTimeout(context.resume());
-        } catch (e) {
-            console.error('failed to initialize audio context', e);
-            return false;
-        }
-
         await this.registerWorklet(context);
 
         const workletNode = new AudioWorkletNode(context, 'pcm-processor', {
@@ -206,13 +184,11 @@ export abstract class AbstractAudioService {
 
         this.audio = { context, gainNode, workletNode };
 
-        context.addEventListener('statechange', () => {
-            if ((context?.state as string) === 'interrupted') void this.updateState();
-        });
+        context.addEventListener('statechange', this.onContextStateChange);
+        this.updateState();
 
         this.applyPwmUpdate();
         this.bindWorkletNode();
-        void this.updateState();
 
         console.log(`audio initialised at ${context.sampleRate}Hz`);
 
@@ -330,6 +306,25 @@ export abstract class AbstractAudioService {
         console.log('unbound worklet');
     }
 
+    private onContextStateChange = () => {
+        if (!this.audio) return;
+
+        console.log(`audio context state change ${this.oldAudioState} -> ${this.audio.context.state}`);
+        this.oldAudioState = this.audio.context.state;
+
+        switch (this.audio.context.state) {
+            case 'suspended':
+                this.emulationService.disablePcmStreaming();
+                break;
+
+            case 'running':
+                this.emulationService.enablePcmStreaming();
+                this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+
+                break;
+        }
+    };
+
     private mutex = new Mutex();
 
     private bufferSourceNode: AudioBufferSourceNode | undefined;
@@ -337,8 +332,9 @@ export abstract class AbstractAudioService {
 
     private muted = false;
     private workletBound = false;
-    resumeFailed = false;
 
     private pwmUpdateEvent: EventInterface<PwmUpdate> | undefined;
     private pendingPwmUpdate: PwmUpdate | undefined;
+
+    private oldAudioState = '[new]';
 }
