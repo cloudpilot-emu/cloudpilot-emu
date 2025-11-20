@@ -1,4 +1,5 @@
 import { PwmUpdate } from '@common/bridge/Cloudpilot';
+import { isIOS } from '@common/helper/browser';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Mutex } from 'async-mutex';
 import { EventInterface } from 'microevent.ts';
@@ -38,7 +39,10 @@ export abstract class AbstractAudioService {
 
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
         this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
-        document.addEventListener('visibilitychange', () => this.updateState());
+        document.addEventListener('visibilitychange', () => {
+            if (isIOS && document.visibilityState === 'visible') setTimeout(() => this.updateState(), 500);
+            else this.updateState();
+        });
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).__cpeAudioDriver = this;
@@ -89,6 +93,9 @@ export abstract class AbstractAudioService {
         void this.mutex.runExclusive(async () => {
             if (!this.audio) return;
             this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+
+            if (this.shouldRun()) this.emulationService.enablePcmStreaming();
+            else this.emulationService.disablePcmStreaming();
 
             if (this.isRunning() === this.shouldRun()) return;
 
