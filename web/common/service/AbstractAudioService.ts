@@ -1,4 +1,5 @@
 import { PwmUpdate } from '@common/bridge/Cloudpilot';
+import { isIOS } from '@common/helper/browser';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Mutex } from 'async-mutex';
 import { EventInterface } from 'microevent.ts';
@@ -93,9 +94,13 @@ export abstract class AbstractAudioService {
             if (this.isRunning() === this.shouldRun()) return;
 
             const oldState = this.audio.context.state;
-            if (oldState === 'closed') {
-                console.warn('audio context closed unexpectedly, no more audio will be played');
-                return;
+            switch (oldState) {
+                case 'interrupted' as AudioContextState:
+                    break;
+
+                case 'closed':
+                    console.warn('audio context closed unexpectedly, no more audio will be played');
+                    return;
             }
 
             if (this.shouldRun()) {
@@ -320,6 +325,10 @@ export abstract class AbstractAudioService {
 
         switch (this.audio.context.state) {
             case 'suspended':
+                if (this.oldAudioState === ('interrupted' as AudioContextState) && this.shouldRun()) {
+                    this.updateState();
+                }
+
                 this.emulationService.disablePcmStreaming();
                 break;
 
