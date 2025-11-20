@@ -419,14 +419,19 @@ export class Emulator {
         const frame = this.uarm.getFrame(this.deviceId === DeviceId.frankene2 ? 480 : 320);
         if (!frame) return undefined;
 
+        let buffer: ArrayBuffer;
+
         if (this.framePool.length === 0) {
-            return frame.slice().buffer;
+            buffer = frame.slice().buffer;
         } else {
             const frameCopy = new Uint32Array(this.framePool.pop()!);
             frameCopy.set(frame);
 
-            return frameCopy.buffer;
+            buffer = frameCopy.buffer;
         }
+
+        this.uarm.resetFrame();
+        return buffer;
     }
 
     private suspendPcm(suspended: boolean): void {
