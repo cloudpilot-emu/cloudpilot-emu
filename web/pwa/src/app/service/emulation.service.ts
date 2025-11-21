@@ -86,6 +86,8 @@ export class EmulationService extends AbstractEmulationService {
             isVisible ? void emulatorLock.lock() : void emulatorLock.unlock(),
         );
 
+        this.newFrameEvent.addHandler(() => modalWatcher.enable());
+
         const storedSession = getStoredSession();
         this.bootstrapCompletePromise = Promise.resolve();
 
