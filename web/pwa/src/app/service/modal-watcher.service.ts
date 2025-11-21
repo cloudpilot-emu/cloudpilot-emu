@@ -23,10 +23,10 @@ export class ModalWatcherService {
     }
 
     enable(): void {
-        const wasEnabled = this.enable;
-        this.enabled = true;
+        if (this.enabled) return;
 
-        if (this.modalActive && !wasEnabled) this.modalVisibilityChangeEvent.dispatch(true);
+        this.enabled = true;
+        if (this.modalActive) this.modalVisibilityChangeEvent.dispatch(true);
     }
 
     private update(): void {
