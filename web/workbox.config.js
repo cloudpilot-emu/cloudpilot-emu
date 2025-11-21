@@ -52,4 +52,5 @@ module.exports = {
     clientsClaim: true,
     inlineWorkboxRuntime: true,
     cleanupOutdatedCaches: true,
+    maximumFileSizeToCacheInBytes: 10485760,
 };
