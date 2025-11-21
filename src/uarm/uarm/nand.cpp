@@ -278,7 +278,7 @@ bool nandWrite(struct NAND *nand, bool cle, bool ale, uint8_t val) {
 
             default:
                 fprintf(stderr, "unknown command 0x%02x. halt.\n", val);
-                while (1);
+                uarmAbort();
         }
     } else if (!cle && ale) {  // addr
 

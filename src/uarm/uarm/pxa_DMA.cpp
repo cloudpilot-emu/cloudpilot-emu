@@ -181,8 +181,7 @@ static bool socDmaPrvChannelDoBurst(
 
     if (!((ch->CR >> 14) & 3)) {
         fprintf(stderr, "DMA is on but WIDTH is misprogrammed\n");
-        // this should never happen and is unpredictable on real HW. halt to allow debug
-        while (1);
+        uarmAbort();
     }
 
     // we never transfer more than there is left
@@ -192,8 +191,7 @@ static bool socDmaPrvChannelDoBurst(
 
         fprintf(stderr, "cannot xfer %u bytes using %u-byte piece. Halting\n", (unsigned)num,
                 (unsigned)each);
-        // this should never happen and is unpredictable on real HW. halt to allow debug
-        while (1);
+        uarmAbort();
     }
 
     num /= each;  // convert from bytes to transfers

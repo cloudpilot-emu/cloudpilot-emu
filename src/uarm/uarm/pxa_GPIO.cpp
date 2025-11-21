@@ -52,7 +52,7 @@ static void socGpioPrvRecalcValues(struct SocGpio *gpio, uint_fast8_t which) {
 
     if (which >= 4) {
         fprintf(stderr, "gpio overflow. halt\n");
-        while (1);
+        uarmAbort();
     }
 
     val = gpio->dirs[which];
