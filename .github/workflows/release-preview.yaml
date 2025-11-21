@@ -27,7 +27,7 @@ jobs:
       - name: Setup wabt
         run: sudo apt-get install wabt
       - name: Build wasm
-        run: make -Csrc -j2 emscripten WASMOPT="$EMSDK/upstream/bin/wasm-opt"
+        run: make -Csrc -j2 emscripten
       - name: Setup node
         uses: actions/setup-node@v3
         with:
