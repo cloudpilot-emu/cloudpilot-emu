@@ -94,6 +94,8 @@ bool socIsPacePatched(struct SoC *soc);
 
 uint32_t socGetRamSize(struct SoC *soc);
 
+void socJamKey(struct SoC *soc, enum KeyId key, uint32_t durationMsec);
+
 struct NAND *socGetNand(struct SoC *soc);
 
 void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts);

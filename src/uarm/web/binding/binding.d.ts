@@ -29,6 +29,20 @@ export const enum DbInstallResult {
     errUnknown = -8,
 }
 
+export const enum KeyId {
+    keyInvalid = 0,
+    keyIdHard1 = 1,
+    keyIdHard2 = 2,
+    keyIdHard3 = 3,
+    keyIdHard4 = 4,
+    keyIdUp = 5,
+    keyIdDown = 6,
+    keyIdLeft = 7,
+    keyIdRight = 8,
+    keyIdSelect = 9,
+    keyIdPower = 10,
+}
+
 export interface Uarm {
     SetRamSize(size: number): Uarm;
     SetNand(size: number, data: VoidPtr): Uarm;
@@ -56,8 +70,8 @@ export interface Uarm {
 
     GetTimestampUsec(): bigint;
 
-    KeyDown(key: number): void;
-    KeyUp(key: number): void;
+    KeyDown(key: KeyId): void;
+    KeyUp(key: KeyId): void;
 
     PendingSamples(): number;
     PopQueuedSamples(): VoidPtr;
@@ -98,6 +112,8 @@ export interface Uarm {
     IsSdInserted(): boolean;
 
     GetRamSize(): number;
+
+    JamKey(key: KeyId, durationMsec: number): void;
 
     InstallDatabase(len: number, data: VoidPtr): DbInstallResult;
 

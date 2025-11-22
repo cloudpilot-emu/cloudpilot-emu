@@ -70,6 +70,8 @@ interface Uarm {
 
     unsigned long GetRamSize();
 
+    void JamKey(long key, unsigned long durationMsec);
+
     unsigned long InstallDatabase(unsigned long len, VoidPtr data);
 
     DbBackup NewDbBackup(long type);

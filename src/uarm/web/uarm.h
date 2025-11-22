@@ -86,6 +86,8 @@ class Uarm {
 
     uint32_t GetRamSize();
 
+    void JamKey(int key, uint32_t durationMsec);
+
     uint32_t InstallDatabase(uint32_t len, void* data);
 
     DbBackup* NewDbBackup(int type);

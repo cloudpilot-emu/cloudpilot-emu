@@ -225,6 +225,10 @@ bool Uarm::IsSdInserted() { return socSdInserted(soc); }
 
 uint32_t Uarm::GetRamSize() { return socGetRamSize(soc); }
 
+void Uarm::JamKey(int key, uint32_t durationMsec) {
+    socJamKey(soc, static_cast<KeyId>(key), durationMsec);
+}
+
 uint32_t Uarm::InstallDatabase(uint32_t len, void* data) {
     return dbInstallerInstall(socGetSyscallDispatch(soc), len, data);
 }

@@ -209,8 +209,23 @@ export class Emulator {
         return this.uarm.getSdCardKey();
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    reset(type: ResetType): void {
+    reset(resetType: ResetType): void {
+        switch (resetType) {
+            case ResetType.normal:
+                break;
+
+            case ResetType.noExtensions:
+                this.uarm.jamButton(PalmButton.up, 2000);
+                break;
+
+            case ResetType.hard:
+                this.uarm.jamButton(PalmButton.power, 2000);
+                break;
+
+            default:
+                resetType satisfies never;
+        }
+
         this.uarm.reset();
     }
 

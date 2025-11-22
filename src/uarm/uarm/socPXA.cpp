@@ -184,6 +184,9 @@ struct SoC {
 
     Savestate<ChunkType> *savestate;
 
+    KeyId jammedKey;
+    uint64_t releaseJammedKeyAt;
+
     uint32_t DispatchTicks(uint32_t clientType, uint32_t batchedTicks);
 
     void Load(SavestateLoader<ChunkType> &loader);
@@ -587,6 +590,18 @@ void socPenDown(SoC *soc, int x, int y) {
 
 void socPenUp(SoC *soc) { soc->penEventQueue->Push(PenEvent::PenUp()); }
 
+static void socEngageKey(SoC *soc, KeyId key, bool down) {
+    deviceKey(soc->dev, key, down);
+    keypadKeyEvt(soc->kp, key, down);
+}
+
+void socJamKey(SoC *soc, KeyId key, uint32_t durationMsec) {
+    soc->jammedKey = key;
+    soc->releaseJammedKeyAt = soc->scheduler->GetTime() + durationMsec * 1_msec;
+
+    socEngageKey(soc, soc->jammedKey, true);
+}
+
 static void socPumpPenEventQueue(SoC *soc) {
     if (soc->penEventQueue->GetSize() == 0) return;
 
@@ -613,11 +628,16 @@ static void socPumpPenEventQueue(SoC *soc) {
 }
 
 static void socPumpKeyEventQueue(SoC *soc) {
+    if (soc->jammedKey != keyInvalid && soc->scheduler->GetTime() >= soc->releaseJammedKeyAt) {
+        socEngageKey(soc, soc->jammedKey, false);
+        soc->jammedKey = keyInvalid;
+    }
+
     if (soc->keyEventQueue->GetSize() > 0) {
         KeyEvent evt(soc->keyEventQueue->Pop());
+        if (evt.key == soc->jammedKey) return;
 
-        deviceKey(soc->dev, evt.key, evt.keyDown);
-        keypadKeyEvt(soc->kp, evt.key, evt.keyDown);
+        socEngageKey(soc, evt.key, evt.keyDown);
     }
 }
 

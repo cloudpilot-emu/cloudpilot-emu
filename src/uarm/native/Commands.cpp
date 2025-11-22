@@ -110,6 +110,20 @@ namespace {
         socReset(ctx->soc);
     }
 
+    void CmdResetNoExtensions(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        socJamKey(ctx->soc, keyIdUp, 2000);
+        socReset(ctx->soc);
+    }
+
+    void CmdResetHard(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        socJamKey(ctx->soc, keyIdPower, 2000);
+        socReset(ctx->soc);
+    }
+
     void CmdRotate(vector<string> args, cli::CommandEnvironment& env, void* context) {
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
@@ -390,6 +404,10 @@ namespace {
           .description = "Unmount SD card.",
           .cmd = CmdMount},
          {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
+         {.name = "reset-no-ext",
+          .description = "Reset Pilot w/o loading extensions.",
+          .cmd = CmdResetNoExtensions},
+         {.name = "reset-hard", .description = "Hard reset Pilot.", .cmd = CmdResetHard},
          {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
          {.name = "save-session",
           .usage = "save-session <session file> [card image]",

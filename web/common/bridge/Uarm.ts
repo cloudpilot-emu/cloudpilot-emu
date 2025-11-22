@@ -10,6 +10,7 @@ import {
     Bridge,
     DbInstallResult as DbInstallResultUarm,
     DeviceType5,
+    KeyId,
     Module,
     Uarm as UarmNative,
     VoidPtr,
@@ -65,28 +66,31 @@ function mapDbInstallResult(result: DbInstallResultUarm): DbInstallResult {
     result satisfies never;
 }
 
-export function mapButton(button: PalmButton): number {
+export function mapButton(button: PalmButton): KeyId {
     switch (button) {
         case PalmButton.cal:
-            return 1;
+            return KeyId.keyIdHard1;
 
         case PalmButton.phone:
-            return 2;
+            return KeyId.keyIdHard2;
 
         case PalmButton.todo:
-            return 3;
+            return KeyId.keyIdHard3;
 
         case PalmButton.notes:
-            return 4;
+            return KeyId.keyIdHard4;
 
         case PalmButton.up:
-            return 5;
+            return KeyId.keyIdUp;
 
         case PalmButton.down:
-            return 6;
+            return KeyId.keyIdDown;
+
+        case PalmButton.power:
+            return KeyId.keyIdPower;
 
         default:
-            return -1;
+            return KeyId.keyInvalid;
     }
 }
 
@@ -398,6 +402,11 @@ export class Uarm {
     @guard()
     reset(): void {
         this.uarm.Reset();
+    }
+
+    @guard()
+    jamButton(button: PalmButton, durationMsec: number): void {
+        this.uarm.JamKey(mapButton(button), durationMsec);
     }
 
     @guard()
