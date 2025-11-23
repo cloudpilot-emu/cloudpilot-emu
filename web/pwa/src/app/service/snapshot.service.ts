@@ -9,7 +9,6 @@ import { Session } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
-import { EmulationContextService } from './emulation-context.service';
 import { ErrorService } from './error.service';
 import { E_LOCK_LOST, StorageService } from './storage.service';
 import {
@@ -68,8 +67,6 @@ const TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT = 0.5;
 const TIMEOUT_DELTA_MSEC_PER_KB_MAX = 8 * TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
-const E_SESSION_MISMATCH = new Error('session does not match emulation');
-
 function snapshotSizeBytes(snapshot: Snapshot | undefined): number {
     return snapshot ? snapshot.pageSize * snapshot.pageCount * 4 : 0;
 }
@@ -80,7 +77,6 @@ function snapshotSizeBytes(snapshot: Snapshot | undefined): number {
 export class SnapshotService {
     constructor(
         private storageService: StorageService,
-        private emulationContext: EmulationContextService,
         private errorService: ErrorService,
         private alertService: AlertService,
         private loadingController: LoadingController,
@@ -104,13 +100,19 @@ export class SnapshotService {
         this.db = await this.storageService.getDb();
     }
 
-    storeSnapshot = (snapshotContainer: SnapshotContainer): Promise<void> =>
+    storeSnapshot = (snapshotContainer: SnapshotContainer, sessionId: number): Promise<void> =>
         this.ngZone.runOutsideAngular(async () => {
-            if (this.sessionId < 0) return;
-
             if (this.snapshotInProgress) throw new Error('cannot happen: snapshot while snapshot is in progress');
 
             this.snapshotInProgress = true;
+
+            // there is not way to reset the sessionId while the snapshot is in progress, so if the
+            // ID matches now we can safely assume that it will still match the snapshot when we store
+            // it later.
+            if (sessionId !== this.sessionId) {
+                throw new Error(`bad snapshot: session ID mismatch: ${this.sessionId} vs ${sessionId}`);
+            }
+
             try {
                 await this.storeSnapshotUnguarded(snapshotContainer);
             } finally {
@@ -167,12 +169,6 @@ export class SnapshotService {
 
                 console.error('snapshot error', e);
 
-                if (e === E_SESSION_MISMATCH) {
-                    this.errorService.fatalBug('attempting to snapshot a session that is not currently running');
-
-                    throw e;
-                }
-
                 if (e === E_LOCK_LOST) {
                     this.errorService.fatalPageLockLost();
 
@@ -210,8 +206,6 @@ export class SnapshotService {
         await this.storageService.acquireLock(tx);
 
         const storageCards: Array<StorageCard> = await complete(tx.objectStore(OBJECT_STORE_STORAGE_CARD).getAll());
-
-        this.assertSessionMatches();
 
         if (!snapshotContainer.materialize()) return false;
 
@@ -352,10 +346,6 @@ export class SnapshotService {
         } else {
             objectStore.delete(this.sessionId);
         }
-    }
-
-    private assertSessionMatches(): void {
-        if (this.emulationContext.session()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
     }
 
     private async showLoader(): Promise<void> {

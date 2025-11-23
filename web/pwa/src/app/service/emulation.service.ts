@@ -199,7 +199,10 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     protected override handleSnapshot(snapshot: SnapshotContainer): void {
-        void this.snapshotService.storeSnapshot(snapshot);
+        const session = this.emulationContext.session();
+        if (!session) throw new Error('unreachable: handleSnapshot without session');
+
+        void this.snapshotService.storeSnapshot(snapshot, session.id);
     }
 
     protected override getCloudpilotInstance(): Promise<Cloudpilot> {
@@ -224,6 +227,9 @@ export class EmulationService extends AbstractEmulationService {
             throw error;
         }
 
+        const session = this.emulationContext.session();
+        if (!session) throw new Error(`unreachable: emulator running w/o session`);
+
         await this.engine.waitForPendingSnapshot();
 
         const snapshot = await this.requestSnapshot();
@@ -232,7 +238,7 @@ export class EmulationService extends AbstractEmulationService {
             return;
         }
 
-        await this.snapshotService.storeSnapshot(snapshot);
+        await this.snapshotService.storeSnapshot(snapshot, session.id);
         await this.engine?.waitForPendingSnapshot();
     }
 
