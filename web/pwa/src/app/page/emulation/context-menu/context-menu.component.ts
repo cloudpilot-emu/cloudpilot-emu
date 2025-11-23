@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { PalmButton } from '@common/bridge/Cloudpilot';
-import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
+import { quirkNoHotsync, quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { SlotType } from '@common/model/SlotType';
 import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
@@ -199,6 +199,12 @@ export class ContextMenuComponent {
         const currentSession = this.emulationContext.session();
 
         return currentSession ? quirkNoPoweroff(currentSession.device) : false;
+    }
+
+    get hotsyncDisabled(): boolean {
+        const currentSession = this.emulationContext.session();
+
+        return currentSession ? quirkNoHotsync(currentSession.device) : false;
     }
 
     get hasActiveSession(): boolean {

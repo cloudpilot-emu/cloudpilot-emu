@@ -290,6 +290,19 @@ export function quirkNoPoweroff(deviceId: DeviceId) {
         case DeviceId.pegNR70:
         case DeviceId.pegT650c:
         case DeviceId.lp168:
+        case DeviceId.frankene2:
+        case DeviceId.te2:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+export function quirkNoHotsync(deviceId: DeviceId) {
+    switch (deviceId) {
+        case DeviceId.frankene2:
+        case DeviceId.te2:
             return true;
 
         default:
