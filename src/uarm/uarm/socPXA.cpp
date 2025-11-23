@@ -183,6 +183,7 @@ struct SoC {
     Device *dev;
 
     Savestate<ChunkType> *savestate;
+    Savestate<ChunkType> *powerOnState;
 
     KeyId jammedKey;
     uint64_t releaseJammedKeyAt;
@@ -526,57 +527,39 @@ SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const
 
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
 
-    /*
-            var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
-       levels: [0x7b6c04, 0x1400101, 0x200], dirs: [0xcf878178, 0xffd1beff, 0x1ffff], riseDet:
-       [0x1680, 0x40000, 0x0], fallDet: [0x786c04, 0x0, 0x0], AFRs: [0x4, 0xa500000a, 0x60008010,
-       0xaaa00000, 0xaa0000a, 0x0]};
-
-
-            var i;
-
-            document.write("<table
-       border=1><tr><td>GPIO</td><td>DIR</td><td>VAL</td><td>AFR</td><td>EDGE</td><td>NOTES</td></tr>");
-
-            for (i = 0; i <= 80; i++) {
-
-                    document.write("<tr><td>" + i + "</td>");
-
-              if (gpio.dirs[i >> 5] & (1 << (i & 31))) {
-                    document.write("<td>OUT</td>");
-                    document.write("<td>" + ((gpio.latches[i >> 5] & (1 << (i & 31))) ? "HI" : "LO")
-       + "</td>");
-              }
-              else {
-                    document.write("<td>IN</td><td></td>");
-              }
-
-              document.write("<td>" + ((gpio.AFRs[i >> 4] >> ((i & 15) * 2)) & 3) + "</td>");
-              document.write("<td>");
-
-              if (gpio.riseDet[i >> 5] & (1 << (i & 31)))
-                    document.write("RE ");
-              if (gpio.fallDet[i >> 5] & (1 << (i & 31)))
-                    document.write("FE ");
-
-
-              document.write("</td>");
-
-              document.write("<td></td></tr>");
-            }
-
-
-            document.write("</table>");
-    */
+    soc->powerOnState = new Savestate<ChunkType>();
+    soc->powerOnState->Save(*soc);
 
     return soc;
 }
 
-void socReset(struct SoC *soc) {
-    cpuReset(soc->cpu, 0);
-    pxaPwrClkReset(soc->pwrClk);
+static void socEngageKey(SoC *soc, KeyId key, bool down) {
+    deviceKey(soc->dev, key, down);
+    keypadKeyEvt(soc->kp, key, down);
+}
 
-    socWakeup(soc, 0);
+void socReset(struct SoC *soc) {
+    const bool pcmOutputEnabled = soc->enablePcmOutput;
+    const bool cardInserted = soc->cardInserted;
+    const uint64_t accumulatedTime = soc->scheduler->GetTime();
+
+    soc->pcmSuspended = false;
+
+    SavestateLoader<ChunkType> loader;
+    loader.Load(soc->powerOnState->GetBuffer(), soc->powerOnState->GetSize(), *soc);
+
+    pxaLcdResetPaletteBuffer(soc->lcd);
+    nandResetPageBuffer(soc->nand);
+
+    if (cardInserted) socSdInsert(soc);
+
+    socSetPcmOutputEnabled(soc, pcmOutputEnabled);
+
+    if (soc->jammedKey != keyInvalid && soc->releaseJammedKeyAt > accumulatedTime) {
+        socJamKey(soc, soc->jammedKey, (soc->releaseJammedKeyAt - accumulatedTime) / 1_msec);
+    } else {
+        soc->jammedKey = keyInvalid;
+    }
 }
 
 void socKeyDown(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyDown(key)); }
@@ -589,11 +572,6 @@ void socPenDown(SoC *soc, int x, int y) {
 }
 
 void socPenUp(SoC *soc) { soc->penEventQueue->Push(PenEvent::PenUp()); }
-
-static void socEngageKey(SoC *soc, KeyId key, bool down) {
-    deviceKey(soc->dev, key, down);
-    keypadKeyEvt(soc->kp, key, down);
-}
 
 void socJamKey(SoC *soc, KeyId key, uint32_t durationMsec) {
     soc->jammedKey = key;

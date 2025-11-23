@@ -38,6 +38,8 @@ struct NAND *nandInit(uint8_t *nandContent, const struct MemoryBuffer *pageBuffe
                       struct Reschedule reschedule, size_t nandSize, const struct NandSpecs *specs,
                       NandReadyCbk readyCbk, void *readyCbkData);
 
+void nandResetPageBuffer(struct NAND *nand);
+
 void nandSecondReadyCbkSet(struct NAND *nand, NandReadyCbk readyCbk, void *readyCbkData);
 
 bool nandWrite(struct NAND *nand, bool cle, bool ale, uint8_t val);

@@ -525,6 +525,11 @@ struct NAND *nandInit(uint8_t *nandContent, const struct MemoryBuffer *pageBuffe
     return nand;
 }
 
+void nandResetPageBuffer(struct NAND *nand) {
+    memset(nand->pageBuf.buffer, 0, nand->bytesPerPage);
+    memoryBufferMarkRangeDirty(&nand->pageBuf, 0, nand->bytesPerPage);
+}
+
 template <typename T>
 void nandSave(struct NAND *nand, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::nand, SAVESTATE_VERSION);

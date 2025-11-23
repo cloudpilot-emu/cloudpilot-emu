@@ -558,6 +558,11 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc 
     return lcd;
 }
 
+void pxaLcdResetPaletteBuffer(struct PxaLcd *lcd) {
+    memset(lcd->paletteBuffer.buffer, 0, PALETTE_SIZE);
+    memoryBufferMarkRangeDirty(&lcd->paletteBuffer, 0, PALETTE_SIZE);
+}
+
 template <typename T>
 void pxaLcdSave(struct PxaLcd *lcd, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaLcd, SAVESTATE_VERSION);

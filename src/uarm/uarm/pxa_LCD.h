@@ -18,6 +18,8 @@ struct SoC;
 struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic,
                           struct MemoryBuffer *buffer, uint16_t width, uint16_t heigh);
 
+void pxaLcdResetPaletteBuffer(struct PxaLcd *lcd);
+
 void pxaLcdTick(struct PxaLcd *lcd);
 
 uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd);
