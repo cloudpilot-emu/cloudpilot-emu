@@ -11,6 +11,8 @@ extern "C" {
 #define SYSCALL_SYS_SET_AUTO_OFF_TIME 0x88c8
 #define SYSCALL_HAL_PEN_RAW_TO_SCREEN 0x415c
 #define SYSCALL_HAL_PEN_SCREEN_TO_RAW 0x4168
+#define SYSCALL_SYS_SLEEP 0x88d8
+#define SYSCALL_SYS_SLEEP_V40 0x88dc
 
 #define packSyscall(table, offset) ((table << 12) | offset)
 

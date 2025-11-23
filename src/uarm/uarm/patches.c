@@ -7,7 +7,6 @@
 
 static bool headpatch_SysSetAutoOffTime(void* ctx, uint32_t syscall, uint32_t* registers) {
     fprintf(stderr, "overriding auto off %u -> 0\n", registers[0]);
-
     registers[0] = 0;
 
     return true;
@@ -49,6 +48,20 @@ static bool headpatch_PenScreenToRaw(void* ctx, uint32_t syscall, uint32_t* regi
     return false;
 }
 
+static bool headpatch_SysSleep(void* ctx, uint32_t syscall, uint32_t* registers) {
+    printf("sys sleep aborted\n");
+    registers[0] = 0;
+
+    return false;
+}
+
+static bool headpatch_SysSleep_v40(void* ctx, uint32_t syscall, uint32_t* registers) {
+    printf("sys sleep v40 aborted\n");
+    registers[0] = 0;
+
+    return false;
+}
+
 void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch* syscallDispatch,
                      struct ArmCpu* cpu) {
     patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SET_AUTO_OFF_TIME, headpatch_SysSetAutoOffTime,
@@ -59,4 +72,7 @@ void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch
 
     patchDispatchAddPatch(patchDispatch, SYSCALL_HAL_PEN_SCREEN_TO_RAW, headpatch_PenScreenToRaw,
                           NULL, cpu);
-}
+
+    patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SLEEP, headpatch_SysSleep, NULL, NULL);
+    patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SLEEP_V40, headpatch_SysSleep_v40, NULL, NULL);
+}  //
