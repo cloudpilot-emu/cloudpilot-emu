@@ -228,8 +228,8 @@ void patchDispatchSave(PatchDispatch* pd, T& savestate) {
 template <typename T>
 void patchDispatchLoad(PatchDispatch* pd, T& loader) {
     uint32_t version;
-    auto chunk =
-        loader.GetChunk(ChunkType::patchDispatch, SAVESTATE_VERSION, "patchDispatch", version);
+    auto chunk = loader.GetChunkOrFail(ChunkType::patchDispatch, SAVESTATE_VERSION, "patchDispatch",
+                                       version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

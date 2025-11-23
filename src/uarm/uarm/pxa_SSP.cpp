@@ -238,7 +238,7 @@ void pxaSspSave(struct SocSsp *ssp, T &savestate, uint32_t index = 0) {
 
 template <typename T>
 void pxaSspLoad(struct SocSsp *ssp, T &loader, uint32_t index = 0) {
-    auto chunk = loader.GetChunk(ChunkType::pxaSsp + index, SAVESTATE_VERSION, "pxa ssp");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaSsp + index, SAVESTATE_VERSION, "pxa ssp");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

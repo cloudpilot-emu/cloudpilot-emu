@@ -640,7 +640,7 @@ void wm9712Lsave(struct WM9712L *wm, T &savestate) {
 
 template <typename T>
 void wm9712Load(struct WM9712L *wm, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::wm9712L, SAVESTATE_VERSION, "wm9712L");
+    auto chunk = loader.GetChunkOrFail(ChunkType::wm9712L, SAVESTATE_VERSION, "wm9712L");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

@@ -226,7 +226,7 @@ void Scheduler<T>::Save(U& savestate) {
 
 template <typename T>
 void Scheduler<T>::Load(SavestateLoader<ChunkType>& loader) {
-    Chunk* chunk = loader.GetChunk(ChunkType::scheduler, SAVESTATE_VERSION, "scheduler");
+    Chunk* chunk = loader.GetChunkOrFail(ChunkType::scheduler, SAVESTATE_VERSION, "scheduler");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

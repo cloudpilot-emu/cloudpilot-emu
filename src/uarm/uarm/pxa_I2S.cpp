@@ -219,7 +219,7 @@ void pxaI2sSave(struct SocI2s *i2s, T &savestate) {
 
 template <typename T>
 void pxaI2sLoad(struct SocI2s *i2s, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaI2s, SAVESTATE_VERSION, "pxa i2s");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaI2s, SAVESTATE_VERSION, "pxa i2s");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

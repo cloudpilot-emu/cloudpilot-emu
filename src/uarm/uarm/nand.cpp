@@ -536,7 +536,7 @@ void nandSave(struct NAND *nand, T &savestate) {
 
 template <typename T>
 void nandLoad(struct NAND *nand, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::nand, SAVESTATE_VERSION, "nand");
+    auto chunk = loader.GetChunkOrFail(ChunkType::nand, SAVESTATE_VERSION, "nand");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

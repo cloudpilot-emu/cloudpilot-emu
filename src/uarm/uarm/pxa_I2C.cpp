@@ -245,7 +245,7 @@ void pxaI2cSave(struct SocI2c *i2c, T &savestate, uint32_t index) {
 
 template <typename T>
 void pxaI2cLoad(struct SocI2c *i2c, T &loader, uint32_t index) {
-    auto chunk = loader.GetChunk(ChunkType::pxaI2c + index, SAVESTATE_VERSION, "pxa i2c");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaI2c + index, SAVESTATE_VERSION, "pxa i2c");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

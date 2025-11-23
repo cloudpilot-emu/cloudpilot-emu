@@ -459,7 +459,7 @@ void pxaAC97Save(struct SocAC97 *ac97, T &savestate) {
 
 template <typename T>
 void pxaAC97Load(struct SocAC97 *ac97, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaAc97, SAVESTATE_VERSION, "pxa ac97");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaAc97, SAVESTATE_VERSION, "pxa ac97");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

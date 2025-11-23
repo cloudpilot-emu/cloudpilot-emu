@@ -539,7 +539,7 @@ void pxaDmaSave(SocDma* dma, T& savestate) {
 
 template <typename T>
 void pxaDmaLoad(SocDma* dma, T& loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaDma, SAVESTATE_VERSION, "pxaDma");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaDma, SAVESTATE_VERSION, "pxaDma");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

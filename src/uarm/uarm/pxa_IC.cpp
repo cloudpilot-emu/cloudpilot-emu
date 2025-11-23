@@ -353,7 +353,7 @@ void pxaIcSave(SocIc *ic, T &savestate) {
 
 template <typename T>
 void pxaIcLoad(SocIc *ic, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaIc, SAVESTATE_VERSION, "pxaIc");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaIc, SAVESTATE_VERSION, "pxaIc");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

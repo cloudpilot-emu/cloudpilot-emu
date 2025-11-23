@@ -404,7 +404,7 @@ void pxaGpioSave(struct SocGpio *gpio, T &savestate) {
 
 template <typename T>
 void pxaGpioLoad(struct SocGpio *gpio, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaGpio, SAVESTATE_VERSION, "pxa gpio");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaGpio, SAVESTATE_VERSION, "pxa gpio");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

@@ -631,7 +631,7 @@ void pxaUartSave(SocUart *uart, T &savestate, uint32_t index) {
 
 template <typename T>
 void pxaUartLoad(struct SocUart *uart, T &loader, uint32_t index) {
-    auto chunk = loader.GetChunk(ChunkType::pxaUart + index, SAVESTATE_VERSION, "uart");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaUart + index, SAVESTATE_VERSION, "uart");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

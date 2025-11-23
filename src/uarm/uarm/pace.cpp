@@ -540,7 +540,7 @@ void paceSave(T& savestate) {
 template <typename T>
 void paceLoad(T& loader) {
     uint32_t version;
-    auto chunk = loader.GetChunk(ChunkType::pace, SAVESTATE_VERSION, "pace", version);
+    auto chunk = loader.GetChunkOrFail(ChunkType::pace, SAVESTATE_VERSION, "pace", version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

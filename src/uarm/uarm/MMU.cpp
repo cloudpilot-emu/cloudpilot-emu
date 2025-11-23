@@ -423,7 +423,7 @@ void mmuSave(struct ArmMmu *mmu, T &savestate) {
 
 template <typename T>
 void mmuLoad(struct ArmMmu *mmu, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::mmu, SAVESTATE_VERSION, "mmu");
+    auto chunk = loader.GetChunkOrFail(ChunkType::mmu, SAVESTATE_VERSION, "mmu");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

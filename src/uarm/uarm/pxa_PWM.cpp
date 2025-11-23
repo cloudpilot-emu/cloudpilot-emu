@@ -92,7 +92,7 @@ void pxaPwmSave(struct PxaPwm* pwm, T& savestate, uint32_t index) {
 
 template <typename T>
 void pxaPwmLoad(struct PxaPwm* pwm, T& loader, uint32_t index) {
-    auto chunk = loader.GetChunk(ChunkType::pxaPwm, SAVESTATE_VERSION, "pxa pwm");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaPwm, SAVESTATE_VERSION, "pxa pwm");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

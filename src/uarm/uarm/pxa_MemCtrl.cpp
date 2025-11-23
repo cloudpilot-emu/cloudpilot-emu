@@ -249,7 +249,7 @@ void pxaMemCtrlrSave(struct PxaMemCtrlr* pxaMemCtrlr, T& savestate) {
 template <typename T>
 void pxaMemCtrlrLoad(struct PxaMemCtrlr* pxaMemCtrlr, T& loader) {
     auto chunk =
-        loader.GetChunk(ChunkType::pxaMemCtrlr, SAVESTATE_VERSION, "pxa memory controller");
+        loader.GetChunkOrFail(ChunkType::pxaMemCtrlr, SAVESTATE_VERSION, "pxa memory controller");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

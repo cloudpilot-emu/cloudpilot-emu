@@ -25,6 +25,10 @@ class SavestateLoader {
     Chunk* GetChunk(ChunkType type, uint32_t version, const char* component);
     Chunk* GetChunk(ChunkType type, uint32_t version, const char* component, uint32_t& gotVersion);
 
+    Chunk* GetChunkOrFail(ChunkType type, uint32_t version, const char* component);
+    Chunk* GetChunkOrFail(ChunkType type, uint32_t version, const char* component,
+                          uint32_t& gotVersion);
+
     bool HasChunk(ChunkType type);
 
     void NotifyError();
@@ -153,6 +157,33 @@ Chunk* SavestateLoader<ChunkType>::GetChunk(ChunkType type, uint32_t version,
 template <typename ChunkType>
 Chunk* SavestateLoader<ChunkType>::GetChunk(ChunkType type, uint32_t version, const char* component,
                                             uint32_t& gotVersion) {
+    Chunk* chunk = GetChunk(type);
+    if (!chunk) {
+        logPrintf("can't restore %s: missing savestate\n", component);
+
+        return nullptr;
+    }
+
+    gotVersion = chunk->Get32();
+    if (gotVersion > version) {
+        logPrintf("can't restore %s: unsupported savestate version %u\n", component, version);
+
+        return nullptr;
+    }
+
+    return chunk;
+}
+
+template <typename ChunkType>
+Chunk* SavestateLoader<ChunkType>::GetChunkOrFail(ChunkType type, uint32_t version,
+                                                  const char* component) {
+    uint32_t gotVersion;
+    return GetChunkOrFail(type, version, component, gotVersion);
+}
+
+template <typename ChunkType>
+Chunk* SavestateLoader<ChunkType>::GetChunkOrFail(ChunkType type, uint32_t version,
+                                                  const char* component, uint32_t& gotVersion) {
     Chunk* chunk = GetChunk(type);
     if (!chunk) {
         logPrintf("failed to restore %s: missing savestate\n", component);

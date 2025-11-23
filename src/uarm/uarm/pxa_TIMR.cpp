@@ -221,7 +221,7 @@ void pxaTimrSave(PxaTimr *timr, T &savestate) {
 
 template <typename T>
 void pxaTimrLoad(PxaTimr *timr, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaTimr, SAVESTATE_VERSION, "pxaTimr");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaTimr, SAVESTATE_VERSION, "pxaTimr");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

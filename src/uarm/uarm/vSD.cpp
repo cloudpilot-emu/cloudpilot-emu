@@ -711,7 +711,7 @@ void vsdSave(struct VSD *vsd, T &savestate) {
 
 template <typename T>
 void vsdLoad(struct VSD *vsd, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::vsd, SAVESTATE_VERSION, "vsd");
+    auto chunk = loader.GetChunkOrFail(ChunkType::vsd, SAVESTATE_VERSION, "vsd");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

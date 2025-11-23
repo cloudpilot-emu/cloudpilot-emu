@@ -370,7 +370,7 @@ void cp15Save(struct ArmCP15* cp15, T& savestate) {
 
 template <typename T>
 void cp15Load(struct ArmCP15* cp15, T& loader) {
-    auto chunk = loader.GetChunk(ChunkType::cp15, SAVESTATE_VERSION, "cp15");
+    auto chunk = loader.GetChunkOrFail(ChunkType::cp15, SAVESTATE_VERSION, "cp15");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

@@ -3716,7 +3716,7 @@ void cpuLoad(ArmCpu *cpu, T &loader) {
     patchDispatchLoad(cpu->patchDispatch, loader);
 
     uint32_t version;
-    auto chunk = loader.GetChunk(ChunkType::cpu, SAVESTATE_VERSION, "cpu", version);
+    auto chunk = loader.GetChunkOrFail(ChunkType::cpu, SAVESTATE_VERSION, "cpu", version);
     if (!chunk) return;
 
     if (version < 3) {

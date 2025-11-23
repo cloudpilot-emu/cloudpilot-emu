@@ -510,7 +510,7 @@ void pxaMmcSave(struct PxaMmc *mmc, T &savestate) {
 
 template <typename T>
 void pxaMmcLoad(struct PxaMmc *mmc, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaMmc, SAVESTATE_VERSION, "pxa mmc");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaMmc, SAVESTATE_VERSION, "pxa mmc");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

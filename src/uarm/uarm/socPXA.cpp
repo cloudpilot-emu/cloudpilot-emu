@@ -980,7 +980,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaRtcLoad(rtc, loader);
     pxaLcdLoad(lcd, loader);
 
-    if (socRev == 2) {
+    if (socRev < 2) {
         pxa255dspLoad(dsp, loader);
         pxa255UdcLoad(udc1, loader);
     } else {
@@ -993,7 +993,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     vsdLoad(vSD, loader);
 
     uint32_t version;
-    Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA", version);
+    Chunk *chunk = loader.GetChunkOrFail(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA", version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
@@ -1037,7 +1037,7 @@ void SoC::Save(T &savestate) {
     pxaRtcSave(rtc, savestate);
     pxaLcdSave(lcd, savestate);
 
-    if (socRev == 2) {
+    if (socRev < 2) {
         pxa255dspSave(dsp, savestate);
         pxa255UdcSave(udc1, savestate);
     } else {

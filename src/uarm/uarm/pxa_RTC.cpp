@@ -154,7 +154,7 @@ void pxaRtcSave(struct PxaRtc *rtc, T &savestate) {
 template <typename T>
 void pxaRtcLoad(struct PxaRtc *rtc, T &loader) {
     uint32_t gotVersion;
-    auto chunk = loader.GetChunk(ChunkType::pxaRtc, SAVESTATE_VERSION, "pxa rtc", gotVersion);
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaRtc, SAVESTATE_VERSION, "pxa rtc", gotVersion);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

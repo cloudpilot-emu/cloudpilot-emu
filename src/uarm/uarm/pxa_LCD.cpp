@@ -569,7 +569,7 @@ void pxaLcdSave(struct PxaLcd *lcd, T &savestate) {
 
 template <typename T>
 void pxaLcdLoad(struct PxaLcd *lcd, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaLcd, SAVESTATE_VERSION, "pxaLcd");
+    auto chunk = loader.GetChunkOrFail(ChunkType::pxaLcd, SAVESTATE_VERSION, "pxaLcd");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);

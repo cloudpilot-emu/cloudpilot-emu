@@ -392,7 +392,8 @@ void pxaPwrClkSave(struct PxaPwrClk *pc, T &savestate) {
 
 template <typename T>
 void pxaPwrClkLoad(struct PxaPwrClk *pc, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaPwrClk, SAVESTATE_VERSION, "pxa power / clock CP");
+    auto chunk =
+        loader.GetChunkOrFail(ChunkType::pxaPwrClk, SAVESTATE_VERSION, "pxa power / clock CP");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
