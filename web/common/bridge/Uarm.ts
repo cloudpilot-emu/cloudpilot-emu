@@ -39,7 +39,7 @@ function mapDbInstallResult(result: DbInstallResultUarm): DbInstallResult {
             return DbInstallResult.success;
 
         case DbInstallResultUarm.needsReset:
-            return DbInstallResult.success;
+            return DbInstallResult.needsReboot;
 
         case DbInstallResultUarm.errCorrupt:
             return DbInstallResult.failureDbIsCorrupt;
