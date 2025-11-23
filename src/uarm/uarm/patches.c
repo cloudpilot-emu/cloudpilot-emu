@@ -55,13 +55,6 @@ static bool headpatch_SysSleep(void* ctx, uint32_t syscall, uint32_t* registers)
     return false;
 }
 
-static bool headpatch_SysSleep_v40(void* ctx, uint32_t syscall, uint32_t* registers) {
-    printf("sys sleep v40 aborted\n");
-    registers[0] = 0;
-
-    return false;
-}
-
 void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch* syscallDispatch,
                      struct ArmCpu* cpu) {
     patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SET_AUTO_OFF_TIME, headpatch_SysSetAutoOffTime,
@@ -74,5 +67,4 @@ void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch
                           NULL, cpu);
 
     patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SLEEP, headpatch_SysSleep, NULL, NULL);
-    patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SLEEP_V40, headpatch_SysSleep_v40, NULL, NULL);
 }  //
