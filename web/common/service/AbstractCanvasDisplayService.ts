@@ -41,6 +41,8 @@ interface Layout {
     buttonWidth: FrameDependent;
     buttonTop: FrameDependent;
     buttonBottom: FrameDependent;
+    radiusDpadSelect: FrameDependent;
+    angleDpad: number;
 }
 
 function buttonHeightForScreenSize(screenSize: ScreenSize) {
@@ -95,6 +97,9 @@ function calculateLayout(device: DeviceId): Layout {
         buttonBottom: coord(
             dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight + buttonHeight.frameDevice,
         ),
+        radiusDpadSelect: { frameCanvas: buttonHeight.frameCanvas / 4.5, frameDevice: buttonHeight.frameDevice / 4.5 },
+        angleDpad:
+            Math.PI / 2 - Math.atan((dimensions.width - 4 * buttonHeight.frameDevice) / buttonHeight.frameDevice),
     };
 }
 
@@ -236,23 +241,53 @@ export abstract class AbstractCanvasDisplayService {
 
     determineButton([x, y]: [number, number]): PalmButton {
         if (x >= this.layout.screenWidth.frameDevice - this.layout.buttonWidth.frameDevice) return PalmButton.notes;
+
         if (x >= this.layout.screenWidth.frameDevice - 2 * this.layout.buttonWidth.frameDevice) return PalmButton.todo;
+
         if (x >= 2 * this.layout.buttonWidth.frameDevice) {
-            return y >=
-                this.layout.screenHeight.frameDevice +
-                    this.layout.silkscreenHeight.frameDevice +
-                    this.layout.buttonHeight.frameDevice / 2
-                ? PalmButton.down
-                : PalmButton.up;
+            if (this.dpad) {
+                const center = {
+                    x: this.layout.screenWidth.frameDevice / 2,
+                    y: this.layout.buttonTop.frameDevice + this.layout.buttonHeight.frameDevice / 2,
+                };
+
+                const rel = { x: Math.abs(x - center.x), y: Math.abs(y - center.y) };
+
+                const tanPhi = Math.tan(this.layout.angleDpad);
+
+                if (rel.x ** 2 + rel.y ** 2 <= this.layout.radiusDpadSelect.frameDevice ** 2) {
+                    return PalmButton.rockerEnter;
+                }
+
+                if (y < center.y && rel.y / rel.x >= tanPhi) return PalmButton.up;
+
+                if (y > center.y && rel.y / rel.x >= tanPhi) return PalmButton.down;
+
+                if (x < center.x && rel.y / rel.x < tanPhi) return PalmButton.rockerLeft;
+
+                return PalmButton.rockerRight;
+            } else {
+                return y >=
+                    this.layout.screenHeight.frameDevice +
+                        this.layout.silkscreenHeight.frameDevice +
+                        this.layout.buttonHeight.frameDevice / 2
+                    ? PalmButton.down
+                    : PalmButton.up;
+            }
         }
+
         if (x >= this.layout.buttonWidth.frameDevice) return PalmButton.phone;
 
         return PalmButton.cal;
     }
 
-    protected async initWithCanvas(canvas: HTMLCanvasElement | undefined = this.ctx?.canvas): Promise<void> {
+    protected async initWithCanvas(
+        dpad: boolean,
+        canvas: HTMLCanvasElement | undefined = this.ctx?.canvas,
+    ): Promise<void> {
         if (!canvas) return;
 
+        this.dpad = dpad;
         this.layout = calculateLayout(this.getDeviceId());
 
         this.onResize.dispatch();
@@ -335,23 +370,117 @@ export abstract class AbstractCanvasDisplayService {
                 BACKGROUND_ACTIVE_BUTTON,
             );
         }
-        if (activeButtons.includes(PalmButton.up)) {
-            this.fillRect(
-                2 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonTop.frameDevice,
-                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice / 2,
-                BACKGROUND_ACTIVE_BUTTON,
-            );
-        }
-        if (activeButtons.includes(PalmButton.down)) {
-            this.fillRect(
-                2 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonTop.frameDevice + this.layout.buttonHeight.frameDevice / 2,
-                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice / 2,
-                BACKGROUND_ACTIVE_BUTTON,
-            );
+        if (!this.dpad) {
+            if (activeButtons.includes(PalmButton.up)) {
+                this.fillRect(
+                    2 * this.layout.buttonWidth.frameDevice,
+                    this.layout.buttonTop.frameDevice,
+                    this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
+                    this.layout.buttonHeight.frameDevice / 2,
+                    BACKGROUND_ACTIVE_BUTTON,
+                );
+            }
+            if (activeButtons.includes(PalmButton.down)) {
+                this.fillRect(
+                    2 * this.layout.buttonWidth.frameDevice,
+                    this.layout.buttonTop.frameDevice + this.layout.buttonHeight.frameDevice / 2,
+                    this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
+                    this.layout.buttonHeight.frameDevice / 2,
+                    BACKGROUND_ACTIVE_BUTTON,
+                );
+            }
+        } else {
+            const center = {
+                x: this.layout.borderWidth.frameCanvas + this.layout.screenWidth.frameCanvas / 2,
+                y: this.layout.buttonTop.frameCanvas + this.layout.buttonHeight.frameCanvas / 2,
+            };
+
+            const topLeft = {
+                x: this.layout.borderWidth.frameCanvas + 2 * this.layout.buttonWidth.frameCanvas,
+                y: this.layout.buttonTop.frameCanvas,
+            };
+
+            const topRight = {
+                x:
+                    this.layout.borderWidth.frameCanvas +
+                    this.layout.screenWidth.frameCanvas -
+                    2 * this.layout.buttonWidth.frameCanvas,
+                y: this.layout.buttonTop.frameCanvas,
+            };
+
+            const bottomLeft = {
+                x: topLeft.x,
+                y: this.layout.buttonTop.frameCanvas + this.layout.buttonHeight.frameCanvas,
+            };
+
+            const bottomRight = {
+                x: topRight.x,
+                y: this.layout.buttonTop.frameCanvas + this.layout.buttonHeight.frameCanvas,
+            };
+
+            const r = this.layout.radiusDpadSelect.frameCanvas;
+            const phi = this.layout.angleDpad;
+
+            if (activeButtons.includes(PalmButton.up)) {
+                this.ctx.beginPath();
+
+                this.ctx.moveTo(topLeft.x, topLeft.y);
+                this.ctx.lineTo(topRight.x, topRight.y);
+                this.ctx.lineTo(center.x + r * Math.cos(phi), center.y - r * Math.sin(phi));
+                this.ctx.arc(center.x, center.y, r, -phi, phi - Math.PI, true);
+                this.ctx.lineTo(topLeft.x, topLeft.y);
+
+                this.ctx.fillStyle = BACKGROUND_ACTIVE_BUTTON;
+                this.ctx.fill();
+            }
+
+            if (activeButtons.includes(PalmButton.down)) {
+                this.ctx.beginPath();
+
+                this.ctx.moveTo(bottomLeft.x, bottomLeft.y);
+                this.ctx.lineTo(bottomRight.x, bottomRight.y);
+                this.ctx.lineTo(center.x + r * Math.cos(phi), center.y + r * Math.sin(phi));
+                this.ctx.arc(center.x, center.y, r, phi, Math.PI - phi, false);
+                this.ctx.lineTo(bottomLeft.x, bottomLeft.y);
+
+                this.ctx.fillStyle = BACKGROUND_ACTIVE_BUTTON;
+                this.ctx.fill();
+            }
+
+            if (activeButtons.includes(PalmButton.rockerLeft)) {
+                this.ctx.beginPath();
+
+                this.ctx.moveTo(topLeft.x, topLeft.y);
+                this.ctx.lineTo(bottomLeft.x, bottomLeft.y);
+                this.ctx.lineTo(center.x - r * Math.cos(phi), center.y + r * Math.sin(phi));
+                this.ctx.arc(center.x, center.y, r, Math.PI - phi, Math.PI + phi, false);
+                this.ctx.lineTo(topLeft.x, topLeft.y);
+
+                this.ctx.fillStyle = BACKGROUND_ACTIVE_BUTTON;
+                this.ctx.fill();
+            }
+
+            if (activeButtons.includes(PalmButton.rockerRight)) {
+                this.ctx.beginPath();
+
+                this.ctx.moveTo(topRight.x, topRight.y);
+                this.ctx.lineTo(bottomRight.x, bottomRight.y);
+                this.ctx.lineTo(center.x + r * Math.cos(phi), center.y + r * Math.sin(phi));
+                this.ctx.arc(center.x, center.y, r, phi, -phi, true);
+                this.ctx.lineTo(topRight.x, topRight.y);
+
+                this.ctx.fillStyle = BACKGROUND_ACTIVE_BUTTON;
+                this.ctx.fill();
+            }
+
+            if (activeButtons.includes(PalmButton.rockerEnter)) {
+                this.ctx.beginPath();
+
+                this.ctx.arc(center.x, center.y, r, 0, Math.PI * 2);
+
+                this.ctx.fillStyle = BACKGROUND_ACTIVE_BUTTON;
+                this.ctx.fill();
+            }
         }
     }
 
@@ -622,6 +751,7 @@ export abstract class AbstractCanvasDisplayService {
     protected ctx: CanvasRenderingContext2D | undefined;
     protected layout = calculateLayout(DEFAULT_DEVICE);
     protected lastEmulationCanvas: HTMLCanvasElement | undefined;
+    protected dpad = false;
 
     readonly onResize = new Event<void>();
 

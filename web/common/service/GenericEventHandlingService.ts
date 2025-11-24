@@ -47,7 +47,9 @@ export class GenericEventHandlingService {
         protected canvasDisplayService: AbstractCanvasDisplayService,
     ) {}
 
-    bind(pointerEventTarget: EventTarget, keyEventTarget: EventTarget = window): void {
+    bind(pointerEventTarget: EventTarget, dpad: boolean, keyEventTarget: EventTarget = window): void {
+        this.dpad = dpad;
+
         if (this.pointerEventTarget) {
             this.release();
         }
@@ -417,8 +419,10 @@ export class GenericEventHandlingService {
             case 'j':
             case 'y':
             case 'z':
-            case 'ArrowLeft':
                 return PalmButton.cal;
+
+            case 'ArrowLeft':
+                return this.dpad ? PalmButton.rockerLeft : PalmButton.cal;
 
             case 'q':
             case 'u':
@@ -433,8 +437,18 @@ export class GenericEventHandlingService {
             case 'd':
             case 'l':
             case 'v':
-            case 'ArrowRight':
                 return PalmButton.notes;
+
+            case 'ArrowRight':
+                return this.dpad ? PalmButton.rockerRight : PalmButton.notes;
+        }
+
+        if (this.dpad) {
+            switch (e.key) {
+                case 'Enter':
+                case ' ':
+                    return PalmButton.rockerEnter;
+            }
         }
 
         return undefined;
@@ -480,4 +494,6 @@ export class GenericEventHandlingService {
     private activeButtons = new Set<PalmButton>();
     private gameMode = false;
     private enableGamemodeHotkey = true;
+
+    private dpad = false;
 }

@@ -42,6 +42,10 @@
                 <ion-toggle labelPlacement="fixed" formControlName="runHidden">Run when hidden</ion-toggle>
             </ion-item>
 
+            <ion-item lines="none">
+                <ion-toggle labelPlacement="fixed" formControlName="emulateDPad">Emulate D-Pad</ion-toggle>
+            </ion-item>
+
             <h1>Host integration</h1>
 
             <ion-item lines="none" *ngIf="clipboardService.isSupported()">

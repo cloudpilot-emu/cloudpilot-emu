@@ -24,4 +24,5 @@ export interface Kvs {
     snapshotIntegrityCheck: boolean;
     infoId?: number;
     ios174UpdateWarningId?: number;
+    dontEmulateDPad?: boolean;
 }

@@ -89,6 +89,15 @@ export function mapButton(button: PalmButton): KeyId {
         case PalmButton.power:
             return KeyId.keyIdPower;
 
+        case PalmButton.rockerLeft:
+            return KeyId.keyIdLeft;
+
+        case PalmButton.rockerRight:
+            return KeyId.keyIdRight;
+
+        case PalmButton.rockerEnter:
+            return KeyId.keyIdSelect;
+
         default:
             return KeyId.keyInvalid;
     }

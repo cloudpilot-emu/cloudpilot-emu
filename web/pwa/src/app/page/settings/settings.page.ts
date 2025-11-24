@@ -36,6 +36,7 @@ const enum fields {
     snapshotIntegrityCheck = 'snapshotIntegrityCheck',
     indicatorFixMode = 'indicatorFixMode',
     fixedFontSize = 'fixedFontSize',
+    emulateDPad = 'emulateDPad',
 }
 @Component({
     selector: 'app-settings',
@@ -103,6 +104,7 @@ export class SettingsPage implements OnInit {
             enableRemoteInstall: this.formGroup.get(fields.enableRemoteInstall)?.value,
             enableAudioOnFirstInteraction: this.formGroup.get(fields.audioOnStart)?.value,
             snapshotIntegrityCheck: this.formGroup.get(fields.snapshotIntegrityCheck)?.value,
+            dontEmulateDPad: !this.formGroup.get(fields.emulateDPad)?.value,
         });
 
         if (this.mutexReleasePromise) {
@@ -187,6 +189,7 @@ export class SettingsPage implements OnInit {
             [fields.snapshotIntegrityCheck]: new UntypedFormControl(this.kvsService.kvs.snapshotIntegrityCheck),
             [fields.indicatorFixMode]: new UntypedFormControl(getIndicatorFixMode()),
             [fields.fixedFontSize]: new UntypedFormControl(!dynamicFontsEnabled()),
+            [fields.emulateDPad]: new UntypedFormControl(!this.kvsService.kvs.dontEmulateDPad),
         });
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);

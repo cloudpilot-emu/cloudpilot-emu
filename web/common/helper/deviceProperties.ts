@@ -358,3 +358,14 @@ export function nandSize(deviceId: DeviceId): number | undefined {
     // blocks * [pages / block] + [bytes / page]
     return engineType(deviceId) === 'uarm' ? 2048 * (2 << 4) * 528 : undefined;
 }
+
+export function hasDPad(deviceId: DeviceId): boolean {
+    switch (deviceId) {
+        case DeviceId.te2:
+        case DeviceId.frankene2:
+            return true;
+
+        default:
+            return false;
+    }
+}

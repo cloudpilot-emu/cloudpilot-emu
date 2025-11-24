@@ -4,20 +4,23 @@
 class ButtonEvent {
    public:
     enum class Button {
-        app1,
-        app2,
-        app3,
-        app4,
-        rockerUp,
-        rockerDown,
-        power,
-        cradle,
-        contrast,
-        antenna,
-        invalid,
-        wheelUp,
-        wheelDown,
-        wheelPush
+        app1 = 0,
+        app2 = 1,
+        app3 = 2,
+        app4 = 3,
+        rockerUp = 4,
+        rockerDown = 5,
+        power = 6,
+        cradle = 7,
+        contrast = 8,
+        antenna = 9,
+        invalid = 10,
+        wheelUp = 11,
+        wheelDown = 12,
+        wheelPush = 13,
+        rockerLeft = 14,
+        rockerRight = 15,
+        rockerEnter = 16
     };
 
     enum class Type { press, release };

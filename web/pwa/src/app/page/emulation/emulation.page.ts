@@ -1,5 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import helpUrl from '@assets/doc/emulation.md';
+import { hasDPad } from '@common/helper/deviceProperties';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { Config, LoadingController, ModalController, PopoverController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
@@ -310,7 +311,10 @@ export class EmulationPage implements DragDropClient {
 
         await this.emulationService.resume();
 
-        this.eventHandlingService.bind(this.canvasRef.nativeElement);
+        this.eventHandlingService.bind(
+            this.canvasRef.nativeElement,
+            hasDPad(session.device) && !this.kvsService.kvs.dontEmulateDPad,
+        );
     }
 
     private onKvsUpdate = (): void => {

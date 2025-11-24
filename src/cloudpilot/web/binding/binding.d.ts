@@ -13,6 +13,9 @@ export const enum PalmButton {
     down = 5,
     power = 6,
     cradle = 7,
+    rockerLeft = 14,
+    rockerRight = 15,
+    rockerEnter = 16,
 }
 
 export const enum DbInstallResult {

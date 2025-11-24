@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
-import { deviceDimensions } from '@common/helper/deviceProperties';
+import { deviceDimensions, hasDPad } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { ScreenSize } from '@common/model/Dimensions';
@@ -11,6 +11,7 @@ import { SkinLoader } from '@common/service/SkinLoader';
 
 import { Session } from '@pwa/model/Session';
 
+import { KvsService } from './kvs.service';
 import { TOKEN_CLOUDPILOT_INSTANCE } from './token';
 
 function fontScaleForScreenSize(screenSize: ScreenSize) {
@@ -29,14 +30,20 @@ function fontScaleForScreenSize(screenSize: ScreenSize) {
 
 @Injectable({ providedIn: 'root' })
 export class CanvasDisplayService extends AbstractCanvasDisplayService {
-    constructor(@Inject(TOKEN_CLOUDPILOT_INSTANCE) cloudpilotInstance: Promise<Cloudpilot>) {
+    constructor(
+        @Inject(TOKEN_CLOUDPILOT_INSTANCE) cloudpilotInstance: Promise<Cloudpilot>,
+        private kvsService: KvsService,
+    ) {
         super(new SkinLoader(cloudpilotInstance));
     }
 
     async initialize(canvas?: HTMLCanvasElement, session: Session | undefined = this.session): Promise<void> {
         this.session = session;
 
-        await this.initWithCanvas(canvas);
+        await this.initWithCanvas(
+            this.session !== undefined ? hasDPad(this.session.device) && !this.kvsService.kvs.dontEmulateDPad : false,
+            canvas,
+        );
     }
 
     async clearStatistics(): Promise<void> {
@@ -140,8 +147,9 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
         );
     }
 
-    private session: Session | undefined;
     lastSnapshotStatistics?: SnapshotStatistics;
     lastEmulationStatistics?: EmulationStatistics;
     statisticsVisible = false;
+
+    private session: Session | undefined;
 }
