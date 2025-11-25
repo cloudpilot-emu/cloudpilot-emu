@@ -97,7 +97,7 @@ function calculateLayout(device: DeviceId): Layout {
         buttonBottom: coord(
             dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight + buttonHeight.frameDevice,
         ),
-        radiusDpadSelect: { frameCanvas: buttonHeight.frameCanvas / 6, frameDevice: buttonHeight.frameDevice / 6 },
+        radiusDpadSelect: { frameCanvas: buttonHeight.frameCanvas / 5, frameDevice: buttonHeight.frameDevice / 5 },
         angleDpad:
             Math.PI / 2 - Math.atan((dimensions.width - 4 * buttonHeight.frameDevice) / buttonHeight.frameDevice),
     };
