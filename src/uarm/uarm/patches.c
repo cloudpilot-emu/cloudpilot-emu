@@ -6,6 +6,8 @@
 #include "stdlib.h"
 #include "syscall.h"
 
+#pragma GCC diagnostic ignored "-Wmultichar"
+
 struct PatchContext {
     struct ArmCpu* cpu;
     struct SyscallDispatch* sd;
