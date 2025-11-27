@@ -36,6 +36,7 @@ struct ScratchState {
 
             case Type::pace:
                 paceLoad(loader);
+                [[fallthrough]];
 
             case Type::minimal:
                 cpuSetReg(cpu, 14, lr);
