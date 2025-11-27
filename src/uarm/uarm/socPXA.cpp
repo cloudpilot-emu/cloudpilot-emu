@@ -176,6 +176,7 @@ struct SoC {
     PacePatch *pacePatch;
     PatchDispatch *patchDispatch;
     SyscallDispatch *syscallDispatch;
+    PatchContext *patchContext;
 
     Keypad *kp;
     VSD *vSD;
@@ -337,7 +338,7 @@ SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const
     patchDispatchSetCpu(soc->patchDispatch, soc->cpu);
 
     soc->syscallDispatch = initSyscallDispatch(soc);
-    registerPatches(soc->patchDispatch, soc->syscallDispatch, soc->cpu);
+    soc->patchContext = registerPatches(soc->patchDispatch, soc->syscallDispatch, soc->cpu);
 
     soc->ram = ramInit(soc->mem, soc, RAM_BASE, ramSize, &soc->bufferMemory, true);
     if (!soc->ram) ERR("Cannot init RAM");

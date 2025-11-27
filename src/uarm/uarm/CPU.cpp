@@ -3760,8 +3760,6 @@ void ArmCpu::DoSaveLoad(U &chunkHelper, uint32_t version) {
 template <typename T>
 void cpuPrepareInjectedCall(struct ArmCpu *cpu, T &savestate) {
     cpuSave(cpu, savestate);
-
-    patchDispatchReset(cpu->patchDispatch);
 }
 
 template <typename T>

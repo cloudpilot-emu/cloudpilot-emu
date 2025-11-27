@@ -9,9 +9,10 @@ extern "C" {
 #endif
 
 struct ArmCpu;
+struct PatchContext;
 
-void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch* syscallDispatch,
-                     struct ArmCpu* cpu);
+struct PatchContext* registerPatches(struct PatchDispatch* patchDispatch,
+                                     struct SyscallDispatch* syscallDispatch, struct ArmCpu* cpu);
 
 #ifdef __cplusplus
 }

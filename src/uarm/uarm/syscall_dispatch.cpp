@@ -26,20 +26,25 @@
 #define INSTRUCTION_M68K_TRAP0 0x4E40
 
 struct ScratchState {
-    enum class Type { full, pace };
+    enum class Type { full, pace, minimal };
 
     void Load(SavestateLoader<ChunkType>& loader) {
-        if (type == Type::full) {
-            cpuFinishInjectedCall(cpu, loader);
-        } else {
-            paceLoad(loader);
+        switch (type) {
+            case Type::full:
+                cpuFinishInjectedCall(cpu, loader);
+                break;
 
-            cpuSetReg(cpu, 14, lr);
-            cpuSetReg(cpu, 15, pc);
-            cpuClearSlowPath(cpu, SLOW_PATH_REASON_INJECTED_CALL_DONE);
-            cpuSetSlowPath(cpu, slowPathInjectedCallDone);
-            cpuSetModePace(cpu, modePace);
-            cpuSetCurInstrPC(cpu, curInstrPC);
+            case Type::pace:
+                paceLoad(loader);
+
+            case Type::minimal:
+                cpuSetReg(cpu, 14, lr);
+                cpuSetReg(cpu, 15, pc);
+                cpuClearSlowPath(cpu, SLOW_PATH_REASON_INJECTED_CALL_DONE);
+                cpuSetSlowPath(cpu, slowPathInjectedCallDone);
+                cpuSetModePace(cpu, modePace);
+                cpuSetCurInstrPC(cpu, curInstrPC);
+                break;
         }
     }
 
@@ -53,7 +58,7 @@ struct ScratchState {
 
         savestate.Save(*this);
 
-        if (type == Type::pace) {
+        if (type == Type::pace || type == Type::minimal) {
             const uint32_t* registers = cpuGetRegisters(cpu);
             lr = registers[14];
             pc = registers[15] + (cpuIsThumb(cpu) ? 1 : 0);
@@ -235,12 +240,61 @@ static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint32_t flags
     sd->deadMansSwitch = deadMansSwitchSaved;
 }
 
+static ScratchState::Type nativeCallPushType(uint32_t flags) {
+    return (flags & SC_EXECUTE_FULL) ? ScratchState::Type::full : ScratchState::Type::minimal;
+}
+
 uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, uint32_t timeout) {
-    const size_t nestLevel = pushState(sd, ScratchState::Type::full);
+    const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
     uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
 
     registers[0] = timeout;
     executeInjectedSyscall(sd, flags, SYSCALL_SYS_SET_AUTO_OFF_TIME);
+
+    uint16_t err = registers[0];
+
+    popState(sd, nestLevel);
+
+    return err;
+}
+
+uint16_t syscall_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t size) {
+    const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
+    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+
+    registers[0] = size;
+    executeInjectedSyscall(sd, flags, SYSCALL_MEM_PTR_NEW);
+
+    uint16_t err = registers[0];
+
+    popState(sd, nestLevel);
+
+    return err;
+}
+
+uint16_t syscall_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t ptr) {
+    const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
+    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+
+    registers[0] = ptr;
+    executeInjectedSyscall(sd, flags, SYSCALL_MEM_CHUNK_FREE);
+
+    uint16_t err = registers[0];
+
+    popState(sd, nestLevel);
+
+    return err;
+}
+
+uint16_t syscall_FtrGet(struct SyscallDispatch* sd, uint32_t flags, uint32_t creator,
+                        uint16_t ftrNum, uint32_t valueP) {
+    const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
+    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+
+    registers[0] = creator;
+    registers[1] = ftrNum;
+    registers[2] = valueP;
+    executeInjectedSyscall(sd, flags, SYSCALL_FTR_GET);
 
     uint16_t err = registers[0];
 
