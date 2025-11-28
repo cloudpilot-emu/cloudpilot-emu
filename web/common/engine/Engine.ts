@@ -48,6 +48,7 @@ export interface EngineCommon {
     isPowerOff(): boolean;
     isUIInitialized(): boolean;
     isSlowdown(): boolean;
+    getOSVersion(): number;
 
     getDeviceId(): DeviceId;
 
@@ -99,7 +100,6 @@ export interface EngineCloudpilot extends EngineCommon {
     getStatistics(): EmulationStatisticsCloudpilot;
 
     isSuspended(): boolean;
-    getOSVersion(): number;
 
     getSerialPortSerial(): SerialPort;
     getSerialPortIR(): SerialPort;

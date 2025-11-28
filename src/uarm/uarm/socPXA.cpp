@@ -60,6 +60,7 @@
 #include "soc_SSP.h"
 #include "soc_UART.h"
 #include "syscall_dispatch.h"
+#include "system_state.h"
 #include "vSD.h"
 
 #define SAVESTATE_VERSION 2
@@ -177,6 +178,7 @@ struct SoC {
     PatchDispatch *patchDispatch;
     SyscallDispatch *syscallDispatch;
     PatchContext *patchContext;
+    SystemState *systemState;
 
     Keypad *kp;
     VSD *vSD;
@@ -329,16 +331,18 @@ SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const
     if (!soc->mem) ERR("Cannot init physical memory manager");
 
     soc->patchDispatch = initPatchDispatch();
+    soc->systemState = createSystemState();
 
     soc->cpu = cpuInit(ROM_BASE, soc->mem, true /* xscale */, false /* omap */, gdbPort,
                        socRev ? ((socRev == 1) ? CPUID_PXA260 : CPUID_PXA270) : CPUID_PXA255,
-                       0x0B16A16AUL, soc->patchDispatch, soc->pacePatch);
+                       0x0B16A16AUL, soc->patchDispatch, soc->pacePatch, soc->systemState);
     if (!soc->cpu) ERR("Cannot init CPU");
 
     patchDispatchSetCpu(soc->patchDispatch, soc->cpu);
 
     soc->syscallDispatch = initSyscallDispatch(soc);
-    soc->patchContext = registerPatches(soc->patchDispatch, soc->syscallDispatch, soc->cpu);
+    soc->patchContext =
+        registerPatches(soc->patchDispatch, soc->syscallDispatch, soc->cpu, soc->systemState);
 
     soc->ram = ramInit(soc->mem, soc, RAM_BASE, ramSize, &soc->bufferMemory, true);
     if (!soc->ram) ERR("Cannot init RAM");
@@ -927,6 +931,8 @@ void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts) {
     pxaTimrSuspendInterrupts(soc->tmr, suspendInterrupts);
 }
 
+struct SystemState *socGetSystemState(struct SoC *soc) { return soc->systemState; }
+
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);
     if (socRev != 2) pxaUartLoad(hwUart, loader, 1);
@@ -970,6 +976,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     scheduler->Load(loader);
     deviceLoad(dev, loader);
     vsdLoad(vSD, loader);
+    systemStateLoad(systemState, loader);
 
     uint32_t version;
     Chunk *chunk = loader.GetChunkOrFail(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA", version);
@@ -1027,6 +1034,7 @@ void SoC::Save(T &savestate) {
     scheduler->Save(savestate);
     deviceSave(dev, savestate);
     vsdSave(vSD, savestate);
+    systemStateSave(systemState, savestate);
 
     auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");

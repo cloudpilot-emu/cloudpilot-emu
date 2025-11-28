@@ -277,16 +277,7 @@ export abstract class AbstractEmulationService {
     }
 
     protected getOSVersion(): number {
-        switch (this.engine?.type) {
-            case 'cloudpilot':
-                return this.engine.getOSVersion();
-
-            case 'uarm':
-                return 5 << 24;
-
-            default:
-                return 0;
-        }
+        return this.engine?.getOSVersion() ?? 0;
     }
 
     private async enforceRunState(): Promise<void> {

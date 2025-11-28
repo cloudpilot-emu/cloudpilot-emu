@@ -96,7 +96,8 @@ SOURCE_CXX =		 					\
 	uarm/db_installer.cpp				\
 	uarm/audio_queue.cpp				\
 	uarm/db_list.cpp					\
-	uarm/db_backup.cpp
+	uarm/db_backup.cpp					\
+	uarm/system_state.cpp
 
 SOURCE_C_NATIVE = $(SOURCE_C)
 SOURCE_CXX_NATIVE =						\

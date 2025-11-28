@@ -160,11 +160,15 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     isUIInitialized(): boolean {
-        return true;
+        return this.uiInitialized;
     }
 
     isSlowdown(): boolean {
         return this.currentIps / 1000000 < this.settings.targetMips * this.settings.warnSlowdownThreshold;
+    }
+
+    getOSVersion(): number {
+        return this.osVersion ?? 0;
     }
 
     getDeviceId(): DeviceId {
@@ -407,6 +411,14 @@ export class EngineUarmImpl implements EngineUarm {
 
                 break;
 
+            case ClientMessageType.systemStateChanged:
+                this.uiInitialized = message.uiInitialized;
+                this.osVersion = message.osVersion;
+
+                this.palmosStateChangeEvent.dispatch();
+
+                break;
+
             default:
                 message satisfies never;
         }
@@ -435,4 +447,7 @@ export class EngineUarmImpl implements EngineUarm {
     private rpcHost: RpcHost;
 
     private pcmChannel = new MessageChannel();
+
+    private uiInitialized = false;
+    private osVersion: number | undefined;
 }

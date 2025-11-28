@@ -24,6 +24,7 @@ struct AudioQueue;
 struct ArmCpu;
 struct SyscallDispatch;
 struct NAND;
+struct SystemState;
 
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
@@ -99,6 +100,8 @@ void socJamKey(struct SoC *soc, enum KeyId key, uint32_t durationMsec);
 struct NAND *socGetNand(struct SoC *soc);
 
 void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts);
+
+struct SystemState *socGetSystemState(struct SoC *soc);
 
 #ifdef __cplusplus
 }

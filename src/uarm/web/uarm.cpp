@@ -12,6 +12,7 @@
 #include "device.h"
 #include "rom_info5.h"
 #include "sdcard.h"
+#include "system_state.h"
 
 using namespace std;
 
@@ -234,3 +235,11 @@ uint32_t Uarm::InstallDatabase(uint32_t len, void* data) {
 }
 
 DbBackup* Uarm::NewDbBackup(int type) { return new DbBackup(socGetSyscallDispatch(soc), type); }
+
+bool Uarm::IsUiInitialized() { return systemStateIsUiInitialized(socGetSystemState(soc)); }
+
+bool Uarm::IsOsVersionSet() {
+    return systemStateGetOsVersion(socGetSystemState(soc)) != SYSTEM_STATE_OS_VERSION_UNDEFINED;
+}
+
+uint32_t Uarm::GetOsVersion() { return systemStateGetOsVersion(socGetSystemState(soc)); }

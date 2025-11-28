@@ -10,9 +10,11 @@ extern "C" {
 
 struct ArmCpu;
 struct PatchContext;
+struct SystemState;
 
 struct PatchContext* registerPatches(struct PatchDispatch* patchDispatch,
-                                     struct SyscallDispatch* syscallDispatch, struct ArmCpu* cpu);
+                                     struct SyscallDispatch* syscallDispatch, struct ArmCpu* cpu,
+                                     struct SystemState* systemState);
 
 #ifdef __cplusplus
 }

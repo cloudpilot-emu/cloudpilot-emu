@@ -459,6 +459,15 @@ export class Uarm {
         return new Uint8Array(this.module.HEAPU8.subarray(ptr, ptr + this.uarm.GetRomDataSize()));
     }
 
+    @guard()
+    isUiInitialized(): boolean {
+        return this.uarm.IsUiInitialized();
+    }
+
+    getOsVersion(): number | undefined {
+        return this.uarm.IsOsVersionSet() ? this.uarm.GetOsVersion() : undefined;
+    }
+
     dead(): boolean {
         return this.amIdead;
     }

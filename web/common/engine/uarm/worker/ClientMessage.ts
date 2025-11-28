@@ -8,6 +8,7 @@ export const enum ClientMessageType {
     timeslice = 'timeslice',
     fatalError = 'fatalError',
     snapshot = 'snapshot',
+    systemStateChanged = 'systemStateChanged',
 }
 
 export interface ClientMessageReady {
@@ -42,10 +43,17 @@ export interface ClientMessageSnapshot {
     snapshot: UarmSnapshot;
 }
 
+export interface ClientMessageSystemStateChanged {
+    type: ClientMessageType.systemStateChanged;
+    uiInitialized: boolean;
+    osVersion: number | undefined;
+}
+
 export type ClientMessage =
     | ClientMessageReady
     | ClientMessageRpcError
     | ClientMessageRpcSuccess
     | ClientMessageTimeslice
     | ClientMessageFatalError
-    | ClientMessageSnapshot;
+    | ClientMessageSnapshot
+    | ClientMessageSystemStateChanged;

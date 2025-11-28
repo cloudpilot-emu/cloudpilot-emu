@@ -115,6 +115,10 @@ export interface Uarm {
 
     JamKey(key: KeyId, durationMsec: number): void;
 
+    IsUiInitialized(): boolean;
+    IsOsVersionSet(): boolean;
+    GetOsVersion(): number;
+
     InstallDatabase(len: number, data: VoidPtr): DbInstallResult;
 
     NewDbBackup(type: BackupType): DbBackup;

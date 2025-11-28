@@ -24,6 +24,11 @@ interface TimesliceProperties {
     currentIpsMax: number;
 }
 
+export interface SystemState {
+    uiInitialized: boolean;
+    osVersion: number | undefined;
+}
+
 const MAX_PCM_SUSPEND_MSEC = 500;
 
 type All<T> = { [P in keyof T]-?: T[P] };
@@ -387,6 +392,8 @@ export class Emulator {
         }
 
         this.processSamples(sizeSeconds);
+        this.updateSystemState();
+
         if (this.backgrounded) return;
 
         this.timesliceEvent.dispatch({
@@ -422,6 +429,17 @@ export class Emulator {
             },
             [sampleBuffer.buffer],
         );
+    }
+
+    private updateSystemState(): void {
+        const oldUiInitialized = this.uiInitialized;
+        this.uiInitialized = this.uarm.isUiInitialized();
+
+        if (this.uiInitialized === oldUiInitialized) return;
+
+        this.osVersion = this.uarm.getOsVersion();
+
+        this.systemStateChangeEvent.dispatch({ osVersion: this.osVersion, uiInitialized: this.uiInitialized });
     }
 
     private getSampleBuffer(): Uint32Array {
@@ -486,6 +504,7 @@ export class Emulator {
 
     timesliceEvent = new Event<TimesliceProperties>();
     snapshotEvent = new Event<[UarmSnapshot, Array<Transferable>]>();
+    systemStateChangeEvent = new Event<SystemState>();
 
     private running = false;
     private backgrounded = false;
@@ -512,4 +531,7 @@ export class Emulator {
     private sampleBufferPool: Array<ArrayBufferLike> = [];
 
     private returnSnapshotCallbacks: Array<() => void> = [];
+
+    private uiInitialized = false;
+    private osVersion: number | undefined;
 }

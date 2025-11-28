@@ -31,7 +31,8 @@ enum class ChunkType : uint32_t {
     cp15 = 0x10040,
     patchDispatch = 0x10050,
     nand = 0x10060,
-    vsd = 0x10070
+    vsd = 0x10070,
+    systemState = 0x10080
 };
 
 inline ChunkType operator+(ChunkType chunkType, uint32_t index) {

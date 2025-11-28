@@ -75,6 +75,7 @@ typedef bool (*ArmCoprocTwoRegF)(struct ArmCpu *cpu, void *userData, bool MRRC, 
 struct ArmMmu;
 struct ArmMem;
 struct PatchDispatch;
+struct SystemState;
 
 struct ArmCoprocessor {
     ArmCoprocRegXferF regXfer;
@@ -86,7 +87,7 @@ struct ArmCoprocessor {
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
                        uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
-                       struct PacePatch *pacePatch);
+                       struct PacePatch *pacePatch, struct SystemState *systemState);
 
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu);
 

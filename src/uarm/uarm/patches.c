@@ -5,12 +5,14 @@
 #include "CPU.h"
 #include "stdlib.h"
 #include "syscall.h"
+#include "system_state.h"
 
 #pragma GCC diagnostic ignored "-Wmultichar"
 
 struct PatchContext {
     struct ArmCpu* cpu;
     struct SyscallDispatch* sd;
+    struct SystemState* systemState;
 };
 
 static bool headpatch_SysSetAutoOffTime(void* ctx, uint32_t syscall, uint32_t* registers) {
@@ -65,9 +67,8 @@ static bool headpatch_SysSleep(void* ctx, uint32_t syscall, uint32_t* registers)
 
 static void tailpatch_uiInitialize(void* ctx, uint32_t syscall,
                                    const uint32_t* registersAtinvocation, uint32_t* registers) {
-    printf("ui initialized \n");
-
     struct PatchContext* patchContext = ctx;
+    systemStateSetUiInitialized(patchContext->systemState, true);
 
     registers[13] -= 4;
     const uint32_t versionP = registers[13];
@@ -80,7 +81,7 @@ static void tailpatch_uiInitialize(void* ctx, uint32_t syscall,
         if (!cpuMemOpExternal(patchContext->cpu, &version, versionP, 4, false)) {
             printf("failed to dereference OS version pointer\n");
         } else {
-            printf("OS version: 0x%08x\n", version);
+            systemStateSetOsVersion(patchContext->systemState, version);
         }
     }
 
@@ -88,10 +89,12 @@ static void tailpatch_uiInitialize(void* ctx, uint32_t syscall,
 }
 
 struct PatchContext* registerPatches(struct PatchDispatch* patchDispatch,
-                                     struct SyscallDispatch* syscallDispatch, struct ArmCpu* cpu) {
+                                     struct SyscallDispatch* syscallDispatch, struct ArmCpu* cpu,
+                                     struct SystemState* systemState) {
     struct PatchContext* ctx = (struct PatchContext*)malloc(sizeof(struct PatchContext));
     ctx->cpu = cpu;
     ctx->sd = syscallDispatch;
+    ctx->systemState = systemState;
 
     patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SET_AUTO_OFF_TIME, headpatch_SysSetAutoOffTime,
                           NULL, ctx);

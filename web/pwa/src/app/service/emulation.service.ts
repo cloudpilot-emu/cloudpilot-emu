@@ -176,10 +176,11 @@ export class EmulationService extends AbstractEmulationService {
 
     protected override onAfterAdvanceEmulation(sliceSizeSeconds: number): void {
         const session = this.emulationContext.session();
+        const osVersion = this.getOSVersion();
 
-        if (this.isUiInitialized() && session && session.osVersion === undefined) {
+        if (this.isUiInitialized() && session && session.osVersion !== osVersion) {
             void this.storageService.updateSessionPartial(session.id, {
-                osVersion: this.getOSVersion(),
+                osVersion,
             });
         }
 

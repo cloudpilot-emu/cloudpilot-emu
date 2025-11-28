@@ -20,6 +20,7 @@
 #include "patch_dispatch.h"
 #include "peephole.h"
 #include "savestate/savestateAll.h"
+#include "system_state.h"
 
 #pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
 
@@ -145,6 +146,7 @@ struct ArmCpu {
 
     struct stub *debugStub;
     struct PatchDispatch *patchDispatch;
+    struct SystemState *systemState;
 
     uint32_t slowPath;
     uint16_t breakPaceSyscall;
@@ -3186,6 +3188,7 @@ void cpuReset(struct ArmCpu *cpu, uint32_t pc) {
     cpuPrvSetPC(cpu, pc);
     mmuReset(cpu->mmu);
     icacheInval(cpu->ic);
+    systemStateSetUiInitialized(cpu->systemState, false);
 
     cpuUpdateSlowPath(cpu);
 }
@@ -3206,7 +3209,7 @@ static void initStatic() {
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
                        uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
-                       struct PacePatch *pacePatch) {
+                       struct PacePatch *pacePatch, struct SystemState *systemState) {
     initStatic();
 
     struct ArmCpu *cpu = (struct ArmCpu *)malloc(sizeof(*cpu));
@@ -3233,6 +3236,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
 
     cpu->patchDispatch = patchDispatch;
     cpu->pacePatch = pacePatch;
+    cpu->systemState = systemState;
 
     cpu->m68kTrap0Handlers = new M68kTrapHandlerMap();
 

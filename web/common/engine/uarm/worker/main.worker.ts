@@ -43,6 +43,10 @@ rpcClient
 
             dispatchMessage({ type: ClientMessageType.snapshot, snapshot }, transferables);
         });
+
+        emulator.systemStateChangeEvent.addHandler((systemState) =>
+            dispatchMessage({ type: ClientMessageType.systemStateChanged, ...systemState }),
+        );
     })
     .register('openSession', ({ rom, memory, nand, state, card }) =>
         unwrapEmulator().openSession(rom, nand, memory, state, card),

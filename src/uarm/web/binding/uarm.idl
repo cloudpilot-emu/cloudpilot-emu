@@ -72,6 +72,10 @@ interface Uarm {
 
     void JamKey(long key, unsigned long durationMsec);
 
+    boolean IsUiInitialized();
+    boolean IsOsVersionSet();
+    unsigned long GetOsVersion();
+
     unsigned long InstallDatabase(unsigned long len, VoidPtr data);
 
     DbBackup NewDbBackup(long type);

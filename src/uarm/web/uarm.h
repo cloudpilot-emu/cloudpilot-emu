@@ -92,6 +92,10 @@ class Uarm {
 
     DbBackup* NewDbBackup(int type);
 
+    bool IsUiInitialized();
+    bool IsOsVersionSet();
+    uint32_t GetOsVersion();
+
    private:
     size_t ramSize{0};
 
