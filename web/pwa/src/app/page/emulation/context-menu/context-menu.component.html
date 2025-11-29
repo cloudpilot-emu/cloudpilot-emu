@@ -13,7 +13,7 @@
     <ion-item
         lines="full"
         button
-        *ngIf="hasActiveSession && !powerDisabled"
+        *ngIf="hasActiveSession && !hotsyncDisabled"
         [detail]="false"
         (click)="hotsync()"
         [disabled]="!emulationService.isRunning()"

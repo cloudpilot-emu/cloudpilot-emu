@@ -27,6 +27,8 @@ void pxaLcdResetPendingFrame(struct PxaLcd *lcd);
 
 void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd);
 
+bool pxaLcdIsEnabled(struct PxaLcd *lcd);
+
 #ifdef __cplusplus
 }
 

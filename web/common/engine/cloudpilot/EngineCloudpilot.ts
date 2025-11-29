@@ -109,6 +109,10 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         return this.powerOff;
     }
 
+    isLcdEnabled(): boolean {
+        return !this.isPowerOff();
+    }
+
     isUIInitialized(): boolean {
         return this.uiInitialized;
     }

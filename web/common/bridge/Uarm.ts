@@ -464,8 +464,14 @@ export class Uarm {
         return this.uarm.IsUiInitialized();
     }
 
+    @guard()
     getOsVersion(): number | undefined {
         return this.uarm.IsOsVersionSet() ? this.uarm.GetOsVersion() : undefined;
+    }
+
+    @guard()
+    isLcdEnabled(): boolean {
+        return this.uarm.IsLcdEnabled();
     }
 
     dead(): boolean {

@@ -453,7 +453,7 @@ void pxaLcdTick(struct PxaLcd *lcd) {
 
     if (lcd->enbChanged) {
         if (lcd->lccr0 & 0x0001) {  // just got enabled
-
+            lcd->framebufferDirty = true;
             // TODO: perhaps check settings?
         } else {  // we just got quick disabled - kill current frame and do no more
 
@@ -532,6 +532,8 @@ uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd) {
 void pxaLcdResetPendingFrame(struct PxaLcd *lcd) { lcd->frame_pending = false; }
 
 void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd) { lcd->framebufferDirty = true; }
+
+bool pxaLcdIsEnabled(struct PxaLcd *lcd) { return lcd->lccr0 & 0x0001; }
 
 struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic,
                           struct MemoryBuffer *buffer, uint16_t width, uint16_t height) {

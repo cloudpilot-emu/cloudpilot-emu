@@ -27,6 +27,7 @@ export interface ClientMessageTimeslice {
     type: ClientMessageType.timeslice;
 
     sizeSeconds: number;
+    lcdEnabled: boolean;
     frame: ArrayBuffer | undefined;
 
     currentIps: number;

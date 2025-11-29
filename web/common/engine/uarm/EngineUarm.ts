@@ -159,6 +159,10 @@ export class EngineUarmImpl implements EngineUarm {
         return false;
     }
 
+    isLcdEnabled(): boolean {
+        return this.lcdEnabled ?? false;
+    }
+
     isUIInitialized(): boolean {
         return this.uiInitialized;
     }
@@ -382,19 +386,27 @@ export class EngineUarmImpl implements EngineUarm {
             case ClientMessageType.fatalError:
                 return this.fatal(message.error);
 
-            case ClientMessageType.timeslice:
+            case ClientMessageType.timeslice: {
                 this.timesliceEvent.dispatch(message.sizeSeconds);
                 this.currentIps = message.currentIps;
                 this.currentIpsMax = message.currentIpsMax;
 
-                if (message.frame) {
+                const lcdWasEnabled = this.lcdEnabled;
+                this.lcdEnabled = message.lcdEnabled;
+
+                if (message.frame && message.lcdEnabled) {
                     this.returnPendingFrame();
                     this.pendingFrame = message.frame;
 
                     this.newFrameEvent.dispatch();
+                } else if (!message.lcdEnabled && (lcdWasEnabled ?? true)) {
+                    this.newFrameEvent.dispatch();
                 }
 
+                this.lcdEnabled = message.lcdEnabled;
+
                 break;
+            }
 
             case ClientMessageType.snapshot:
                 try {
@@ -449,5 +461,6 @@ export class EngineUarmImpl implements EngineUarm {
     private pcmChannel = new MessageChannel();
 
     private uiInitialized = false;
+    private lcdEnabled: boolean | undefined;
     private osVersion: number | undefined;
 }

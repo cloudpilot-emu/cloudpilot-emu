@@ -18,6 +18,7 @@ import { UarmSnapshot } from './Snapshot';
 
 interface TimesliceProperties {
     sizeSeconds: number;
+    lcdEnabled: boolean;
     frame: ArrayBuffer | undefined;
 
     currentIps: number;
@@ -394,11 +395,10 @@ export class Emulator {
         this.processSamples(sizeSeconds);
         this.updateSystemState();
 
-        if (this.backgrounded) return;
-
         this.timesliceEvent.dispatch({
             sizeSeconds,
-            frame: this.getFrame(),
+            lcdEnabled: this.uarm.isLcdEnabled(),
+            frame: this.backgrounded ? undefined : this.getFrame(),
             currentIps: this.uarm.getCurrentIps(),
             currentIpsMax: this.uarm.getCurrentIpsMax(),
         });
@@ -439,7 +439,10 @@ export class Emulator {
 
         this.osVersion = this.uarm.getOsVersion();
 
-        this.systemStateChangeEvent.dispatch({ osVersion: this.osVersion, uiInitialized: this.uiInitialized });
+        this.systemStateChangeEvent.dispatch({
+            osVersion: this.osVersion,
+            uiInitialized: this.uiInitialized,
+        });
     }
 
     private getSampleBuffer(): Uint32Array {

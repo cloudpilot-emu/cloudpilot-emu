@@ -76,6 +76,8 @@ interface Uarm {
     boolean IsOsVersionSet();
     unsigned long GetOsVersion();
 
+    boolean IsLcdEnabled();
+
     unsigned long InstallDatabase(unsigned long len, VoidPtr data);
 
     DbBackup NewDbBackup(long type);

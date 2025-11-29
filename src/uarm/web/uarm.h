@@ -96,6 +96,8 @@ class Uarm {
     bool IsOsVersionSet();
     uint32_t GetOsVersion();
 
+    bool IsLcdEnabled();
+
    private:
     size_t ramSize{0};
 

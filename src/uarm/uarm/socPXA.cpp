@@ -933,6 +933,8 @@ void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts) {
 
 struct SystemState *socGetSystemState(struct SoC *soc) { return soc->systemState; }
 
+bool socLcdEnabled(struct SoC *soc) { return pxaLcdIsEnabled(soc->lcd); }
+
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);
     if (socRev != 2) pxaUartLoad(hwUart, loader, 1);

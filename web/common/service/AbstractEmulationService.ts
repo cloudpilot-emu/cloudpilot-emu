@@ -312,7 +312,7 @@ export abstract class AbstractEmulationService {
     private onEngineNewFrameEvent = () => {
         if (!this.engine) throw new Error('invalid state');
 
-        if (this.engine.isPowerOff()) {
+        if (!this.engine.isLcdEnabled()) {
             this.clearCanvas();
         } else {
             this.engine.blitFrame(this.canvas);

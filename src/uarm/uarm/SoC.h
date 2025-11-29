@@ -103,6 +103,8 @@ void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts);
 
 struct SystemState *socGetSystemState(struct SoC *soc);
 
+bool socLcdEnabled(struct SoC *soc);
+
 #ifdef __cplusplus
 }
 #endif

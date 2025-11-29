@@ -243,3 +243,5 @@ bool Uarm::IsOsVersionSet() {
 }
 
 uint32_t Uarm::GetOsVersion() { return systemStateGetOsVersion(socGetSystemState(soc)); }
+
+bool Uarm::IsLcdEnabled() { return socLcdEnabled(soc); }

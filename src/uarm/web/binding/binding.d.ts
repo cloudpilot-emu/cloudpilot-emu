@@ -119,6 +119,8 @@ export interface Uarm {
     IsOsVersionSet(): boolean;
     GetOsVersion(): number;
 
+    IsLcdEnabled(): boolean;
+
     InstallDatabase(len: number, data: VoidPtr): DbInstallResult;
 
     NewDbBackup(type: BackupType): DbBackup;

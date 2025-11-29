@@ -46,6 +46,7 @@ export interface EngineCommon {
 
     isRunning(): boolean;
     isPowerOff(): boolean;
+    isLcdEnabled(): boolean;
     isUIInitialized(): boolean;
     isSlowdown(): boolean;
     getOSVersion(): number;
