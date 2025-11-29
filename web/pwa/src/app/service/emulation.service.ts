@@ -159,6 +159,10 @@ export class EmulationService extends AbstractEmulationService {
         return this.engine?.waitForPendingSnapshot();
     }
 
+    flush(): Promise<void> {
+        return this.mutex.waitForUnlock();
+    }
+
     protected override updateConfiguredHotsyncName(hotsyncName: string): void {
         const session = this.emulationContext.session();
         if (!session) return;
@@ -219,6 +223,7 @@ export class EmulationService extends AbstractEmulationService {
     private unblock = (): Promise<void> => this.mutex.runExclusive(() => this.doUnblock());
 
     private async snapshotNow(): Promise<void> {
+        await this.flush();
         if (!this.engine) return;
 
         if (this.isRunning()) {
@@ -240,7 +245,7 @@ export class EmulationService extends AbstractEmulationService {
         }
 
         await this.snapshotService.storeSnapshot(snapshot, session.id);
-        await this.engine?.waitForPendingSnapshot();
+        await this.engine.waitForPendingSnapshot();
     }
 
     private async stopUnchecked(): Promise<void> {

@@ -29,6 +29,7 @@ export class BackupService {
 
         const { failedDatabases, archive } = await this.emulatorLock.runGuarded(async () => {
             await loader.present();
+            await this.emulationService.flush();
             await this.emulationService.waitForPendingSnapshot();
 
             try {

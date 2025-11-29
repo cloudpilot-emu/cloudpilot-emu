@@ -233,6 +233,7 @@ export class InstallationService {
             });
 
             await loader.present();
+            await this.emulationService.flush();
             await this.emulationService.waitForPendingSnapshot();
 
             try {
