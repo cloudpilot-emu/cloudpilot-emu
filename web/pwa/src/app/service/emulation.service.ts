@@ -74,7 +74,8 @@ export class EmulationService extends AbstractEmulationService {
         });
 
         this.snapshotService.snapshotRequestEvent.addHandler((cb) =>
-            this.snapshotNow()
+            this.mutex
+                .runExclusive(() => this.snapshotNow())
                 .then(() => cb())
                 .catch(cb),
         );
@@ -223,7 +224,6 @@ export class EmulationService extends AbstractEmulationService {
     private unblock = (): Promise<void> => this.mutex.runExclusive(() => this.doUnblock());
 
     private async snapshotNow(): Promise<void> {
-        await this.flush();
         if (!this.engine) return;
 
         if (this.isRunning()) {
