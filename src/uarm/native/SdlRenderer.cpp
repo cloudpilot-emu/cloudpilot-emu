@@ -58,8 +58,11 @@ SdlRenderer::~SdlRenderer() {
 }
 
 void SdlRenderer::Draw(bool forceRedraw) {
-    uint32_t* frame = socGetPendingFrame(soc);
-    if (!frame && !forceRedraw) return;
+    const bool wasLcdEnabled = lcdEnabled;
+    lcdEnabled = socLcdEnabled(soc);
+
+    const uint32_t* frame = socGetPendingFrame(soc);
+    if (!frame && !forceRedraw && lcdEnabled == wasLcdEnabled) return;
 
     if (frame) {
         uint8_t* pixels;
@@ -84,7 +87,7 @@ void SdlRenderer::Draw(bool forceRedraw) {
     SDL_RenderClear(renderer);
     DrawSilkscreen();
 
-    if (frameTextureValid) {
+    if (frameTextureValid && lcdEnabled) {
         SDL_Rect dest = {.x = 0,
                          .y = 0,
                          .w = scale * displayConfiguration.width,

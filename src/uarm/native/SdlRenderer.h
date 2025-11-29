@@ -25,6 +25,7 @@ class SdlRenderer {
     SDL_Texture* silkscreenTexture{nullptr};
 
     bool frameTextureValid{false};
+    bool lcdEnabled{true};
 
     SoC* soc{nullptr};
 
