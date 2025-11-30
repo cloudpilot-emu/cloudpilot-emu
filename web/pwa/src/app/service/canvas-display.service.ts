@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@angular/core';
+import { Inject, Injectable, signal } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { deviceDimensions, hasDPad } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
@@ -8,6 +8,7 @@ import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { AbstractCanvasDisplayService, DEFAULT_DEVICE } from '@common/service/AbstractCanvasDisplayService';
 import { SkinLoader } from '@common/service/SkinLoader';
+import { Mutex } from 'async-mutex';
 
 import { Session } from '@pwa/model/Session';
 
@@ -64,14 +65,22 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
         super(new SkinLoader(cloudpilotInstance));
     }
 
-    async initialize(canvas?: HTMLCanvasElement, session: Session | undefined = this.session): Promise<void> {
-        this.session = session;
+    initialize = (canvas?: HTMLCanvasElement, session: Session | undefined = this.session): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            this.initializedSession.set(undefined);
 
-        await this.initWithCanvas(
-            this.session !== undefined ? hasDPad(this.session.device) && !this.kvsService.kvs.dontEmulateDPad : false,
-            canvas,
-        );
-    }
+            this.session = session;
+            if (session?.device !== this.session?.device) this.lastEmulationCanvas = undefined;
+
+            await this.initWithCanvas(
+                this.session !== undefined
+                    ? hasDPad(this.session.device) && !this.kvsService.kvs.dontEmulateDPad
+                    : false,
+                canvas,
+            );
+
+            this.initializedSession.set(this.session);
+        });
 
     async clearStatistics(): Promise<void> {
         this.statisticsVisible = false;
@@ -196,9 +205,14 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
         );
     }
 
+    initializedSession = signal<Session | undefined>(undefined);
+
     lastSnapshotStatistics?: SnapshotStatistics;
     lastEmulationStatistics?: EmulationStatistics;
     statisticsVisible = false;
 
     private session: Session | undefined;
+    private initialized = false;
+
+    private mutex = new Mutex();
 }

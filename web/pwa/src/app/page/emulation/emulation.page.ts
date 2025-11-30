@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, Signal, ViewChild, computed } from '@angular/core';
 import helpUrl from '@assets/doc/emulation.md';
 import { hasDPad } from '@common/helper/deviceProperties';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
@@ -56,7 +56,13 @@ export class EmulationPage implements DragDropClient {
         private loadingController: LoadingController,
         private audioService: AudioService,
         public config: Config,
-    ) {}
+    ) {
+        this.showCanvas = computed(
+            () =>
+                this.emulationContext.session() !== undefined &&
+                this.emulationContext.session()?.id === this.canvasDisplayService.initializedSession()?.id,
+        );
+    }
 
     get cssWidth(): string {
         return this.canvasDisplayService.width / devicePixelRatio + 'px';
@@ -404,7 +410,8 @@ export class EmulationPage implements DragDropClient {
 
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
 
-    private autoLockUI = true;
+    showCanvas: Signal<boolean>;
 
+    private autoLockUI = true;
     private mutex = new Mutex();
 }
