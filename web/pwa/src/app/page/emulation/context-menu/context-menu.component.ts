@@ -353,6 +353,7 @@ export class ContextMenuComponent {
         const loader = await this.loadingController.create();
         try {
             await loader.present();
+            void this.popoverController.dismiss();
 
             const session = this.emulationContext.session();
             if (!session) return;
