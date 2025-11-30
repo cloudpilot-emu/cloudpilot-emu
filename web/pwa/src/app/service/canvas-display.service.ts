@@ -61,10 +61,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
         @Inject(TOKEN_CLOUDPILOT_INSTANCE) cloudpilotInstance: Promise<Cloudpilot>,
         private kvsService: KvsService,
     ) {
-        const skinLoader = new SkinLoader(cloudpilotInstance);
-        super(skinLoader);
-
-        this.skinLoader = skinLoader;
+        super(new SkinLoader(cloudpilotInstance));
     }
 
     async initialize(canvas?: HTMLCanvasElement, session: Session | undefined = this.session): Promise<void> {
