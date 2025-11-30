@@ -3,9 +3,16 @@ import { PalmButton } from '@common/bridge/Cloudpilot';
 import { quirkNoHotsync, quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { SlotType } from '@common/model/SlotType';
-import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
+import {
+    ActionSheetController,
+    AlertController,
+    LoadingController,
+    ModalController,
+    PopoverController,
+} from '@ionic/angular';
 
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
+import { filenameForScreenshot } from '@pwa/helper/filename';
 import { SessionSettings, mergeSettings, settingsFromSession } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { AlertService } from '@pwa/service/alert.service';
@@ -16,6 +23,7 @@ import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { EmulationContextService } from '@pwa/service/emulation-context.service';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { ErrorService } from '@pwa/service/error.service';
+import { FileService } from '@pwa/service/file.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { NativeSupportService } from '@pwa/service/native-support.service';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
@@ -85,6 +93,8 @@ export class ContextMenuComponent {
         private alertController: AlertController,
         private storageService: StorageService,
         private errorService: ErrorService,
+        private loadingController: LoadingController,
+        private fileService: FileService,
     ) {}
 
     async reset(): Promise<void> {
@@ -337,6 +347,27 @@ export class ContextMenuComponent {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'eject failed');
         }
         void this.popoverController.dismiss();
+    }
+
+    async saveScreenshot(): Promise<void> {
+        const loader = await this.loadingController.create();
+        try {
+            await loader.present();
+
+            const session = this.emulationContext.session();
+            if (!session) return;
+
+            const screenshot = await this.canvasDisplayService.screenshot();
+            if (!screenshot) throw new Error(`screenshot is undefined`);
+
+            this.fileService.saveBlob(filenameForScreenshot(session), screenshot);
+        } catch (e) {
+            console.error(e);
+
+            void this.alertService.errorMessage('Failed to create screenshot.');
+        } finally {
+            await loader.dismiss();
+        }
     }
 
     @Input()

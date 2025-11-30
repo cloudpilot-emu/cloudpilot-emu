@@ -3,6 +3,17 @@
 This version is a major release that adds support for emulating the Tunsten E2 (PalmOS 5!)
 through a fork of [uarm](https://github.com/uARM-Palm/uARM).
 
+-   Support for Tungsten E2 / OS5.
+-   Support for Dmitry Grinberg hacked "Tungsten E3" widescreen E2 ROM.
+-   Support full D-Pad on OS5 hardware (no support for Tungsten W as the silkscreen version
+    does not support a D-Pad).
+-   Option to disable full D-Pad ("clumsy finger mode").
+-   PCM audio on Tungsten E2.
+-   Add "Save screenshot" option to emulation menu to capture the current screen as PNG.
+-   Greatly improved stability of the audio driver --- audio should reliably resume after
+    the app is suspended or backgrounded now.
+-   No release of CloudpilotEmu embedded for this version.
+
 # Version 1.10.16
 
 -   Minor styling fixes.

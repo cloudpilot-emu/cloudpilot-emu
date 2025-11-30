@@ -46,6 +46,7 @@ module.exports = {
         'svg/trash-outline.svg',
         'svg/volume-high-outline.svg',
         'svg/volume-mute-outline.svg',
+        'svg/camera-outline.svg',
     ],
     cacheId: 'cloudpilot-pwa',
     mode: 'production',

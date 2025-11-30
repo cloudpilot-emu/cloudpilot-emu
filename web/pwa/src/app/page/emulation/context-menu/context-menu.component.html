@@ -85,6 +85,10 @@
         <ion-label>Settings</ion-label>
         <ion-icon name="cog-outline" slot="end"></ion-icon>
     </ion-item>
+    <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="saveScreenshot()">
+        <ion-label>Save screenshot</ion-label>
+        <ion-icon name="camera-outline" slot="end"></ion-icon>
+    </ion-item>
     <ion-item lines="none" button [detail]="false" (click)="help()">
         <ion-label>Help</ion-label>
         <ion-icon name="help-outline" slot="end"></ion-icon>

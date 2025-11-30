@@ -34,6 +34,10 @@ export function filenameForArchive(card: StorageCard): string {
     return `files_${filenameFragment(card.name)}.zip`;
 }
 
+export function filenameForScreenshot(session: Session): string {
+    return `${filenameFragment(session.name)}.png`;
+}
+
 export function concatFilenames(files: Array<string>, limit = 3): string {
     if (files.length === 0) return '';
 

@@ -43,8 +43,11 @@ export class FileService {
     }
 
     saveFile(name: string, content: Uint8Array, type = 'application/octet-stream'): void {
-        const file = new Blob([content], { type });
-        const url = URL.createObjectURL(file);
+        this.saveBlob(name, new Blob([content], { type }));
+    }
+
+    saveBlob(name: string, content: Blob): void {
+        const url = URL.createObjectURL(content);
 
         const a = document.createElement('a');
         a.href = url;

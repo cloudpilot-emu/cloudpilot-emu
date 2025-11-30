@@ -69,6 +69,24 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
         this.statisticsVisible = true;
     }
 
+    screenshot(): Promise<Blob | undefined> {
+        return new Promise((resolve, reject) => {
+            if (!this.ctx) return undefined;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = this.width / devicePixelRatio;
+            canvas.height = this.height / devicePixelRatio;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('unable to create intermediate canvas');
+
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(this.ctx.canvas, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('unable to create screenshot'))));
+        });
+    }
+
     protected getDeviceId(): DeviceId {
         return this.session?.device ?? DEFAULT_DEVICE;
     }
