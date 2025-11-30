@@ -59,9 +59,9 @@ function buttonHeightForScreenSize(screenSize: ScreenSize) {
     }
 }
 
-function calculateLayout(device: DeviceId): Layout {
+function calculateLayout(device: DeviceId, pixelRatio: number): Layout {
     const dimensions = deviceDimensions(device);
-    const scale = (dimensions.screenSize === ScreenSize.screen160x160 ? 3 : 2) * devicePixelRatio;
+    const scale = (dimensions.screenSize === ScreenSize.screen160x160 ? 3 : 2) * pixelRatio;
     const borderWidth: FrameDependent = { frameDevice: 1, frameCanvas: scale };
 
     const dist = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: x * scale });
@@ -288,7 +288,7 @@ export abstract class AbstractCanvasDisplayService {
         if (!canvas) return;
 
         this.dpad = dpad;
-        this.layout = calculateLayout(this.getDeviceId());
+        this.layout = calculateLayout(this.getDeviceId(), this.pixelRatio());
 
         this.onResize.dispatch();
 
@@ -489,6 +489,10 @@ export abstract class AbstractCanvasDisplayService {
     protected abstract getOrientation(): DeviceOrientation;
 
     protected onAfterUpdateCanvas(): void {}
+
+    protected pixelRatio(): number {
+        return devicePixelRatio;
+    }
 
     protected setupTransformation(): void {
         if (!this.ctx) return;
@@ -749,7 +753,7 @@ export abstract class AbstractCanvasDisplayService {
     }
 
     protected ctx: CanvasRenderingContext2D | undefined;
-    protected layout = calculateLayout(DEFAULT_DEVICE);
+    protected layout = calculateLayout(DEFAULT_DEVICE, this.pixelRatio());
     protected lastEmulationCanvas: HTMLCanvasElement | undefined;
     protected dpad = false;
 

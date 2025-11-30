@@ -28,13 +28,43 @@ function fontScaleForScreenSize(screenSize: ScreenSize) {
     }
 }
 
+class ScreenshotDisplayService extends AbstractCanvasDisplayService {
+    constructor(
+        private deviceId: DeviceId,
+        private orientation: DeviceOrientation,
+        private _pixelRatio: number,
+        skinLoader: SkinLoader,
+    ) {
+        super(skinLoader);
+    }
+
+    setCanvas(canvas: HTMLCanvasElement): Promise<void> {
+        return this.initWithCanvas(false, canvas);
+    }
+
+    protected override getDeviceId(): DeviceId {
+        return this.deviceId;
+    }
+
+    protected override getOrientation(): DeviceOrientation {
+        return this.orientation;
+    }
+
+    protected override pixelRatio(): number {
+        return this._pixelRatio;
+    }
+}
+
 @Injectable({ providedIn: 'root' })
 export class CanvasDisplayService extends AbstractCanvasDisplayService {
     constructor(
         @Inject(TOKEN_CLOUDPILOT_INSTANCE) cloudpilotInstance: Promise<Cloudpilot>,
         private kvsService: KvsService,
     ) {
-        super(new SkinLoader(cloudpilotInstance));
+        const skinLoader = new SkinLoader(cloudpilotInstance);
+        super(skinLoader);
+
+        this.skinLoader = skinLoader;
     }
 
     async initialize(canvas?: HTMLCanvasElement, session: Session | undefined = this.session): Promise<void> {
@@ -69,20 +99,24 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
         this.statisticsVisible = true;
     }
 
-    screenshot(): Promise<Blob | undefined> {
+    async screenshot(pixelRatio: number): Promise<Blob | undefined> {
+        if (!this.ctx) return undefined;
+
+        const screenshotDisplayService = new ScreenshotDisplayService(
+            this.getDeviceId(),
+            this.getOrientation(),
+            pixelRatio,
+            this.skinLoader,
+        );
+
+        const canvas = document.createElement('canvas');
+        canvas.width = screenshotDisplayService.width;
+        canvas.height = screenshotDisplayService.height;
+
+        await screenshotDisplayService.setCanvas(canvas);
+        screenshotDisplayService.updateEmulationCanvas(this.lastEmulationCanvas);
+
         return new Promise((resolve, reject) => {
-            if (!this.ctx) return undefined;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = this.width / devicePixelRatio;
-            canvas.height = this.height / devicePixelRatio;
-
-            const ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error('unable to create intermediate canvas');
-
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(this.ctx.canvas, 0, 0, canvas.width, canvas.height);
-
             canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('unable to create screenshot'))));
         });
     }

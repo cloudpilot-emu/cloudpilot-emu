@@ -357,7 +357,7 @@ export class ContextMenuComponent {
             const session = this.emulationContext.session();
             if (!session) return;
 
-            const screenshot = await this.canvasDisplayService.screenshot();
+            const screenshot = await this.canvasDisplayService.screenshot(2);
             if (!screenshot) throw new Error(`screenshot is undefined`);
 
             this.fileService.saveBlob(filenameForScreenshot(session), screenshot);
