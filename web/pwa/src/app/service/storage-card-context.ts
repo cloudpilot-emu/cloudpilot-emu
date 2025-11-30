@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 import { ErrorService } from '@pwa/service/error.service';
 
-export enum CardOwner {
+export const enum CardOwner {
     cloudpilot = 'cloudpilot',
     fstools = 'fstools',
     vfs = 'vfs',

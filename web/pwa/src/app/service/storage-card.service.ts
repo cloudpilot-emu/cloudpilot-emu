@@ -28,7 +28,7 @@ import { CardOwner, StorageCardContext } from './storage-card-context';
 import { TOKEN_EMULATOR_LOCK } from './token';
 import { VfsService } from './vfs.service';
 
-export enum NewCardSize {
+export const enum NewCardSize {
     mb4,
     mb8,
     mb16,

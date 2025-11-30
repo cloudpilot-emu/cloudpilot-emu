@@ -1,4 +1,4 @@
-export enum StorageCardStatus {
+export const enum StorageCardStatus {
     dirty = 'dirty',
     clean = 'clean',
     unformatted = 'unformatted',

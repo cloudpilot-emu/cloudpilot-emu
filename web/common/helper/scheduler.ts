@@ -1,6 +1,6 @@
 import { clearTimeout, setTimeout } from 'worker-timers';
 
-export enum SchedulerKind {
+export const enum SchedulerKind {
     animationFrame,
     timeout,
 }

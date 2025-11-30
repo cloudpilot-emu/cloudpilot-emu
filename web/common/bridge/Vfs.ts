@@ -43,14 +43,14 @@ export type ReaddirResult =
     | { error: ReaddirError.none; entries: Array<FileEntry> }
     | { error: ReaddirError.no_such_directory | ReaddirError.unknown; reason: string };
 
-export enum UnzipResult {
+export const enum UnzipResult {
     success,
     zipfileError,
     ioError,
     cardFull,
 }
 
-export enum PasteResult {
+export const enum PasteResult {
     success,
     ioError,
     cardFull,
