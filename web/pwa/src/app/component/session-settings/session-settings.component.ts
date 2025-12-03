@@ -3,7 +3,6 @@ import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { LoadingController } from '@ionic/angular';
 
 import { memoize } from '@pwa/helper/memoize';
 import {
@@ -27,7 +26,6 @@ export class SessionSettingsComponent implements OnInit {
         private sessionService: SessionService,
         private alertService: AlertService,
         private fileService: FileService,
-        private loadingController: LoadingController,
     ) {}
 
     get formControlName(): AbstractControl {
@@ -179,11 +177,7 @@ export class SessionSettingsComponent implements OnInit {
 
     onNandClick(): void {
         this.fileService.openFile(async (file) => {
-            const loader = await this.loadingController.create();
-
             let content: Uint8Array;
-            await loader.present();
-
             try {
                 content = await file.getContent();
             } catch (e) {
@@ -191,8 +185,6 @@ export class SessionSettingsComponent implements OnInit {
 
                 await this.alertService.errorMessage(`Unable to open ${file.name}.`);
                 return;
-            } finally {
-                void loader.dismiss();
             }
 
             if (content.length !== this.selectNandSize) {

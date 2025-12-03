@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
 import helpPage from '@assets/doc/cards.md';
 import { CardSupportLevel } from '@common/bridge/Cloudpilot';
-import * as angular from '@ionic/angular';
+import { ActionSheetController, ModalController, PopoverController } from '@ionic/angular';
 
 import { HelpComponent } from '@pwa/component/help/help.component';
 import { debounce } from '@pwa/helper/debounce';
@@ -13,6 +13,7 @@ import { AlertService } from '@pwa/service/alert.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { FsToolsService } from '@pwa/service/fstools.service';
+import { LoaderService } from '@pwa/service/loader.service';
 import { NativeSupportService } from '@pwa/service/native-support.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 
@@ -30,16 +31,16 @@ type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
 })
 export class SubpageCardsComponent implements OnInit {
     constructor(
-        private actionSheetController: angular.ActionSheetController,
+        private actionSheetController: ActionSheetController,
         public storageCardService: StorageCardService,
-        private modalController: angular.ModalController,
+        private modalController: ModalController,
         private nativeSupportService: NativeSupportService,
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
-        private loadingController: angular.LoadingController,
+        private loaderService: LoaderService,
         private fstools: FsToolsService,
-        private popoverController: angular.PopoverController,
+        private popoverController: PopoverController,
         private cd: ChangeDetectorRef,
     ) {}
 
@@ -157,16 +158,13 @@ export class SubpageCardsComponent implements OnInit {
 
         if (abort) return;
 
-        const loader = await this.loadingController.create({ message: 'Deleting...' });
-        await loader.present();
-
-        try {
-            await this.storageCardService.deleteCard(card.id);
-        } catch (e) {
-            this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
-        } finally {
-            void loader.dismiss();
-        }
+        await this.loaderService.showWhile(async () => {
+            try {
+                await this.storageCardService.deleteCard(card.id);
+            } catch (e) {
+                this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
+            }
+        }, 'Deleting...');
     }
 
     trackCardBy(index: number, card: StorageCard) {
@@ -290,16 +288,13 @@ export class SubpageCardsComponent implements OnInit {
 
                 if (abort) return;
 
-                const loader = await this.loadingController.create({ message: 'Deleting...' });
-                await loader.present();
-
-                try {
-                    for (const id of selection) await this.storageCardService.deleteCard(id);
-                } catch (e) {
-                    this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
-                } finally {
-                    void loader.dismiss();
-                }
+                await this.loaderService.showWhile(async () => {
+                    try {
+                        for (const id of selection) await this.storageCardService.deleteCard(id);
+                    } catch (e) {
+                        this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
+                    }
+                }, 'Deleting...');
             }
         }
     }
@@ -372,9 +367,6 @@ export class SubpageCardsComponent implements OnInit {
         }
 
         let content: Uint8Array | undefined;
-        const loader = await this.loadingController.create();
-        await loader.present();
-
         try {
             content = await file.getContent();
         } catch (e) {
@@ -382,8 +374,6 @@ export class SubpageCardsComponent implements OnInit {
 
             await this.alertService.errorMessage(`Unable to open ${file.name}".`);
             return;
-        } finally {
-            void loader.dismiss();
         }
 
         if (file.name.endsWith('.zip')) {
@@ -405,14 +395,7 @@ export class SubpageCardsComponent implements OnInit {
         }
 
         if (/\.gz$/.test(file.name)) {
-            const loader = await this.loadingController.create({ message: 'Unpacking...' });
-            await loader.present();
-
-            try {
-                content = await this.fstools.gunzip(content);
-            } finally {
-                await loader.dismiss();
-            }
+            content = await this.loaderService.showWhile(() => this.fstools.gunzip(content!), 'Unpacking...');
         }
 
         const supportLevel = content

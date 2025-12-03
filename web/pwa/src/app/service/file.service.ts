@@ -8,6 +8,9 @@ import { RemoteUrlPromptComponent } from '@pwa/component/remote-url-prompt/remot
 import { AlertService } from './alert.service';
 import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
+import { LoaderService } from './loader.service';
+
+const CONTENT_LOADER_DELAY = 100;
 
 export interface FileDescriptor {
     name: string;
@@ -24,6 +27,7 @@ export class FileService {
         private modalController: ModalController,
         private alertService: AlertService,
         private fetchService: FetchService,
+        private loaderService: LoaderService,
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -85,7 +89,7 @@ export class FileService {
 
         handler({
             name: urlParsed.pathname.replace(/.*\//, ''),
-            getContent: () => contentPromise,
+            getContent: () => this.loaderService.showWhile(() => contentPromise, 'Loading...', CONTENT_LOADER_DELAY),
         });
 
         return;
@@ -167,23 +171,29 @@ export class FileService {
 
     private readFile(file: File): FileDescriptor {
         let contentPromise: Promise<Uint8Array> | undefined;
-        const content = async (): Promise<Uint8Array> => {
-            if (contentPromise) return contentPromise;
 
-            contentPromise = new Promise((resolve, reject) => {
-                const reader = new FileReader();
+        const content = (): Promise<Uint8Array> =>
+            this.loaderService.showWhile(
+                async () => {
+                    if (contentPromise) return contentPromise;
 
-                reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
-                reader.onerror = () => {
-                    console.warn(reader.error);
-                    reject(reader.error);
-                };
+                    contentPromise = new Promise((resolve, reject) => {
+                        const reader = new FileReader();
 
-                reader.readAsArrayBuffer(file);
-            });
+                        reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+                        reader.onerror = () => {
+                            console.warn(reader.error);
+                            reject(reader.error);
+                        };
 
-            return contentPromise;
-        };
+                        reader.readAsArrayBuffer(file);
+                    });
+
+                    return contentPromise;
+                },
+                'Loading...',
+                CONTENT_LOADER_DELAY,
+            );
 
         return { name: file.name, getContent: content };
     }

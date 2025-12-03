@@ -14,7 +14,7 @@ import { isIOS, isIOSNative } from '@common/helper/browser';
 import { nandSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { SessionMetadata } from '@common/model/SessionMetadata';
-import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
+import { ModalController, PopoverController } from '@ionic/angular';
 
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { HelpComponent } from '@pwa/component/help/help.component';
@@ -28,6 +28,7 @@ import { EmulationContextService } from '@pwa/service/emulation-context.service'
 import { EmulationService } from '@pwa/service/emulation.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { LinkApi } from '@pwa/service/link-api.service';
+import { LoaderService } from '@pwa/service/loader.service';
 import { NativeSupportService } from '@pwa/service/native-support.service';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
@@ -57,7 +58,7 @@ export class SessionsPage implements DragDropClient, OnInit {
         private nativeSupportService: NativeSupportService,
         private dragDropService: DragDropService,
         private popoverController: PopoverController,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private cd: ChangeDetectorRef,
     ) {
         this.currentSessionId = computed(() => this.currentSessionOverride() ?? this.emulationContext.session()?.id);
@@ -111,14 +112,7 @@ export class SessionsPage implements DragDropClient, OnInit {
 
         if (abort) return;
 
-        const loader = await this.loadingController.create({ message: 'Deleting...' });
-        await loader.present();
-
-        try {
-            await this.sessionService.deleteSession(session);
-        } finally {
-            void loader.dismiss();
-        }
+        await this.loaderService.showWhile(() => this.sessionService.deleteSession(session), 'Deleting...');
     }
 
     @debounce()
@@ -297,14 +291,9 @@ export class SessionsPage implements DragDropClient, OnInit {
 
             if (abort) return;
 
-            const loader = await this.loadingController.create({ message: 'Deleting...' });
-            await loader.present();
-
-            try {
+            await this.loaderService.showWhile(async () => {
                 for (const session of selectedSessions) await this.sessionService.deleteSession(session);
-            } finally {
-                void loader.dismiss();
-            }
+            }, 'Deleting...');
         }
     }
 
@@ -330,9 +319,6 @@ export class SessionsPage implements DragDropClient, OnInit {
         }
 
         let content: Uint8Array;
-        const loader = await this.loadingController.create();
-        await loader.present();
-
         try {
             content = await file.getContent();
         } catch (e) {
@@ -340,8 +326,6 @@ export class SessionsPage implements DragDropClient, OnInit {
 
             await this.alertService.errorMessage(`Unable to open ${file.name}.`);
             return;
-        } finally {
-            void loader.dismiss();
         }
 
         if (file.name.endsWith('.zip')) {

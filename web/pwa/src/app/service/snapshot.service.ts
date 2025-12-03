@@ -1,7 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Snapshot, SnapshotContainer } from '@common/engine/Snapshot';
 import { DynamicTimeout } from '@common/helper/dynamicTimeout';
-import { LoadingController } from '@ionic/angular';
 import { Event } from 'microevent.ts';
 
 import { MemoryMetadata } from '@pwa//model/MemoryMetadata';
@@ -10,6 +9,7 @@ import { StorageCard } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
 import { ErrorService } from './error.service';
+import { LoaderService } from './loader.service';
 import { E_LOCK_LOST, StorageService } from './storage.service';
 import {
     OBJECT_STORE_LOCK,
@@ -79,7 +79,7 @@ export class SnapshotService {
         private storageService: StorageService,
         private errorService: ErrorService,
         private alertService: AlertService,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private ngZone: NgZone,
     ) {}
 
@@ -349,18 +349,16 @@ export class SnapshotService {
     }
 
     private async showLoader(): Promise<void> {
-        if (this.loader) return;
+        if (this.loaderHandle !== undefined) return;
 
-        this.loader = await this.loadingController.create({ message: 'Saving...' });
-        await this.loader.present();
+        this.loaderHandle = await this.loaderService.add('Saving...');
     }
 
     private hideLoader(): void {
-        if (!this.loader) return;
+        if (this.loaderHandle === undefined) return;
 
-        void this.loader.dismiss();
-
-        this.loader = undefined;
+        this.loaderService.resolve(this.loaderHandle);
+        this.loaderHandle = undefined;
     }
 
     snapshotRequestEvent = new Event<(error?: Error) => void>();
@@ -372,7 +370,7 @@ export class SnapshotService {
     private timeBlocking = 0;
     private timeBackground = 0;
     private snapshotInProgress = false;
-    private loader: HTMLIonLoadingElement | undefined;
+    private loaderHandle: number | undefined;
 
     private clonePoolMemory = new ClonePool();
     private clonePoolNand = new ClonePool();

@@ -3,13 +3,7 @@ import { PalmButton } from '@common/bridge/Cloudpilot';
 import { quirkNoHotsync, quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { SlotType } from '@common/model/SlotType';
-import {
-    ActionSheetController,
-    AlertController,
-    LoadingController,
-    ModalController,
-    PopoverController,
-} from '@ionic/angular';
+import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 import { filenameForScreenshot } from '@pwa/helper/filename';
@@ -25,6 +19,7 @@ import { EmulationService } from '@pwa/service/emulation.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { FileService } from '@pwa/service/file.service';
 import { KvsService } from '@pwa/service/kvs.service';
+import { LoaderService } from '@pwa/service/loader.service';
 import { NativeSupportService } from '@pwa/service/native-support.service';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
@@ -93,7 +88,7 @@ export class ContextMenuComponent {
         private alertController: AlertController,
         private storageService: StorageService,
         private errorService: ErrorService,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private fileService: FileService,
     ) {}
 
@@ -350,24 +345,22 @@ export class ContextMenuComponent {
     }
 
     async saveScreenshot(): Promise<void> {
-        const loader = await this.loadingController.create();
+        void this.popoverController.dismiss();
+
         try {
-            await loader.present();
-            void this.popoverController.dismiss();
+            await this.loaderService.showWhile(async () => {
+                const session = this.emulationContext.session();
+                if (!session) return;
 
-            const session = this.emulationContext.session();
-            if (!session) return;
+                const screenshot = await this.canvasDisplayService.screenshot(2);
+                if (!screenshot) throw new Error(`screenshot is undefined`);
 
-            const screenshot = await this.canvasDisplayService.screenshot(2);
-            if (!screenshot) throw new Error(`screenshot is undefined`);
-
-            this.fileService.saveBlob(filenameForScreenshot(session), screenshot);
+                this.fileService.saveBlob(filenameForScreenshot(session), screenshot);
+            });
         } catch (e) {
             console.error(e);
 
             void this.alertService.errorMessage('Failed to create screenshot.');
-        } finally {
-            await loader.dismiss();
         }
     }
 

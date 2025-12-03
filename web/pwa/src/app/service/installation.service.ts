@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@angular/core';
 import { DbInstallResult } from '@common/bridge/Cloudpilot';
 import { FsTools } from '@common/bridge/FSTools';
 import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
-import { LoadingController } from '@ionic/angular';
 
 import { concatFilenames } from '@pwa/helper/filename';
 import { Lock } from '@pwa/helper/lock';
@@ -12,6 +11,7 @@ import { EmulationContextService } from './emulation-context.service';
 import { EmulationService } from './emulation.service';
 import { FileDescriptor } from './file.service';
 import { FsToolsService } from './fstools.service';
+import { LoaderService } from './loader.service';
 import { SnapshotService } from './snapshot.service';
 import { TOKEN_EMULATOR_LOCK } from './token';
 
@@ -203,7 +203,7 @@ class InstallationContext {
 export class InstallationService {
     constructor(
         private emulationService: EmulationService,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private snapshotService: SnapshotService,
         private alertService: AlertService,
         private fstools: FsToolsService,
@@ -228,15 +228,10 @@ export class InstallationService {
 
     private async installFilesUnguarded(files: Array<FileDescriptor>): Promise<void> {
         const [filesSuccess, filesRequireReset, filesFail] = await this.emulatorLock.runGuarded(async () => {
-            const loader = await this.loadingController.create({
-                message: 'Installing...',
-            });
+            return this.loaderService.showWhile(async () => {
+                await this.emulationService.flush();
+                await this.emulationService.waitForPendingSnapshot();
 
-            await loader.present();
-            await this.emulationService.flush();
-            await this.emulationService.waitForPendingSnapshot();
-
-            try {
                 const installationContext = new InstallationContext(
                     this.fstools,
                     this.alertService,
@@ -246,9 +241,7 @@ export class InstallationService {
                 );
 
                 return await installationContext.run();
-            } finally {
-                void loader.dismiss();
-            }
+            }, 'Installing...');
         });
 
         const message = [

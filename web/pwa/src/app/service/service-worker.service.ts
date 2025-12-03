@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
 
 import { environment } from '../../environments/environment';
 import { AlertService } from './alert.service';
+import { LoaderService } from './loader.service';
 import { NativeAppService } from './native-app.service';
 
 const WORKER_URL = 'ngsw-worker.js';
@@ -13,7 +13,7 @@ const REGISTRATION_DELAY_MILLISECONDS = 3000;
 @Injectable({ providedIn: 'root' })
 export class ServiceWorkerService {
     constructor(
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private alertService: AlertService,
         private nativeAppService: NativeAppService,
     ) {
@@ -31,21 +31,18 @@ export class ServiceWorkerService {
     }
 
     async reset(): Promise<void> {
-        const loader = await this.loadingController.create();
-        await loader.present();
-
         try {
-            const registration = await navigator.serviceWorker.getRegistration();
+            await this.loaderService.showWhile(async () => {
+                const registration = await navigator.serviceWorker.getRegistration();
 
-            if (!(await registration?.unregister())) throw new Error('failed to unregister worker');
+                if (!(await registration?.unregister())) throw new Error('failed to unregister worker');
 
-            await this.updateNativeAppRegistrationStatus(false);
+                await this.updateNativeAppRegistrationStatus(false);
+            });
         } catch (e) {
             console.error(e);
             await this.alertService.errorMessage('Failed to unregister service worker.');
             return;
-        } finally {
-            await loader.dismiss();
         }
 
         await this.alertService.message(
@@ -70,10 +67,9 @@ export class ServiceWorkerService {
     async activateUpdate(): Promise<void> {
         if (!this.registration?.waiting) return;
 
-        const loader = await this.loadingController.create({ message: 'Updating...' });
-        await loader.present();
-
-        this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        await this.loaderService.showWhile(async () => {
+            this.registration!.waiting!.postMessage({ type: 'SKIP_WAITING' });
+        }, 'Updating...');
     }
 
     private updateNativeAppRegistrationStatus = (workerRegistered: boolean) =>

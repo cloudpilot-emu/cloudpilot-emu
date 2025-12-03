@@ -3,7 +3,6 @@ import { CardSupportLevel } from '@common/bridge/Cloudpilot';
 import { FsckContext, FsckResult, GzipContext } from '@common/bridge/FSTools';
 import { Engine } from '@common/engine/Engine';
 import { isIOS } from '@common/helper/browser';
-import { LoadingController } from '@ionic/angular';
 import { ZipfileWalkerState } from '@native/cloudpilot_web';
 import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
@@ -23,6 +22,7 @@ import { EmulationContextService } from './emulation-context.service';
 import { ErrorService } from './error.service';
 import { FileService } from './file.service';
 import { FsToolsService } from './fstools.service';
+import { LoaderService } from './loader.service';
 import { NativeSupportService } from './native-support.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { TOKEN_EMULATOR_LOCK } from './token';
@@ -104,7 +104,7 @@ export class StorageCardService {
         private storageService: StorageService,
         private emulationContext: EmulationContextService,
         private nativeSupportService: NativeSupportService,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private snapshotService: SnapshotService,
         private alertService: AlertService,
         private errorService: ErrorService,
@@ -124,12 +124,8 @@ export class StorageCardService {
         return this._cards;
     }
 
-    async createEmptyCard(name: string, size: NewCardSize, dontFsckAutomatically: boolean): Promise<StorageCard> {
-        const loader = await this.loadingController.create({ message: 'Formatting...' });
-
-        try {
-            await loader.present();
-
+    createEmptyCard = async (name: string, size: NewCardSize, dontFsckAutomatically: boolean): Promise<StorageCard> =>
+        this.loaderService.showWhile(async () => {
             const cardImage = await this.fstools.mkfs(cardSizeNumeric(size));
             if (!cardImage) throw new Error('failed to create image');
 
@@ -142,21 +138,13 @@ export class StorageCardService {
             };
 
             return await this.storageService.importStorageCard(cardWithoutId, cardImage);
-        } finally {
-            void loader.dismiss();
-        }
-    }
+        }, 'Formatting...');
 
-    async createCardFromImage(name: string, image: Uint8Array, dontFsckAutomatically: boolean): Promise<void> {
-        const loader = await this.loadingController.create({ message: 'Importing...' });
-
-        try {
-            await loader.present();
-            await this.doCreateCardFromImage(name, image, dontFsckAutomatically);
-        } finally {
-            void loader.dismiss();
-        }
-    }
+    createCardFromImage = async (name: string, image: Uint8Array, dontFsckAutomatically: boolean): Promise<void> =>
+        this.loaderService.showWhile(
+            () => this.doCreateCardFromImage(name, image, dontFsckAutomatically),
+            'Importing...',
+        );
 
     onEmulatorStop(): void {
         const mountedCard = this.emulationContext.session()?.mountedCard;
@@ -312,11 +300,8 @@ export class StorageCardService {
         return this.storageService.updateStorageCardPartial(id, update);
     }
 
-    async deleteCard(id: number): Promise<void> {
-        const loader = await this.loadingController.create({ message: 'Deleting...' });
-        await loader.present();
-
-        try {
+    deleteCard = async (id: number): Promise<void> =>
+        this.loaderService.showWhile(async () => {
             const card = this._cards().find((c) => c.id === id);
 
             await this.vfsService.releaseCard(id);
@@ -324,25 +309,15 @@ export class StorageCardService {
             await this.storageService.deleteStorageCard(id);
 
             if (card) this.deleteCardEvent.dispatch(card);
-        } finally {
-            void loader.dismiss();
-        }
-    }
+        }, 'Deleting...');
 
     async saveCard(id: number, name: string, gzip: boolean): Promise<void> {
         const card = await this.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
 
-        const loader = await this.loadingController.create({ message: 'Exporting...' });
-        let cardData: Uint8Array | undefined;
-
-        try {
-            await loader.present();
-
-            cardData = await this.getCardData(card, gzip ? name : undefined);
-        } finally {
-            void loader.dismiss();
-        }
+        const cardData = await this.loaderService.showWhile(async () => {
+            return await this.getCardData(card, gzip ? name : undefined);
+        }, 'Exporting...');
 
         if (cardData) {
             this.fileService.saveFile(gzip ? `${name}.gz` : name, cardData);
@@ -350,37 +325,36 @@ export class StorageCardService {
     }
 
     async saveCards(ids: Array<number>): Promise<void> {
-        const loader = await this.loadingController.create({ message: 'Exporting...' });
         const createZipContext = await this.fstools.createZipContext(0);
 
         try {
-            await loader.present();
-            const names = new Set<string>();
-            const gzipContext = await this.fstools.createGzipContext();
+            await this.loaderService.showWhile(async (loaderHandle) => {
+                const names = new Set<string>();
+                const gzipContext = await this.fstools.createGzipContext();
 
-            let i = 0;
-            for (const id of ids) {
-                i++;
+                let i = 0;
+                for (const id of ids) {
+                    i++;
 
-                const card = await this.getCard(id);
-                if (!card) continue;
+                    const card = await this.getCard(id);
+                    if (!card) continue;
 
-                loader.message = `Exporting ${i}/${ids.length}...`;
+                    this.loaderService.updateMessage(loaderHandle, `Exporting ${i}/${ids.length}...`);
 
-                const name = disambiguateName(card.name, (name) => names.has(name));
-                names.add(name);
+                    const name = disambiguateName(card.name, (name) => names.has(name));
+                    names.add(name);
 
-                const cardData = await this.getCardData(card, name, gzipContext);
-                if (!cardData) continue;
+                    const cardData = await this.getCardData(card, name, gzipContext);
+                    if (!cardData) continue;
 
-                await createZipContext.addEntry(`${name}.img.gz`, cardData);
-            }
+                    await createZipContext.addEntry(`${name}.img.gz`, cardData);
+                }
+            });
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
-            await loader.dismiss();
             await this.alertService.errorMessage(`Failed to export card images: ${e?.message ?? 'unknown error'}`);
-        } finally {
-            void loader.dismiss();
+            return;
         }
 
         this.fileService.saveFile(filenameForCards(), createZipContext.getContent());
@@ -410,98 +384,95 @@ export class StorageCardService {
             `
             : '';
 
-        const loader = await this.loadingController.create({ message: 'Importing...' });
-
         try {
-            await loader.present();
-
-            const walker = await this.fstools.createZipfileWalker(zipData);
-            if (walker.GetState() === ZipfileWalkerState.error) {
-                await this.alertService.errorMessage('Import failed: unable to read zip file.');
-                return;
-            }
-
-            const entriesTotal = walker.GetTotalEntries();
-            const names = new Set<string>(this.cards().map((card) => card.name));
-            const gunzipContext = await this.fstools.createGunzipContext();
-
-            let iEntry = 1;
-            let skipErrors = false;
-            const failures: Array<string> = [];
-
-            while (walker.GetState() === ZipfileWalkerState.open) {
-                loader.message = `Importing ${iEntry++}/${entriesTotal}...`;
-                let filename = walker.GetCurrentEntryName();
-
-                try {
-                    if (!SUFFIX_PATTERN.test(filename)) {
-                        throw new ImportError(`${filename} has the wrong suffix to be considered as a card image.`);
-                    }
-
-                    let content = walker.GetCurrentEntryContent();
-
-                    if (filename.endsWith('.gz') && content) {
-                        gunzipContext.initialize(content);
-
-                        content = (await gunzipContext.gunzip()) ? gunzipContext.getDecompressedData() : undefined;
-                        filename = filename.substring(0, filename.length - 3);
-                    }
-
-                    if (content === undefined) {
-                        throw new ImportError(`Failed to extract ${filename}. ${SAFARI_DISCLAIMER}`);
-                    }
-
-                    if (
-                        (await this.nativeSupportService.getCardSupportLevel(content.length)) ===
-                        CardSupportLevel.unsupported
-                    ) {
-                        throw new ImportError(`${filename} is not a valid card image.`);
-                    }
-
-                    const name = disambiguateName(filename.replace(SUFFIX_PATTERN, ''), (n) => names.has(n));
-
-                    await this.doCreateCardFromImage(name, content, false, true);
-                } catch (e: unknown) {
-                    if (!(e instanceof ImportError)) throw e;
-
-                    failures.push(filename);
-
-                    if (!skipErrors) {
-                        skipErrors = await this.alertService.messageWithChoice(
-                            'Error',
-                            e.message,
-                            'Skip further errors',
-                            skipErrors,
-                            {},
-                            'Continue',
-                        );
-                    }
-                } finally {
-                    walker.Next();
+            await this.loaderService.showWhile(async (loaderHandle) => {
+                const walker = await this.fstools.createZipfileWalker(zipData);
+                if (walker.GetState() === ZipfileWalkerState.error) {
+                    await this.alertService.errorMessage('Import failed: unable to read zip file.');
+                    return;
                 }
-            }
 
-            if (failures.length <= 3 && failures.length > 0) {
-                await this.alertService.errorMessage(
-                    `The following files could not be imported: <br><br>${failures.join('<br>')}`,
-                );
-            } else if (failures.length > 3) {
-                await this.alertService.errorMessage(
-                    `
+                const entriesTotal = walker.GetTotalEntries();
+                const names = new Set<string>(this.cards().map((card) => card.name));
+                const gunzipContext = await this.fstools.createGunzipContext();
+
+                let iEntry = 1;
+                let skipErrors = false;
+                const failures: Array<string> = [];
+
+                while (walker.GetState() === ZipfileWalkerState.open) {
+                    this.loaderService.updateMessage(loaderHandle, `Importing ${iEntry++}/${entriesTotal}...`);
+
+                    let filename = walker.GetCurrentEntryName();
+
+                    try {
+                        if (!SUFFIX_PATTERN.test(filename)) {
+                            throw new ImportError(`${filename} has the wrong suffix to be considered as a card image.`);
+                        }
+
+                        let content = walker.GetCurrentEntryContent();
+
+                        if (filename.endsWith('.gz') && content) {
+                            gunzipContext.initialize(content);
+
+                            content = (await gunzipContext.gunzip()) ? gunzipContext.getDecompressedData() : undefined;
+                            filename = filename.substring(0, filename.length - 3);
+                        }
+
+                        if (content === undefined) {
+                            throw new ImportError(`Failed to extract ${filename}. ${SAFARI_DISCLAIMER}`);
+                        }
+
+                        if (
+                            (await this.nativeSupportService.getCardSupportLevel(content.length)) ===
+                            CardSupportLevel.unsupported
+                        ) {
+                            throw new ImportError(`${filename} is not a valid card image.`);
+                        }
+
+                        const name = disambiguateName(filename.replace(SUFFIX_PATTERN, ''), (n) => names.has(n));
+
+                        await this.doCreateCardFromImage(name, content, false, true);
+                    } catch (e: unknown) {
+                        if (!(e instanceof ImportError)) throw e;
+
+                        failures.push(filename);
+
+                        if (!skipErrors) {
+                            skipErrors = await this.alertService.messageWithChoice(
+                                'Error',
+                                e.message,
+                                'Skip further errors',
+                                skipErrors,
+                                {},
+                                'Continue',
+                            );
+                        }
+                    } finally {
+                        walker.Next();
+                    }
+                }
+
+                if (failures.length <= 3 && failures.length > 0) {
+                    await this.alertService.errorMessage(
+                        `The following files could not be imported: <br><br>${failures.join('<br>')}`,
+                    );
+                } else if (failures.length > 3) {
+                    await this.alertService.errorMessage(
+                        `
                         The following files could not be imported: <br><br>${failures.slice(0, 3).join('<br>')}
                         <br><br>
                         and ${failures.length - 3} more files.
                     `,
-                );
-            }
+                    );
+                }
+            }, 'Importing...');
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
-            await loader.dismiss();
             await this.alertService.errorMessage(
                 `Failed to import card images: ${e?.message ?? 'unknown error'}<br><br>${SAFARI_DISCLAIMER}`,
             );
-        } finally {
-            void loader.dismiss();
         }
     }
 
@@ -697,12 +668,8 @@ export class StorageCardService {
         return true;
     }
 
-    private async executeFsckAndUpdateCard(cardId: number): Promise<FsckContext> {
-        const loader = await this.loadingController.create({ message: 'Checking card...' });
-
-        try {
-            await loader.present();
-
+    private executeFsckAndUpdateCard = async (cardId: number): Promise<FsckContext> =>
+        this.loaderService.showWhile(async () => {
             if (await this.cardIsMounted(cardId)) throw new Error('attempt to fsck a mounted card');
 
             const card = await this.storageService.getCard(cardId);
@@ -748,18 +715,12 @@ export class StorageCardService {
             }
 
             return context;
-        } finally {
-            void loader.dismiss();
-        }
-    }
+        }, 'Checking card...');
 
     private async applyFsckResult(cardId: number, context: FsckContext): Promise<void> {
         if (context.getResult() !== FsckResult.fixed) return;
 
-        const loader = await this.loadingController.create({ message: 'Fixing errors...' });
-
-        try {
-            await loader.present();
+        await this.loaderService.showWhile(async () => {
             await this.storageService.updateCardData(
                 cardId,
                 context.getImageData(),
@@ -769,28 +730,19 @@ export class StorageCardService {
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
 
             this.storageCardContext.release(cardId, CardOwner.fstools);
-        } finally {
-            void loader.dismiss();
-        }
+        }, 'Fixing errors...');
     }
 
     private async fsckNewCard(
         data: Uint32Array,
         cardWithoutId: Omit<StorageCard, 'id'>,
     ): Promise<[Uint32Array, Omit<StorageCard, 'id'>]> {
-        const loader = await this.loadingController.create({ message: 'Checking card...' });
-        let fsckContext: FsckContext;
-        let result: FsckResult;
-
-        try {
-            await loader.present();
-
-            fsckContext = await this.fstools.createFsckContext(cardWithoutId.size);
+        const [fsckContext, result] = await this.loaderService.showWhile(async () => {
+            const fsckContext = await this.fstools.createFsckContext(cardWithoutId.size);
             fsckContext.getImageData().set(data);
-            result = fsckContext.fsck();
-        } finally {
-            void loader.dismiss();
-        }
+            const result = fsckContext.fsck();
+            return [fsckContext, result] as const;
+        }, 'Checking card...');
 
         switch (result) {
             case FsckResult.ok:
@@ -847,48 +799,38 @@ export class StorageCardService {
             throw new Error('emulation engine not initialized');
         }
 
-        const loader = await this.loadingController.create({ message: 'Inserting...' });
+        return await this.loaderService.showWhile(
+            () =>
+                this.emulatorLock.runGuarded(async () => {
+                    await this.vfsService.releaseCard(cardId);
 
-        try {
-            await loader.present();
+                    const session = this.emulationContext.session();
+                    if (!session) throw new Error('no current session');
+                    if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
 
-            return await this.emulatorLock.runGuarded(async () => {
-                await this.vfsService.releaseCard(cardId);
+                    const card = await this.loadCardInEmulator(cardId, engine, data);
 
-                const session = this.emulationContext.session();
-                if (!session) throw new Error('no current session');
-                if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
+                    await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
+                    await this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
 
-                const card = await this.loadCardInEmulator(cardId, engine, data);
+                    if (!(await engine.mountCard(card.storageId))) {
+                        await engine.releaseCard(card.storageId);
 
-                await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
-                await this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+                        throw new Error('failed to mount card');
+                    }
 
-                if (!(await engine.mountCard(card.storageId))) {
-                    await engine.releaseCard(card.storageId);
+                    this.mountCardEvent.dispatch(card);
 
-                    throw new Error('failed to mount card');
-                }
-
-                this.mountCardEvent.dispatch(card);
-
-                return card;
-            });
-        } finally {
-            void loader.dismiss();
-        }
+                    return card;
+                }),
+            'Inserting...',
+        );
     }
 
-    private async mountCardForBrowsing(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {
-        const loader = await this.loadingController.create({ message: 'Mounting...' });
-
-        try {
-            await loader.present();
+    private mountCardForBrowsing = async (id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> =>
+        this.loaderService.showWhile(async () => {
             return await this.vfsService.mountCardUnchecked(id, readonly, data);
-        } finally {
-            void loader.dismiss();
-        }
-    }
+        }, 'Mounting...');
 
     mountCardEvent = new Event<StorageCard>();
     deleteCardEvent = new Event<StorageCard>();

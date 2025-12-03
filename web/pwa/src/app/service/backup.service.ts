@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@angular/core';
-import { LoadingController } from '@ionic/angular';
 
 import { concatFilenames, filenameForBackup } from '@pwa/helper/filename';
 import { Lock } from '@pwa/helper/lock';
@@ -8,12 +7,13 @@ import { AlertService } from './alert.service';
 import { EmulationContextService } from './emulation-context.service';
 import { EmulationService } from './emulation.service';
 import { FileService } from './file.service';
+import { LoaderService } from './loader.service';
 import { TOKEN_EMULATOR_LOCK } from './token';
 
 @Injectable({ providedIn: 'root' })
 export class BackupService {
     constructor(
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private emulationService: EmulationService,
         private fileService: FileService,
         private emulationContext: EmulationContextService,
@@ -25,21 +25,16 @@ export class BackupService {
         const currentSession = this.emulationContext.session();
         if (!currentSession) return;
 
-        const loader = await this.loadingController.create({ message: 'Backing up...' });
-
         const { failedDatabases, archive } = await this.emulatorLock.runGuarded(async () => {
-            await loader.present();
-            await this.emulationService.flush();
-            await this.emulationService.waitForPendingSnapshot();
+            return this.loaderService.showWhile(async () => {
+                await this.emulationService.flush();
+                await this.emulationService.waitForPendingSnapshot();
 
-            try {
                 const engine = this.emulationContext.engine();
                 if (!engine) throw new Error('emulator not running');
 
                 return (await engine.backup(includeRomDatabases)) ?? { failedDatabases: undefined, archive: undefined };
-            } finally {
-                await loader.dismiss();
-            }
+            }, 'Backing up...');
         });
 
         if (!archive) {

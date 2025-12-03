@@ -1,7 +1,6 @@
 import { EventEmitter, Injectable, Signal, signal } from '@angular/core';
 import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { PasteResult } from '@common/bridge/Vfs';
-import { LoadingController } from '@ionic/angular';
 import wasmModule from '@native-vfs/vfs_web.wasm';
 import deepEqual from 'deep-equal';
 import { Event } from 'microevent.ts';
@@ -16,6 +15,7 @@ import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 
 import { AlertService } from './alert.service';
+import { LoaderService } from './loader.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 
 @Injectable({ providedIn: 'root' })
@@ -24,7 +24,7 @@ export class VfsService {
         private storageService: StorageService,
         private storageCardContext: StorageCardContext,
         private fileService: FileService,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private alertService: AlertService,
     ) {
         void this.vfs.then((instance) => (this.vfsInstance = instance));
@@ -195,11 +195,8 @@ export class VfsService {
         }
     }
 
-    async saveFile(entry: FileEntry): Promise<void> {
-        const loader = await this.loadingController.create({ message: 'Preparing file...' });
-        await loader.present();
-
-        try {
+    saveFile = async (entry: FileEntry): Promise<void> =>
+        this.loaderService.showWhile(async () => {
             const vfs = await this.vfs;
             const content = vfs.readFile(entry.path);
 
@@ -209,57 +206,47 @@ export class VfsService {
             }
 
             this.fileService.saveFile(entry.name, content);
-        } finally {
-            await loader.dismiss();
-
             this._change.emit();
-        }
-    }
+        }, 'Preparing file...');
 
     async archiveFiles(entries: Array<FileEntry>, prefix: string): Promise<void> {
         if (entries.length === 0 || !this.primaryCard) return;
 
-        const loader = await this.loadingController.create({ message: 'Creating archive...' });
-        await loader.present();
-
-        try {
+        const { archive, failedItems } = await this.loaderService.showWhile(async () => {
             const vfs = await this.vfs;
             const directories = entries
                 .filter((entry) => entry.isDirectory)
                 .map((entry) => this.normalizePath(entry.path));
             const files = entries.filter((entry) => !entry.isDirectory).map((entry) => this.normalizePath(entry.path));
-            const archiveName = entries.length === 1 ? `${entries[0].name}.zip` : filenameForArchive(this.primaryCard);
 
-            const { archive, failedItems } = await vfs.createZipArchive({
+            return await vfs.createZipArchive({
                 directories,
                 files,
                 prefix,
             });
+        }, 'Creating archive...');
 
-            await loader.dismiss();
+        const archiveName = entries.length === 1 ? `${entries[0].name}.zip` : filenameForArchive(this.primaryCard!);
 
-            if (failedItems.length > 0) {
-                if (failedItems.length <= 3) {
-                    await this.alertService.message(
-                        'Warning',
-                        `The following files were not archived correctly due to errors: <br><br>${failedItems.join(
-                            '<br>',
-                        )}`,
-                    );
-                } else {
-                    await this.alertService.message(
-                        'Warning',
-                        `The following files were not archived correctly due to errors: <br><br>${failedItems
-                            .slice(0, 3)
-                            .join('<br>')}<br><br> and ${failedItems.length - 3} other file`,
-                    );
-                }
+        if (failedItems.length > 0) {
+            if (failedItems.length <= 3) {
+                await this.alertService.message(
+                    'Warning',
+                    `The following files were not archived correctly due to errors: <br><br>${failedItems.join(
+                        '<br>',
+                    )}`,
+                );
+            } else {
+                await this.alertService.message(
+                    'Warning',
+                    `The following files were not archived correctly due to errors: <br><br>${failedItems
+                        .slice(0, 3)
+                        .join('<br>')}<br><br> and ${failedItems.length - 3} other file`,
+                );
             }
-
-            if (archive) this.fileService.saveFile(archiveName, archive);
-        } finally {
-            await loader.dismiss();
         }
+
+        if (archive) this.fileService.saveFile(archiveName, archive);
     }
 
     async unlinkEntry(entry: FileEntry): Promise<void> {
@@ -285,17 +272,15 @@ export class VfsService {
     async deleteRecursive(entries: Array<FileEntry>): Promise<void> {
         const files = entries.map((entry) => this.normalizePath(entry.path));
 
-        const loader = await this.loadingController.create({ message: 'Deleting...' });
-        await loader.present();
+        const loaderHandle = await this.loaderService.add('Deleting...');
 
         try {
             const vfs = await this.vfs;
             const result = await vfs.deleteRecursive(files);
 
             if (!result.success) {
-                await loader.dismiss();
+                this.loaderService.resolve(loaderHandle);
                 await this.fatalError(`Failed to delete ${result.failingItem}`);
-
                 return;
             }
 
@@ -304,8 +289,7 @@ export class VfsService {
 
             this.directoryCache.clear();
         } finally {
-            await loader.dismiss();
-
+            this.loaderService.resolve(loaderHandle);
             this._change.emit();
         }
     }
@@ -391,82 +375,75 @@ export class VfsService {
     }
 
     async unpackArchive(zip: Uint8Array, destination: string): Promise<void> {
-        const loader = await this.loadingController.create({ message: 'Extracting...' });
-        await loader.present();
+        const { entriesTotal, entriesSuccess, result } = await this.loaderService.showWhile(
+            () => this.unpackArchiveUnchecked(zip, destination),
+            'Extracting...',
+        );
 
-        try {
-            const { entriesTotal, entriesSuccess, result } = await this.unpackArchiveUnchecked(zip, destination);
+        let status: string;
+        let title: string;
+        switch (result) {
+            case UnzipResult.success:
+                status = 'The archive was extracted successfully, but some entries were skipped.';
+                title = 'Skipped entries';
+                break;
 
-            await loader.dismiss();
+            case UnzipResult.ioError:
+                await this.fatalError('There was an error writing to the card.');
+                return;
 
-            let status: string;
-            let title: string;
-            switch (result) {
-                case UnzipResult.success:
-                    status = 'The archive was extracted successfully, but some entries were skipped.';
-                    title = 'Skipped entries';
-                    break;
+            case UnzipResult.cardFull:
+                status = 'No space left on card.';
+                title = 'No space left';
+                break;
 
-                case UnzipResult.ioError:
-                    await this.fatalError('There was an error writing to the card.');
-                    return;
+            case UnzipResult.zipfileError:
+                status = 'There was an error reading from the archive.';
+                title = 'Error reading archive';
+                break;
 
-                case UnzipResult.cardFull:
-                    status = 'No space left on card.';
-                    title = 'No space left';
-                    break;
-
-                case UnzipResult.zipfileError:
-                    status = 'There was an error reading from the archive.';
-                    title = 'Error reading archive';
-                    break;
-
-                default:
-                    throw new Error('unreachable');
-            }
-
-            const entriesFailed = entriesTotal - entriesSuccess;
-            const pluralize = (entries: number) => (entries > 1 ? `${entries} entries` : 'one entry');
-
-            if (entriesTotal > 0 && entriesFailed === entriesTotal) {
-                await this.alertService.message(
-                    title,
-                    `
-                    ${status}
-                    <br><br>
-                    The archive contains ${pluralize(entriesTotal)}, but none could be unpacked.
-                `,
-                );
-            }
-
-            if (entriesFailed > 0 && entriesSuccess > 0) {
-                await this.alertService.message(
-                    title,
-                    `
-                    ${status}
-                    <br><br>
-                    ${ucFirst(pluralize(entriesSuccess))} unpacked succesfully, but ${pluralize(
-                        entriesFailed,
-                    )} could not be unpacked.
-                `,
-                );
-            }
-        } finally {
-            void loader.dismiss();
-
-            this._change.emit();
+            default:
+                throw new Error('unreachable');
         }
+
+        const entriesFailed = entriesTotal - entriesSuccess;
+        const pluralize = (entries: number) => (entries > 1 ? `${entries} entries` : 'one entry');
+
+        if (entriesTotal > 0 && entriesFailed === entriesTotal) {
+            await this.alertService.message(
+                title,
+                `
+                ${status}
+                <br><br>
+                The archive contains ${pluralize(entriesTotal)}, but none could be unpacked.
+            `,
+            );
+        }
+
+        if (entriesFailed > 0 && entriesSuccess > 0) {
+            await this.alertService.message(
+                title,
+                `
+                ${status}
+                <br><br>
+                ${ucFirst(pluralize(entriesSuccess))} unpacked succesfully, but ${pluralize(
+                    entriesFailed,
+                )} could not be unpacked.
+            `,
+            );
+        }
+
+        this._change.emit();
     }
 
     async paste(destination: string): Promise<void> {
         if (!this.isClipboardPopulated()) return;
 
-        const loader = await this.loadingController.create({ message: 'Pasting files...' });
-        await loader.present();
         try {
-            const result = await this.pasteUnchecked(destination);
-
-            await loader.dismiss();
+            const result = await this.loaderService.showWhile(
+                () => this.pasteUnchecked(destination),
+                'Pasting files...',
+            );
 
             switch (result) {
                 case PasteResult.cardFull:
@@ -483,8 +460,6 @@ export class VfsService {
         } catch (e: unknown) {
             await this.alertService.errorMessage(e instanceof Error ? e.message : 'Unknown error.');
         } finally {
-            void loader.dismiss();
-
             this._change.emit();
         }
     }
@@ -492,32 +467,26 @@ export class VfsService {
     async addFiles(files: Array<FileDescriptor>, destination: string): Promise<void> {
         if (files.length === 0) return;
 
-        const loader = await this.loadingController.create({ message: ' Adding files' });
-        await loader.present();
+        const failed = await this.loaderService.showWhile(
+            () => this.addFilesUnchecked(files, destination),
+            'Adding files',
+        );
 
-        try {
-            const failed = await this.addFilesUnchecked(files, destination);
+        const pluralize = (files: number) => (files > 1 ? `${files} entries` : 'one file');
 
-            await loader.dismiss();
-
-            const pluralize = (files: number) => (files > 1 ? `${files} entries` : 'one file');
-
-            if (failed.length === files.length) {
-                await this.alertService.message('Skipped files', 'No files were added to the card.');
-            } else if (failed.length !== 0) {
-                await this.alertService.message(
-                    `Skipped files`,
-                    `Successfully added ${pluralize(files.length - failed.length)} to card. ${ucFirst(
-                        pluralize(failed.length),
-                    )} could not be added.
-                `,
-                );
-            }
-        } finally {
-            void loader.dismiss();
-
-            this._change.emit();
+        if (failed.length === files.length) {
+            await this.alertService.message('Skipped files', 'No files were added to the card.');
+        } else if (failed.length !== 0) {
+            await this.alertService.message(
+                `Skipped files`,
+                `Successfully added ${pluralize(files.length - failed.length)} to card. ${ucFirst(
+                    pluralize(failed.length),
+                )} could not be added.
+            `,
+            );
         }
+
+        this._change.emit();
     }
 
     get change(): Observable<void> {

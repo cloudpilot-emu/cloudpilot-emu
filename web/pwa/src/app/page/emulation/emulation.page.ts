@@ -2,7 +2,7 @@ import { Component, ElementRef, Signal, ViewChild, computed } from '@angular/cor
 import helpUrl from '@assets/doc/emulation.md';
 import { hasDPad } from '@common/helper/deviceProperties';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
-import { Config, LoadingController, ModalController, PopoverController } from '@ionic/angular';
+import { Config, ModalController, PopoverController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 
 import { HelpComponent } from '@pwa/component/help/help.component';
@@ -19,6 +19,7 @@ import { FileService } from '@pwa/service/file.service';
 import { InstallationService } from '@pwa/service/installation.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { LinkApi } from '@pwa/service/link-api.service';
+import { LoaderService } from '@pwa/service/loader.service';
 import { NetworkService } from '@pwa/service/network.service';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
@@ -53,7 +54,7 @@ export class EmulationPage implements DragDropClient {
         public performanceWatchdogService: PerformanceWatchdogService,
         private dragDropService: DragDropService,
         private sessionService: SessionService,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private audioService: AudioService,
         public config: Config,
     ) {
@@ -381,27 +382,24 @@ export class EmulationPage implements DragDropClient {
         }
     };
 
-    private async switchSession(session: Session): Promise<void> {
-        const loader = await this.loadingController.create();
-        await loader.present();
-
-        try {
+    private switchSession = (session: Session): Promise<void> =>
+        this.loaderService.showWhile(async () => {
             this.lastTitle = this.title;
             this.switching = true;
 
-            await this.emulationService.pause();
+            try {
+                await this.emulationService.pause();
 
-            if (!(await this.emulationService.switchSession(session.id, { showLoader: false }))) {
-                await this.alertService.errorMessage('Failed to launch session');
-                return;
+                if (!(await this.emulationService.switchSession(session.id, { showLoader: false }))) {
+                    await this.alertService.errorMessage('Failed to launch session');
+                    return;
+                }
+
+                if (!session.wasResetForcefully) await this.launchEmulator();
+            } finally {
+                this.switching = false;
             }
-
-            if (!session.wasResetForcefully) await this.launchEmulator();
-        } finally {
-            void loader.dismiss();
-            this.switching = false;
-        }
-    }
+        }, 'Loading...');
 
     bootstrapComplete = false;
 

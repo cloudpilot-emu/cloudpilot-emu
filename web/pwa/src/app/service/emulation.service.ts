@@ -3,10 +3,10 @@ import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { StorageCardProvider } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { SnapshotContainer } from '@common/engine/Snapshot';
+import { LoaderHandle } from '@common/helper/Loader';
 import { isIOS } from '@common/helper/browser';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { AbstractEmulationService, Executor } from '@common/service/AbstractEmulationService';
-import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { environment } from 'pwa/src/environments/environment';
 
@@ -24,6 +24,7 @@ import { ErrorService } from './error.service';
 import { FeatureService } from './feature.service';
 import { KvsService } from './kvs.service';
 import { hasInitialImportRequest } from './link-api.service';
+import { LoaderService } from './loader.service';
 import { ModalWatcherService } from './modal-watcher.service';
 import { NetworkService } from './network.service';
 import { SessionService } from './session.service';
@@ -41,7 +42,7 @@ export class EmulationService extends AbstractEmulationService {
     constructor(
         private storageService: StorageService,
         private ngZone: NgZone,
-        private loadingController: LoadingController,
+        private loaderService: LoaderService,
         private emulationContext: EmulationContextService,
         private snapshotService: SnapshotService,
         private errorService: ErrorService,
@@ -110,12 +111,11 @@ export class EmulationService extends AbstractEmulationService {
             await this.stopUnchecked();
             await this.bootstrapService.hasRendered();
 
-            let loader: HTMLIonLoadingElement | undefined;
+            let loaderHandle: LoaderHandle | undefined;
             const showLoader = options.showLoader ?? true;
 
             if (showLoader) {
-                loader = await this.loadingController.create({ message: 'Loading...' });
-                await loader.present();
+                loaderHandle = await this.loaderService.add('Loading...');
             }
 
             try {
@@ -140,7 +140,7 @@ export class EmulationService extends AbstractEmulationService {
 
                 setStoredSession(id);
             } finally {
-                if (loader) await loader.dismiss();
+                if (loaderHandle !== undefined) this.loaderService.resolve(loaderHandle);
             }
 
             return true;
@@ -295,17 +295,13 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     private async recoverStoredSession(session: number) {
-        // This avoids a nasty delay in Safari on load. Browser bug. Juck.
-        let loaderPromise: Promise<HTMLIonLoadingElement> | undefined;
-        const loaderTimeout = setTimeout(() => {
-            loaderPromise = this.loadingController.create({ message: 'Loading...' }).then(async (loader) => {
-                await loader.present();
-                return loader;
-            });
-        }, 100);
-
         try {
-            await this.switchSession(session, { showLoader: false });
+            // The delay avoids a nasty delay in Safari on load. Browser bug. Juck.
+            await this.loaderService.showWhile(
+                () => this.switchSession(session, { showLoader: false }),
+                'Loading...',
+                1,
+            );
         } catch (e) {
             if (isIOS) {
                 void this.alertService.message(
@@ -319,10 +315,6 @@ Sorry for the inconvenience.`,
             }
 
             console.error(e);
-        } finally {
-            if (loaderPromise) void loaderPromise.then((loader) => loader.dismiss());
-
-            clearTimeout(loaderTimeout);
         }
     }
 

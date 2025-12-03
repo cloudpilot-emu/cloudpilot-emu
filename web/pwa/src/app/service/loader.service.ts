@@ -2,29 +2,36 @@ import { Injectable } from '@angular/core';
 import { Loader, LoaderAdapter } from '@common/helper/Loader';
 import { LoadingController } from '@ionic/angular';
 
-class Adapter implements LoaderAdapter {
-    constructor(loadingController: LoadingController) {
-        this.loader = loadingController.create();
-    }
+export interface LoaderOptions {
+    onTop?: boolean;
+}
 
-    async show(message: '') {
-        const loader = await this.loader;
-        loader.message = message;
+class Adapter implements LoaderAdapter<LoaderOptions> {
+    constructor(private loadingController: LoadingController) {}
 
-        await loader.present();
+    async show(message?: string, { onTop } = {} as LoaderOptions) {
+        if (this.loader) {
+            this.loader.message = message;
+        } else {
+            this.loader = await this.loadingController.create({ message });
+            await this.loader.present();
+        }
+
+        this.loader.style.zIndex = onTop ? '10000000' : '';
     }
 
     async hide(): Promise<void> {
-        const loader = await this.loader;
+        if (!this.loader) return;
 
-        await loader.dismiss();
+        await this.loader.dismiss();
+        this.loader = undefined;
     }
 
-    private loader: Promise<HTMLIonLoadingElement>;
+    private loader: HTMLIonLoadingElement | undefined;
 }
 
 @Injectable({ providedIn: 'root' })
-export class LoaderService extends Loader {
+export class LoaderService extends Loader<LoaderOptions> {
     constructor(loadingController: LoadingController) {
         super(new Adapter(loadingController), 50);
     }
