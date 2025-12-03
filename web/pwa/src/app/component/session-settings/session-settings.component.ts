@@ -179,7 +179,7 @@ export class SessionSettingsComponent implements OnInit {
         this.fileService.openFile(async (file) => {
             let content: Uint8Array;
             try {
-                content = await file.getContent();
+                content = await file.getContent({ onTop: true });
             } catch (e) {
                 console.warn(e);
 

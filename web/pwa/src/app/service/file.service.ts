@@ -8,13 +8,13 @@ import { RemoteUrlPromptComponent } from '@pwa/component/remote-url-prompt/remot
 import { AlertService } from './alert.service';
 import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
-import { LoaderService } from './loader.service';
+import { LoaderOptions, LoaderService } from './loader.service';
 
 const CONTENT_LOADER_DELAY = 100;
 
 export interface FileDescriptor {
     name: string;
-    getContent: () => Promise<Uint8Array>;
+    getContent: (loaderOptions?: LoaderOptions) => Promise<Uint8Array>;
 }
 
 @Injectable({
@@ -89,7 +89,8 @@ export class FileService {
 
         handler({
             name: urlParsed.pathname.replace(/.*\//, ''),
-            getContent: () => this.loaderService.showWhile(() => contentPromise, 'Loading...', CONTENT_LOADER_DELAY),
+            getContent: (loaderOptions?: LoaderOptions) =>
+                this.loaderService.showWhile(() => contentPromise, 'Loading...', CONTENT_LOADER_DELAY, loaderOptions),
         });
 
         return;
@@ -172,9 +173,9 @@ export class FileService {
     private readFile(file: File): FileDescriptor {
         let contentPromise: Promise<Uint8Array> | undefined;
 
-        const content = (): Promise<Uint8Array> =>
+        const content = (loaderOptions?: LoaderOptions): Promise<Uint8Array> =>
             this.loaderService.showWhile(
-                async () => {
+                () => {
                     if (contentPromise) return contentPromise;
 
                     contentPromise = new Promise((resolve, reject) => {
@@ -193,6 +194,7 @@ export class FileService {
                 },
                 'Loading...',
                 CONTENT_LOADER_DELAY,
+                loaderOptions,
             );
 
         return { name: file.name, getContent: content };
