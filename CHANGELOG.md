@@ -12,6 +12,8 @@ through a fork of [uarm](https://github.com/uARM-Palm/uARM).
 -   Add "Save screenshot" option to emulation menu to capture the current screen as PNG.
 -   Greatly improved stability of the audio driver --- audio should reliably resume after
     the app is suspended or backgrounded now.
+-   Improved loading spinner consistency. Spinners are now always shown if file loads are
+    slow (e.g. iCloud).
 -   No release of CloudpilotEmu embedded for this version.
 
 # Version 1.10.16
