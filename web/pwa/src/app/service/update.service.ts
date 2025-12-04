@@ -44,6 +44,13 @@ export class UpdateService {
 
             if (storedVersion === VERSION) return;
 
+            // wait for a possible loader to disappear
+            await this.emulationService.bootstrapComplete();
+
+            await this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
+                Changes: () => this.showChangelog(),
+            });
+
             await this.kvsService.set({
                 version: VERSION,
                 previousVersion: storedVersion,
@@ -51,13 +58,6 @@ export class UpdateService {
                 // in in order to provide a smooth transition.
                 // TODO remove in a future version.
                 latestVersion: VERSION,
-            });
-
-            // wait for a possible loader to disappear
-            await this.emulationService.bootstrapComplete();
-
-            await this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
-                Changes: () => this.showChangelog(),
             });
         });
 
