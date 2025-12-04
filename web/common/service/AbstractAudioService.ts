@@ -262,7 +262,7 @@ export abstract class AbstractAudioService {
         const data = buffer.getChannelData(0);
 
         for (let i = 0; i < data.length; i++) {
-            data[i] = i / data.length < dutyCycle ? 1 : 0;
+            data[i] = i / data.length < dutyCycle ? 0.5 : 0;
         }
 
         const bufferSourceNode = this.audio.context.createBufferSource();
