@@ -18,7 +18,7 @@ declare global {
 interface Audio {
     context: AudioContext;
     gainNode: GainNode;
-    workletNode: AudioWorkletNode;
+    workletNode: AudioWorkletNode | undefined;
 }
 
 const audioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -182,16 +182,22 @@ export abstract class AbstractAudioService {
             console.warn('audio driver: failed to set channel count', e);
         }
 
-        await this.registerWorklet(context);
+        let workletNode: AudioWorkletNode | undefined;
 
-        const workletNode = new AudioWorkletNode(context, 'pcm-processor', {
-            channelCount: 2,
-            numberOfOutputs: 1,
-            outputChannelCount: [2],
-            processorOptions: {
-                sampleRateTo: context.sampleRate,
-            },
-        });
+        try {
+            await this.registerWorklet(context);
+
+            workletNode = new AudioWorkletNode(context, 'pcm-processor', {
+                channelCount: 2,
+                numberOfOutputs: 1,
+                outputChannelCount: [2],
+                processorOptions: {
+                    sampleRateTo: context.sampleRate,
+                },
+            });
+        } catch (e) {
+            console.error('failed to load audio worklet, PCM audio not available', e);
+        }
 
         const gainNode = context.createGain();
         gainNode.channelInterpretation = 'speakers';
@@ -293,11 +299,11 @@ export abstract class AbstractAudioService {
     }
 
     private dispatchPcmControlMessage(message: ControlMessageHost, transferables?: Array<Transferable>): void {
-        this.audio?.workletNode.port.postMessage(message, transferables as Array<Transferable>);
+        this.audio?.workletNode?.port.postMessage(message, transferables as Array<Transferable>);
     }
 
     private bindWorkletNode(): void {
-        if (this.workletBound || !this.audio) return;
+        if (this.workletBound || !this.audio?.workletNode) return;
 
         const pcmPort = this.emulationService.pcmPort();
         if (!pcmPort) return;
@@ -314,7 +320,7 @@ export abstract class AbstractAudioService {
 
     private unbindWorkletNode(): void {
         if (!this.workletBound) return;
-        this.audio?.workletNode.disconnect();
+        this.audio?.workletNode?.disconnect();
 
         this.dispatchPcmControlMessage({ type: ControlMessageHostType.reset });
         this.emulationService.disablePcmStreaming();
