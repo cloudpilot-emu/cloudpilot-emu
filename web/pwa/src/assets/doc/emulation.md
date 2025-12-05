@@ -1,7 +1,8 @@
 The "Emulation" tab displays your emulated device. The device is running as
-long as the tab is visible. Once the tab is switched (or CloudpilotEmu goes into
-the background) the emulation pauses. Date and time are synced to the host
-system, so the clock is not affected by the emulator pausing and resuming.
+long as the tab is visible. Once the tab is switched or the app is sent
+to the background the emulation pauses (this can be disabled for desktops
+in the settings). Date and time are synced to the host system,
+so the clock is not affected by the emulator pausing and resuming.
 
 # Interacting with the emulator
 
@@ -9,11 +10,12 @@ You can interact with the emulator by touching or clicking the screen and the
 hardware buttons below. The power button is located in the menu on the top
 left.
 
-A hardware keyboard can be used to type directly in the emulator (see "Keyboard
-mappings" at the end of this page).
+A hardware keyboard can be used to type directly in OS<=4 devices (see "Keyboard
+mappings" at the end of this page). This is not available on OS5 devices; on thse
+the keyboard always controls the hardware keys.
 
 On browsers that support the necessary APIs the clipboard can be shared with
-the host. Check "Clipboard integration" below for more details.
+the host on OS<=4 devices. Check "Clipboard integration" below for more details.
 
 # Locking the UI
 
@@ -21,7 +23,7 @@ By default the navigation at the bottom remains visible when the emulator is
 running. This may cause your fingers to accidentally touch the navigation
 if you are interacting with your pilot.
 
-You can touch the lock item at the top in order to hide the navigation
+You can touch the lock icon at the top in order to hide the navigation
 and make room for your fingers. You can toggle the "Auto-lock UI" setting
 on the settings page in order to do that automatically on launch.
 
@@ -107,24 +109,21 @@ trigger a prompt that will allow you to factory reset the device.
 
 # Power button
 
-The power button can be pressed by selecting "Power" from the menu.
+The power button can be pressed by selecting "Power" from the menu. Some devices may
+not support this, and the menu item is not available in this case.
 
 # Hotsync button
 
 The hotsync button on the cradle can be pressed by selecting "Hotsync" from the menu.
+OS5 does not support this, and the menu item is not available in this case.
 
 # Audio
 
 The "Enable audio" / "Disable audio" option in the menu allows to toggle audio emulation on / off.
-CloudpilotEmu always starts with audio disabled, and the option must be selected to enable
-it.
+CloudpilotEmu always starts with audio disabled (unless configured otherwise in the settings),
+and the option must be selected to enable it.
 
-The volume can be changed on the settings tab. Audio is not available if the volume is set
-to zero.
-
-On iOS, muting the phone also mutes audio from the emulator. Occasionally the audio
-may glitch and stay off after resuming CloudpilotEmu from the background due to browser
-bugs. You can reenable audio by turning it off and on again.
+The volume can be changed in the settings. On iOS, muting the phone also mutes audio from the emulator.
 
 # Memory cards
 
@@ -137,7 +136,7 @@ corruption. The best place to eject a card is the launcher.
 # Session settings
 
 The "Settings" option from the menu gives you access to the session settings. The settings are
-described in detail on the sessions tab help.
+described in detail in the sessions tab help.
 
 # Performance issues
 
@@ -156,6 +155,9 @@ the Palm, and in game mode it controls the hardware buttons.
 Game mode can be toggled by pressing `shift-ctrl`. A gamepad icon will appear at the top
 while game mode is active. In normal mode the game mode mappings are accessible by holding `ctrl`.
 
+On OS5 devices, normal mode is available, and the keyboard will always control the
+hardware buttons.
+
 In both modes `page up` and `page down` control the up / down buttons of the device.
 
 ### Game mode mappings
@@ -169,7 +171,10 @@ hardware buttons
 * **uhjk/uo:**
   The same as wasd/qe, but shifted to the right of the keyboard.
 * **up/down/left/right**:
-  These buttons control up/down/cal/notes.
+  On OS<=4 these buttons control up/down/cal/notes. On OS5 they control the D-Pad
+  directional buttons.
+* **enter/space**
+  On OS5 this controls the D-Pad selector.
 * **zxcv/yxcv**:
   z/x/c/v (or y/x/c/v) control cal/contacs/todo/notes.
 
@@ -177,7 +182,7 @@ If unsure take a look at the buttons on the silkscreen --- their background will
 while the corresponding button is pressed.
 
 :::div{.feature-clipboard-integration}
-# Clipboard integration
+# Clipboard integration (OS<=4)
 
 On browsers that support it the clipboard can be shared with the host. This is disabled
 by default and needs to be turned on the settings page. Note that the option is not
@@ -193,34 +198,28 @@ confirmed the first time CloudpilotEmu pastes from the host clipboard. On other 
 clipboard access. This is necessary because those browsers require clipboard access to
 be the direct consequence of an user interaction. When pasting Safari will show
 an additions "Paste" widget that needs to be tapped in order to paste.
+
+This feature is not available on OS5.
 :::
 
 # Statistics
 
-**WARNING** Technical details ahead. This is a technical diagnostics feature and not
-required for normal operation. You can skip the remainder of this documentation page unless
-you want to interpret the statistics overlay.
-
 If "Show Statistics" is enabled (on the settings tab) CloudpilotEmu displays an overlay with
-performance statistics above the grafitti silkscreen. The statistics are updated
+performance statistics over the grafitti silkscreen. The statistics are updated
 whenever a new state snapshot is taken.
 
 ### Snapshot statistics
 
 State snapshots are taken every second while the emulator is running and preserve
-the current state of the emulator in the browser's IndexedDB. In order to
-reduce the amount of data saved memory is divided into pages of 1k, and only the
-pages that have been modified are saved.
+the current state of the emulator in the browser's IndexedDB.
 
  * **last snapshot**: This is the time at which the last snapshot was taken.
- * **snapshot pages**: The number of pages updated in this snapshot.
+ * **snapshot size**: The amount of data saved.
  * **snapshot time total**: The total amount of time the snapshot took to complete.
    Most of this time is spent by the browser on a separate thread and does not block
    emulation, so this number does not have a direct impact on performance.
- * **snapshot time blocking**: The amount of time that was spent blocking on the main
-   thread. During this time the emulator cannot execute. If this value is higher than
-   the time for a single frame (typically 1/60th second) the snapshot will cause a
-   slight frame drop when it executes.
+ * **snapshot time blocking**: The amount of time that was spent blocking on the emulation
+   thread. During this time the emulator cannot execute.
 
 ### Emulation statistics
 
@@ -229,22 +228,25 @@ the code that is currently executing. If the device sleeps the emulator will
 consume very little CPU as well. If the emulator is busy executing code and shoveling
 data around the CPU load on the host device increases as well.
 
-While all supported iOS devices are fast enough to execute the emulator at full
-speed at all times, some (in particular older) Android devices are not able to
-keep up all the time. CloudpilotEmu compensates this by monitoring the "host speed"
-(the ratio between the real time required to emulate a chunk of m68k code relative
-to the corresponding time in the frame of the virtual device). If this drops below one
-CloudpilotEmu will reduce the clock of the emulated device accordingly while keeping the
-timers in sync with real time.
+CloudpilotEmu uses very different emulation cores for OS<=4 and OS5, and the
+information displayed differs between those:
 
- * **host speed**: See above. Note that this is calculated using the true clock speed
-   of the virtual device (ignoring the correction that is applied if host speed
-   drops below one).
+##### OS<=4
+
+ * **host speed**: Ratio between maximum possible speed and the speed the device is
+   supposed to run at. This varies vastly depending on the workload.
  * **emulation speed**: The ratio between the actual clock of the emulated device and
-   the clock at which it is supposed to run. This drops below 1 if CloudpilotEmu reduces
-   speed in order to compensate for a slow host.
- * **average FPS**: The average frames per second at which the emulator runs.
-   This is usually identical to the refresh rate of the display (usually 60Hz), but it
-   will drop if the host device cannot keep up. Note that the screen is not actually
-   updated during every frame; CloudpilotEmu redraws only if the display content has
-   changed.
+   the clock at which it is supposed to run.
+ * **average FPS**: The average frames per second at which the emulator runs. Note
+   that the screen is not actually updated during every frame; CloudpilotEmu redraws
+   only if the display content has changed.
+
+##### OS5
+
+Speed is given in million instructions per second (MIPS). A real Tungsten E2
+runs at about 100 MIPS, depending on how well cache can be utilized.
+
+ * **current MIPS**: Current speed of the emulator.
+ * **current MIPS limit**: Theoretically achievable speed of the emulator. This varies
+   vastly depending on the workload.
+*  **current load**: Current percentage of a single host core consumed by emulation.

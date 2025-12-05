@@ -235,6 +235,9 @@ speed and host utilization in the session settings.
 -   On PalmOS 5, keyboard input, clipboard and network integration are not
     currently available.
 
+-   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
+    the skin suggests otherwise.
+
 # CloudpilotEmu on the web
 
  * [Source code](https://github.com/cloudpilot-emu/cloudpilot-emu)

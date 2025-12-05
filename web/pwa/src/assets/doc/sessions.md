@@ -50,11 +50,12 @@ on import. After import this field is read only.
 
 This allows you to rotate the virtual device.
 
-##### Speed
+##### Speed (OS<=4)
 
 This allows you to adjust the speed of your virtual device. This setting will affect
 the speed of the emulated CPU but leave the timers intact.
-##### Hotsync name
+
+##### Hotsync name (OS<=4)
 
 Usually CloudpilotEmu devices do not hotsync, so CloudpilotEmu can manage the hotsync
 user name instead. The hotsync name can be changed at any time.
@@ -62,11 +63,32 @@ user name instead. The hotsync name can be changed at any time.
 Older versions of CloudpilotEmu do not include the hotsync name in session images.
 In this case, the name will we read from the device as soon as it is launched.
 
-##### Manage hotsync name
+##### Manage hotsync name (OS<=4)
 
 In case you are using network hotsync to sync the virtual device with Palm Desktop
 this setting will conflict with the desktop. Turn it off by unchecking
 "Manage hotsync name".
+
+##### NAND (OS5)
+
+PalmOS 5 devices contain NAND flash, which contains some of the preloaded apps
+on the original Tungsten E2 ROM. You can provide a NAND flash image by
+tapping this setting and loading the image. If you leave NAND blank PalmOS
+will format it on first boot.
+
+##### Performance (OS5)
+
+For PalmOS 5 you can configure the following options
+
+* Target speed: the emulator will run at this speed, or at the maximum speed that
+  can be sustained by the host.
+* Minimum speed: CloudpilotEmu will signal a slowdown in the toolbar if performance
+  falls under the specified percentage of the target speed.
+* Load limit: limit host utilization to the specified percentage of a single core.
+  This may help with preventing mobiles from throttling.
+
+Target speed is specified in million instructions per second (MIPS). A real Tungsten E2
+runs at about 100 MIPS, depending on how well cache can be utilized.
 
 ### Export
 

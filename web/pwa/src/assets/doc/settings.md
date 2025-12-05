@@ -17,6 +17,12 @@ Enable audio when the app starts.
 Keep CloudpilotEmu running when its browser tab is hidden.
 :::
 
+### Emulate D-Pad
+
+Disable this to replace the D-Pad with simple up / down zones on OS5
+devices that support full 5-way navigation. This enlarges the respective touch
+areas and makes them easier to control on mobile devices.
+
 # Host integration
 
 :::div{.feature-clipboard-integration}
@@ -31,14 +37,11 @@ This turns on clipboard integration.
 CloudpilotEmu can connect the virtual PalmOS device to the network.
 
 If you set "Redirection method" to "Native", CloudpilotEmu will connect PalmOS
-directly to your network. Please note that iOS will ask for your consent if
-you try to access the local network, i.e. if you are trying to HotSync with
-a server on your local network. This setting can be changed at any later point in
-the "Settings" app (navigate to Apps -> CloudpilotEmu).
+directly to your network.
 
 If you set "Redirection method" to "Proxy", CloudpilotEmu will connect to the
-network using a proxy server. In this mode you'll have to enter the address of the proxy
-server below. Use the "Test" button to test the connection before attempting to
+network using a proxy server, the address of which you'll have to enter the address below.
+Use the "Test" button to test the connection before attempting to
 connect from within the virtual device. Please check the
 [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
 for detailed instructions on setting up the proxy.
@@ -70,7 +73,7 @@ Enable this to ignore the font size configured in your mobile device settings.
 
 ### Show Statistics
 
-This overlays the grafitti area with a collection of performance statistics.
+Overlay the grafitti area with a collection of performance statistics.
 
 ### Open from remote sources
 
@@ -85,6 +88,6 @@ has to support CORS.
 Safari on iOS has a glitch that may display the home indicator (the white-ish bar
 at the bottom of the screen) on top of the UI instead below it. Whether you are
 affected depends on how the toolbar is configured in the Safari settings. This
-is cannot be detected, but you can change this setting in order to work around
+cannot be detected, but you can change this setting in order to work around
 the issue if you are affected.
 :::
