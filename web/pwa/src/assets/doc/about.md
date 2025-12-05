@@ -16,11 +16,9 @@ Currently, the following devices are emulated:
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Palm i705
 -   Tungsten W (silkscreen version)
--   Tungsten E2
--   Tungsten E3 (a widescreen version of the E2 created specifically for emulation by
+-   Tungsten E2, E3 (a widescreen version of the E2 created specifically for emulation by
     Dmitry Grinberg)
--   Handera 330
--   Handera 330c (the lost color version of the 330c)
+-   Handera 330, 330c (the lost color version of the 330c)
 -   Sony PEG-S300, PEG-S320
 -   Sony PEG-S500C series
 -   Sony PEG-T400 series
@@ -30,12 +28,11 @@ Currently, the following devices are emulated:
 -   Sony PEG-T650C series
 -   Sony PEG-NR70 series
 -   Acer S1x
--   Legend P168 (no support for SD card)
+-   Legend P168 (no SD card support)
 
-The correct device type is automatically determined from the ROM you load. If
+The device type is automatically determined from the ROM you load. If
 there are multiple possible devices CloudpilotEmu will let you choose when you
-create the session. You can find a collection of PalmOS ROMs on
-[PalmDB](https://www.palmdb.net).
+create the session.
 
 # Tabs
 
@@ -45,8 +42,6 @@ accessed by tapping either "?" in the toolbar or selecting "Help" from the menu.
 ### Sessions tab
 
 Navigate to the sessions tab in order to create, manage and launch emulation sessions.
-New emulation sessions are created either by loading a ROM or a by loading a
-previously saved session snapshot.
 
 ### Emulation tab
 
@@ -64,8 +59,8 @@ The settings tab allows you to adjust the emulator settings.
 # Reloads and emulation state
 
 The emulator automatically saves the state of the emulated device every second while
-the while the emulation is running. If CloudpilotEmu terminates and restarts the emulation
-will resume exactly where you left off.
+the while the emulation is running. If CloudpilotEmu terminates and restarts emulation
+will resume.
 
 # Installing programs and databases
 
@@ -74,7 +69,7 @@ device. `.zip` archives containing such files can be installed as well.
 
 # Network support
 
-CloudpilotEmu can connect virtual PalmOS <= 4 devices to the network via
+CloudpilotEmu can connect PalmOS <= 4 devices to the network via
 a proxy server. This configuration supports network hotsync. Please check the
 [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
 for detailed instructions.
@@ -86,7 +81,7 @@ Network integration is not currently available for PalmOS 5.
 Many PalmOS devices support removable storage in the for of either SD
 cards or memory sticks. CloudpilotEmu allows you to create virtual
 memory cards that can be attached as eihter SD cards or memory sticks
-to devices that had the corresponding slots. Please see the help on the
+to devices that have the corresponding slots. Please see the help on the
 "Cards" tab for more details.
 
 # Backing up your virtual devices
@@ -108,12 +103,8 @@ as portable .prc and .pdb files.
 
 # Handling fatal errors
 
-The emulator is pretty stable, but you may encounter situations in which
-it crashes. This may be due to a bug in the emulator, or due to the way
-CloudpilotEmu interact with PalmOS for installing software,
-backing up databases, setting the hotsync name and similar tasks.
-
-If the emulator crashes CloudpilotEmu will stop immediately and show you a dialog
+The emulator is highly stable, but you may encounter situations in which
+it crashes. In this caseCloudpilotEmu will stop immediately and show you a dialog
 that allows you to restart the emulator. Upon restart CloudpilotEmu will not
 automatically resume your session but will instead start up with the session
 page. You can resume your session from there.
@@ -122,9 +113,8 @@ page. You can resume your session from there.
 
 In the unlikely event that the emulated device keeps
 crashing the emulator you can reset the device directly on the
-sessions page (see the help page there for more info). This will remove the
-hardware state but preserve the RAM, resulting in a reboot when you resume your
-session. This allows you to break the crash loop.
+sessions page (see the help page there). This will remove the
+hardware state but preserve the RAM, resulting in a clean reboot.
 
 :::div{.no-feature-native-app}
 # Requirements and browser support
@@ -169,18 +159,20 @@ Data of the two different versions is isolated from each other.
 # Notes on PalmOS 5 emulation
 
 PalmOS 5 was designed to run on ARM CPUs clocked at several
-100s of MHz. Those chips were fast enough to play music and video and run demanding
-games and even emulators. As a result, PalmOS 5 emulation is much heavier in terms
-of CPU load compared to earlier versions of PalmOS.
+100 MHz. Those chips were fast enough to play music and video and run demanding
+games and even emulators.
 
-CloudpilotEmu pulls many tricks and optimizations to run as fast
-as possible, and applications targeting PalmOS 4 or earlier will run at
-comparable speeds on PalmOS 5, but native PalmOS 5 software requires a fast
-host. Apple Silicon Macs and recent iPhones and iPads (iPhone 13 or later) will
-run even demanding ARM applications at decent or even full speed, and the same
-goes for fast x86 desktops, but older and slower devices and most Android phones
-and tablets may struggle. Many apps will still work fine, but your mileage may
+CloudpilotEmu pulls many tricks and optimizations to run OS5 as fast
+as possible, and applications targeting OS4 or earlier will run at
+comparable speeds on OS5, but native OS5 software requires a fast
+host. Apple Silicon Macs and recent iOS devices (iPhone 13 or later) will
+run even demanding ARM apps at decent and even full speed, and the same
+goes for fast x86 desktops, but older and slower devices (which includes most
+Android devices) may struggle. Many apps will still work fine, but your mileage may
 vary.
+
+Note that mobiles may throttle under high load. You can try to influence this by limiting
+speed and host utilization in the session settings.
 
 # Known issues and limitations
 
@@ -220,16 +212,16 @@ vary.
 
 ### Emulation issues
 
--   Audio timing is not perfect and processed at the refresh rate of the emulator
-    (usually the same as the screen refresh rate of the host device). Sound
-    effects that rely on quickly modulating the audio signal may not be
-    reproduced correctly.
+-   Audio timing on PalmOS <= 4 is not perfect and processed at the refresh rate
+    of the
+-   emulator. Sound effects that rely on quickly modulating the audio signal may
+    not be reproduced correctly.
 
 -   On rare ocassions installing files or changing the hotsync name can catch
     PalmOS on the wrong foot and crash the emulator.
 
--   Tungsten W, i705, PEG-T650C and PEG-NR70 cannot enter and exit sleep correctly,
-    and the corresponding functionality has been disabled.
+-   Some devices cannot enter and exit sleep correctly. For those, CloudpilotEmu
+    patches PalmOS to prevent sleeping.
 
 -   On Clié devices, audio is not emulated beyond the usual beeps.
   
@@ -237,10 +229,11 @@ vary.
     framebuffer support, 2D acceleration is not available.
     
 -   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
-    locks up PalmOS.
+    locks up PalmOS. CloudpilotEmu formats newly created cards, so there is
+    no need to reformat them in PalmOS.
 
--   On PalmOS 5, keyboard input and clipboard and network integration are
-    not currently available.
+-   On PalmOS 5, keyboard input, clipboard and network integration are not
+    currently available.
 
 # CloudpilotEmu on the web
 
