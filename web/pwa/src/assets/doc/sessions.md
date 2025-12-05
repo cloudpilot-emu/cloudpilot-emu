@@ -50,12 +50,12 @@ on import. After import this field is read only.
 
 This allows you to rotate the virtual device.
 
-##### Speed (OS<=4)
+##### Speed (OS4 and earlier)
 
 This allows you to adjust the speed of your virtual device. This setting will affect
 the speed of the emulated CPU but leave the timers intact.
 
-##### Hotsync name (OS<=4)
+##### Hotsync name (OS4 and earlier)
 
 Usually CloudpilotEmu devices do not hotsync, so CloudpilotEmu can manage the hotsync
 user name instead. The hotsync name can be changed at any time.
@@ -63,7 +63,7 @@ user name instead. The hotsync name can be changed at any time.
 Older versions of CloudpilotEmu do not include the hotsync name in session images.
 In this case, the name will we read from the device as soon as it is launched.
 
-##### Manage hotsync name (OS<=4)
+##### Manage hotsync name (OS4 and earlier)
 
 In case you are using network hotsync to sync the virtual device with Palm Desktop
 this setting will conflict with the desktop. Turn it off by unchecking

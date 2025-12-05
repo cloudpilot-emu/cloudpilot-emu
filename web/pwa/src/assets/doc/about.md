@@ -69,7 +69,7 @@ device. `.zip` archives containing such files can be installed as well.
 
 # Network support
 
-CloudpilotEmu can connect PalmOS <= 4 devices to the network via
+CloudpilotEmu can connect OS4 and earlier devices to the network via
 a proxy server. This configuration supports network hotsync. Please check the
 [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
 for detailed instructions.
@@ -212,7 +212,7 @@ speed and host utilization in the session settings.
 
 ### Emulation issues
 
--   Audio timing on PalmOS <= 4 is not perfect and processed at the refresh rate
+-   Audio timing on OS4 and earlier is not perfect and processed at the refresh rate
     of the
 -   emulator. Sound effects that rely on quickly modulating the audio signal may
     not be reproduced correctly.

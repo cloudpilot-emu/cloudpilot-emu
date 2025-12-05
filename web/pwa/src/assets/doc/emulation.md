@@ -10,12 +10,12 @@ You can interact with the emulator by touching or clicking the screen and the
 hardware buttons below. The power button is located in the menu on the top
 left.
 
-A hardware keyboard can be used to type directly in OS<=4 devices (see "Keyboard
+A hardware keyboard can be used to type directly in OS4 and earlier devices (see "Keyboard
 mappings" at the end of this page). This is not available on OS5 devices; on thse
 the keyboard always controls the hardware keys.
 
 On browsers that support the necessary APIs the clipboard can be shared with
-the host on OS<=4 devices. Check "Clipboard integration" below for more details.
+the host on OS4 and earlier devices. Check "Clipboard integration" below for more details.
 
 # Locking the UI
 
@@ -171,7 +171,7 @@ hardware buttons
 * **uhjk/uo:**
   The same as wasd/qe, but shifted to the right of the keyboard.
 * **up/down/left/right**:
-  On OS<=4 these buttons control up/down/cal/notes. On OS5 they control the D-Pad
+  On OS4 and earlier these buttons control up/down/cal/notes. On OS5 they control the D-Pad
   directional buttons.
 * **enter/space**
   On OS5 this controls the D-Pad selector.
@@ -182,7 +182,7 @@ If unsure take a look at the buttons on the silkscreen --- their background will
 while the corresponding button is pressed.
 
 :::div{.feature-clipboard-integration}
-# Clipboard integration (OS<=4)
+# Clipboard integration (OS4 and earlier)
 
 On browsers that support it the clipboard can be shared with the host. This is disabled
 by default and needs to be turned on the settings page. Note that the option is not
@@ -228,10 +228,10 @@ the code that is currently executing. If the device sleeps the emulator will
 consume very little CPU as well. If the emulator is busy executing code and shoveling
 data around the CPU load on the host device increases as well.
 
-CloudpilotEmu uses very different emulation cores for OS<=4 and OS5, and the
+CloudpilotEmu uses very different emulation cores for OS4 and earlier and OS5, and the
 information displayed differs between those:
 
-##### OS<=4
+##### OS4 and earlier
 
  * **host speed**: Ratio between maximum possible speed and the speed the device is
    supposed to run at. This varies vastly depending on the workload.
