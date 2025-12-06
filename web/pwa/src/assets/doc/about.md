@@ -1,6 +1,6 @@
 CloudpilotEmu is a web-based emulator for PalmOS. It emulates both Dragonball
-based devices (PalmOS 1-4) and the Palm Tungsten E2 (ARM-based, PalmOS 5). Emulation
-of Dragonball devices is based on the original POSE emulator, and PalmOS 5
+based devices (OS 1-4) and the Palm Tungsten E2 (ARM-based, OS5). Emulation
+of Dragonball devices is based on the original POSE emulator, and OS5
 emulation is based on uARM.
 
 Currently, the following devices are emulated:
@@ -74,7 +74,7 @@ a proxy server. This configuration supports network hotsync. Please check the
 [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
 for detailed instructions.
 
-Network integration is not currently available for PalmOS 5.
+Network integration is not currently available for OS5.
 
 # SD cards and memory sticks
 
@@ -94,6 +94,10 @@ or DB backups.
 Saving a session snapshot on the Sessions tab every now and then will protect
 your data in case anything goes wrong. Re-importing a session snapshot
 will create a clone of the device at the moment where it was backed up.
+
+Changes to the snapshot format are forward compatible, which means that a newer
+version of CloudpilotEmu can always import a snapshot written by an older
+version.
 
 ### DB backups
 
@@ -156,22 +160,22 @@ toggling "Use preview version".
 Data of the two different versions is isolated from each other.
 :::
 
-# Notes on PalmOS 5 emulation
+# Notes on OS5 emulation
 
-PalmOS 5 was designed to run on ARM CPUs clocked at several
-100 MHz. Those chips were fast enough to play music and video and run demanding
+OS5 was designed to run on ARM CPUs clocked at several
+100 MHz. Those chips were fast enough to play music, decode video and run demanding
 games and even emulators.
 
 CloudpilotEmu pulls many tricks and optimizations to run OS5 as fast
 as possible, and applications targeting OS4 or earlier will run at
 comparable speeds on OS5, but native OS5 software requires a fast
 host. Apple Silicon Macs and recent iOS devices (iPhone 13 or later) will
-run even demanding ARM apps at decent and even full speed, and the same
+run even demanding ARM apps ranging from decent to faster-than-real speeds, and the same
 goes for fast x86 desktops, but older and slower devices (which includes most
 Android devices) may struggle. Many apps will still work fine, but your mileage may
 vary.
 
-Note that mobiles may throttle under high load. You can try to influence this by limiting
+Note that mobiles may throttle under high load. You can try to counter this by limiting
 speed and host utilization in the session settings.
 
 # Known issues and limitations
@@ -210,14 +214,13 @@ speed and host utilization in the session settings.
     that can increase the likelihood. This issue is not present in the native app.
 :::
 
-### Emulation issues
+### Emulation limitations
 
 -   Audio timing on OS4 and earlier is not perfect and processed at the refresh rate
-    of the
--   emulator. Sound effects that rely on quickly modulating the audio signal may
+    of the emulator. Sound effects that rely on quickly modulating the audio signal may
     not be reproduced correctly.
 
--   On rare ocassions installing files or changing the hotsync name can catch
+-   On rare occasions installing files or changing the hotsync name can catch
     PalmOS on the wrong foot and crash the emulator.
 
 -   Some devices cannot enter and exit sleep correctly. For those, CloudpilotEmu
@@ -228,11 +231,11 @@ speed and host utilization in the session settings.
 -   The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
     framebuffer support, 2D acceleration is not available.
     
--   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
+-   Formatting an unformatted memory stick in Clié devices that run OS 3.x
     locks up PalmOS. CloudpilotEmu formats newly created cards, so there is
     no need to reformat them in PalmOS.
 
--   On PalmOS 5, keyboard input, clipboard and network integration are not
+-   On OS5, keyboard input, clipboard and network integration are not
     currently available.
 
 -   The emulated Tungsten|W does not provide a full 5-way D-pad, even though

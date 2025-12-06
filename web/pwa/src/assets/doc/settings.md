@@ -4,7 +4,7 @@ The "Settings" tab allows you to configure CloudpilotEmu.
 
 ### Volume
 
-This setting control the volume of the emulated audio.
+This setting controls the overall volume of the emulated audio.
 
 ### Enable audio on start
 
@@ -14,7 +14,7 @@ Enable audio when the app starts.
 :::div{.feature-run-hidden}
 ### Run when hidden
 
-Keep CloudpilotEmu running when its browser tab is hidden.
+Keep CloudpilotEmu running when the browser tab is hidden.
 :::
 
 ### Emulate D-Pad

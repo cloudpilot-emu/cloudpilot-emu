@@ -1,7 +1,9 @@
 The "Emulation" tab displays your emulated device. The device is running as
 long as the tab is visible. Once the tab is switched or the app is sent
 to the background the emulation pauses (this can be disabled for desktops
-in the settings). Date and time are synced to the host system,
+in the settings).
+
+Date and time are synced to the host system,
 so the clock is not affected by the emulator pausing and resuming.
 
 # Interacting with the emulator
@@ -11,7 +13,7 @@ hardware buttons below. The power button is located in the menu on the top
 left.
 
 A hardware keyboard can be used to type directly in OS4 and earlier devices (see "Keyboard
-mappings" at the end of this page). This is not available on OS5 devices; on thse
+mappings" at the end of this page). This is not available on OS5 devices; on these
 the keyboard always controls the hardware keys.
 
 On browsers that support the necessary APIs the clipboard can be shared with
@@ -42,8 +44,8 @@ program and back to the launcher in order for newly installed programs to become
 visible. On Palm OS 3.5 and above it is sufficient to switch the launcher
 category.
 
-On rare occasions the installation catches PalmOS on the wrong foot and
-crashes the emulator. In this case you can simply resume the session and
+On rare occasions the installation may catch PalmOS on the wrong foot and
+crash the emulator. In this case you can simply resume the session and
 retry the installation. Installing while the launcher is open is generally
 safe.
 
@@ -80,11 +82,6 @@ Backing up databases interacts with PalmOS, and there is a (very) slim chance of
 the emulator, depending on the state of the virtual device when the backup is
 run. In general it is best to run the backup while the launcher is open.
 
-Note that currently opened DBs cannot be backed up. This is particularly
-noticeable on OS1 and OS2 where the launcher opens on top of the running
-application. Try switching to another app if CloudpilotEmu complains about failed
-databases.
-
 # Device reset
 
 The device can be reset by selecting "reset" from the menu.
@@ -109,13 +106,13 @@ trigger a prompt that will allow you to factory reset the device.
 
 # Power button
 
-The power button can be pressed by selecting "Power" from the menu. Some devices may
-not support this, and the menu item is not available in this case.
+The power button can be pressed by selecting "Power" from the menu. CloudpilotEmu does not
+support sleep for some devices, and the menu item is not available in this case.
 
 # Hotsync button
 
 The hotsync button on the cradle can be pressed by selecting "Hotsync" from the menu.
-OS5 does not support this, and the menu item is not available in this case.
+CloudpilotEmu does not support this on OS5, and the menu item is not available in this case.
 
 # Audio
 
@@ -142,8 +139,9 @@ described in detail in the sessions tab help.
 
 CloudpilotEmu will automatically throttle the clock of the virtual device if your host
 is too slow to keep up. In this case an icon in the menu bar will appear to notify you.
-You can adjust the speed of your virtual device in the session settings in order to avoid
-this.
+
+For OS5, the icon will display when speed falls under the threshold configured in the
+session settings.
 
 # Keyboard input
 
@@ -155,7 +153,7 @@ the Palm, and in game mode it controls the hardware buttons.
 Game mode can be toggled by pressing `shift-ctrl`. A gamepad icon will appear at the top
 while game mode is active. In normal mode the game mode mappings are accessible by holding `ctrl`.
 
-On OS5 devices, normal mode is available, and the keyboard will always control the
+On OS5 devices, normal mode is not available, and the keyboard will always control the
 hardware buttons.
 
 In both modes `page up` and `page down` control the up / down buttons of the device.
@@ -178,7 +176,7 @@ hardware buttons
 * **zxcv/yxcv**:
   z/x/c/v (or y/x/c/v) control cal/contacs/todo/notes.
 
-If unsure take a look at the buttons on the silkscreen --- their background will change
+If unsure take a look at the buttons on the silkscreen --- they will light up
 while the corresponding button is pressed.
 
 :::div{.feature-clipboard-integration}
@@ -192,12 +190,12 @@ Once the setting is turned on copy and paste operations will access the host cli
 Accessing the clipboard is a sensitive operation, and browsers implement security
 mechanisms around it.
 
-On most webkit-based browsers (including Chrome) a popup asking for permission must be
+On most browsers (including Chrome) a popup asking for permission must be
 confirmed the first time CloudpilotEmu pastes from the host clipboard. On other browsers
 (notably Safari) CloudpilotEmu shows a dialog asking to confirm the operation on every
 clipboard access. This is necessary because those browsers require clipboard access to
 be the direct consequence of an user interaction. When pasting Safari will show
-an additions "Paste" widget that needs to be tapped in order to paste.
+an additional "Paste" widget that needs to be tapped in order to paste.
 
 This feature is not available on OS5.
 :::

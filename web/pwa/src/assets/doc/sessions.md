@@ -26,7 +26,7 @@ contain the ROM image of the exported device together with a snapshot of the
 device RAM and state at the moment the snapshot was taken. Importing a session
 image will create a clone of the device.
 
-Changes to the image format are backwards compatible, which means that a newer
+Changes to the image format are forward compatible, which means that a newer
 version of CloudpilotEmu can always import a session image written by an older
 version.
 
@@ -81,18 +81,18 @@ will format it on first boot.
 For PalmOS 5 you can configure the following options
 
 * Target speed: the emulator will run at this speed, or at the maximum speed that
-  can be sustained by the host.
+  can be handled by the host.
 * Minimum speed: CloudpilotEmu will signal a slowdown in the toolbar if performance
   falls under the specified percentage of the target speed.
 * Load limit: limit host utilization to the specified percentage of a single core.
-  This may help with preventing mobiles from throttling.
+  This may help to prevent mobiles from throttling.
 
 Target speed is specified in million instructions per second (MIPS). A real Tungsten E2
 runs at about 100 MIPS, depending on how well cache can be utilized.
 
 ### Export
 
-Exports a session lets you save a snapshot to disk.
+Save a snapshot of the session that can later be reimported.
 
 ### Reset
 
