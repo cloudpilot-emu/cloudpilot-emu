@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, computed } from '@angular/core';
 import { PalmButton } from '@common/bridge/Cloudpilot';
 import { quirkNoHotsync, quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
@@ -366,4 +366,15 @@ export class ContextMenuComponent {
 
     @Input()
     showHelp: () => void = () => undefined;
+
+    mountedCardName = computed(() => {
+        const cardId = this.emulationContext.session()?.mountedCard;
+
+        const name =
+            cardId !== undefined ? this.storageCardService.cards().find((card) => card.id === cardId)?.name : undefined;
+
+        console.log(cardId, this.storageCardService.cards());
+
+        return name ?? (this.hasMemorystick ? 'stick' : 'SD card');
+    });
 }

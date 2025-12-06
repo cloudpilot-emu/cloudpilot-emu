@@ -43,7 +43,7 @@
         <ion-icon name="log-in-outline" slot="end"></ion-icon>
     </ion-item>
     <ion-item lines="full" button *ngIf="supportsStorageCard && hasMountedCard" [detail]="false" (click)="ejectCard()">
-        <ion-label>Eject {{ hasMemorystick ? 'stick' : 'SD card' }}</ion-label>
+        <ion-label>Eject "{{ mountedCardName() }}"</ion-label>
         <ion-icon name="log-out-outline" slot="end"></ion-icon>
     </ion-item>
     <ion-item
