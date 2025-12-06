@@ -273,7 +273,7 @@ export class EmulationService extends AbstractEmulationService {
             session.engine === 'cloudpilot'
                 ? {
                       speed: session.speed,
-                      manageHotsyncName: session.dontManageHotsyncName,
+                      manageHotsyncName: !session.dontManageHotsyncName,
                       hotsyncName: session.hotsyncName,
                       schedulerKind,
 
@@ -287,6 +287,8 @@ export class EmulationService extends AbstractEmulationService {
                       maxHostLoad: session.maxHostLoad,
                       runInBackground: this.kvsService.kvs.runHidden,
                   };
+
+        if (settings.networkIntegration !== this.engineSettings.networkIntegration) this.networkService.reset();
 
         this.updateEngineSettings({
             ...settings,

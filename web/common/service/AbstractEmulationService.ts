@@ -385,8 +385,8 @@ export abstract class AbstractEmulationService {
     protected penDown = false;
 
     protected engine?: Engine;
+    protected engineSettings: EngineSettings = { ...DEFAULT_ENGINE_SETTINGS };
 
-    private engineSettings: EngineSettings = { ...DEFAULT_ENGINE_SETTINGS };
     private shouldRun = false;
     private blocked = false;
 }

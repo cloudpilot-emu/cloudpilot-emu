@@ -371,6 +371,16 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     }
 
     updateSettings(settings: EngineSettings): void {
+        if (this.cloudpilotInstance.getClipboardIntegration() !== settings.clipboardIntegration) {
+            this.cloudpilotInstance.setClipboardIntegration(settings.clipboardIntegration);
+        }
+
+        if (this.cloudpilotInstance.getNetworkRedirection() !== settings.networkIntegration) {
+            this.cloudpilotInstance.setNetworkRedirection(this.settings.networkIntegration);
+        }
+
+        this.cloudpilotInstance.setHotsyncNameManagement(settings.manageHotsyncName);
+
         this.settings = settings;
     }
 
