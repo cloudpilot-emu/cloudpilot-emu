@@ -135,6 +135,7 @@ netErrScptPluginCmdFail = netErrorClass | 130
 netErrScptPluginInvalidCmd = netErrorClass | 131
 
 _errnoNameLookup = {
+    'EPIPE': netErrSocketClosedByRemote,
     'EINTR': netErrUserCancel,
     'EDEADLK': netErrWouldBlock,
     'ENOMEM': netErrOutOfMemory,

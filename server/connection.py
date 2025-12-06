@@ -164,7 +164,7 @@ def logAndConvertException(msg: str, ex: Exception) -> int:
     ecode = exceptionToErr(ex)
 
     if ecode != err.netErrTimeout and ecode != err.netErrWouldBlock:
-        warning(f'{msg}: {formatException(ex)}')
+        warning(f'{msg}: {formatException(ex)} , PalmOS error {ecode}')
 
     return ecode
 
