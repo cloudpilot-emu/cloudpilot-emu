@@ -82,7 +82,19 @@ export class NetworkService {
         this.reset();
     };
 
-    private onUnexpectedBackendClose = () => this.reset();
+    private onUnexpectedBackendClose = () => {
+        switch (this.cloudpilot?.getSuspendKind()) {
+            case SuspendKind.networkConnect:
+                this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
+                break;
+
+            case SuspendKind.networkRpc:
+                this.cloudpilot.getSuspendContextNetworkRpc().Cancel();
+                break;
+        }
+
+        this.reset();
+    };
 
     private onSessionResume = () => this.resumeEvent.dispatch();
 

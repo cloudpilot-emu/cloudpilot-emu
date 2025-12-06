@@ -669,6 +669,7 @@ class Connection:
             socket = socketCtx.socket
 
             if request.level == netSocketOptLevelSocket and request.option == netSocketOptSockNonBlocking:
+                debug(F'socket {request.handle} set nonblocking {bool(value)}')
                 await runInThread(lambda: socketCtx.setNonblocking(bool(value)))
             else:
                 level = sockopt.translateSockoptLevel(request.level)
