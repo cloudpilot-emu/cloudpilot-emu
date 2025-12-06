@@ -15,9 +15,9 @@
 #define SAVESTATE_VERSION 0
 
 struct TlbEntry {
-    uint32_t pa;
+    uint32_t pa : 20;
 
-    uint32_t revision : 16;
+    uint32_t revision : 4;
     uint32_t ap : 2;
     uint32_t domain : 4;
     uint32_t c : 1;
@@ -226,7 +226,7 @@ translated:
             tlbEntry->c = c;
             tlbEntry->domain = dom;
             tlbEntry->section = section;
-            tlbEntry->pa = paPage + offset;
+            tlbEntry->pa = (paPage + offset) >> 12;
             tlbEntry->revision = mmu->revision;
         }
     }
@@ -259,7 +259,7 @@ MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t addr, bool priviled
         if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
     }
 
-    uint64_t result = (addr & 0xfff) + tlbEntry->pa;
+    uint64_t result = (addr & 0xfff) + (tlbEntry->pa << 12);
 
     if (tlbEntry->c) result |= (1ull << 62);
 
