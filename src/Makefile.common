@@ -51,8 +51,6 @@ EXTRA_OBJECT_DEPS ?=
 
 # The stuff below can be overridden if necessary, but there shouldn't be any need
 
-EMCC_OPT = -O3 -flto
-
 CC_NATIVE ?= gcc
 CXX_NATIVE ?= g++
 LD_NATIVE ?= g++
