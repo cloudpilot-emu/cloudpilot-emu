@@ -35,7 +35,7 @@ html {
     user-select: none;
 }
 
-markdown {
+markdown, .text-selectable {
     user-select: text;
 
     p {
