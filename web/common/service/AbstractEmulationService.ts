@@ -198,13 +198,15 @@ export abstract class AbstractEmulationService {
         this.shouldRun = false;
 
         const engine = await this.createEngine(engineType(deviceId));
+        this.bindEngineHandlers(engine);
+
         engine.updateSettings(this.engineSettings);
 
         if (!(await engine.openSession(rom, deviceId, nand, memory, state, card))) {
+            this.unbindEngineHandlers(this.engine);
             return false;
         }
 
-        this.bindEngineHandlers(engine);
         this.engine = engine;
 
         this.resetCanvas();
