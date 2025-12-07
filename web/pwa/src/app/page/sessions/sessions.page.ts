@@ -145,7 +145,10 @@ export class SessionsPage implements DragDropClient, OnInit {
         const launchSuccess = await this.emulationService.switchSession(session.id);
         this.currentSessionOverride.set(undefined);
 
-        if (!launchSuccess) return;
+        if (!launchSuccess) {
+            await this.alertService.errorMessage('Failed to launch session.');
+            return;
+        }
 
         void this.router.navigateByUrl('/tab/emulation');
     }
@@ -159,7 +162,9 @@ export class SessionsPage implements DragDropClient, OnInit {
         await this.storageService.deleteStateForSession(session);
         await this.storageService.updateSessionPartial(session.id, { wasResetForcefully: true });
 
-        if (running) await this.emulationService.switchSession(session.id);
+        if (running && !(await this.emulationService.switchSession(session.id))) {
+            await this.alertService.errorMessage('Failed to relaunch session.');
+        }
 
         await this.alertService.message('Done', `Session ${session.name} has been reset.`);
     }

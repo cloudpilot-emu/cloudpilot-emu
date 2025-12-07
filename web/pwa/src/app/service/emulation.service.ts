@@ -57,11 +57,11 @@ export class EmulationService extends AbstractEmulationService {
         private sessionsService: SessionService,
         private featureService: FeatureService,
         modalWatcher: ModalWatcherService,
-        @Inject(TOKEN_CLOUDPILOT_INSTANCE) private cloudpilotPromise: Promise<Cloudpilot>,
+        @Inject(TOKEN_CLOUDPILOT_INSTANCE) cloudpilotPromise: Promise<Cloudpilot>,
         @Inject(TOKEN_UARM_MODULE) private uarmModulePromise: Promise<WebAssembly.Module>,
         @Inject(TOKEN_EMULATOR_LOCK) emulatorLock: Lock,
     ) {
-        super();
+        super(cloudpilotPromise);
 
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.stop);
@@ -126,12 +126,7 @@ export class EmulationService extends AbstractEmulationService {
 
                 this.emulationContext.clearContext();
 
-                if (!(await this.restoreSession(session))) {
-                    void this.alertService.errorMessage(
-                        'Failed to launch session. This may be the result of a bad ROM file.',
-                    );
-                    return false;
-                }
+                if (!(await this.restoreSession(session))) return false;
 
                 if (!this.engine) throw new Error('engine failed to initialize');
 
@@ -209,10 +204,6 @@ export class EmulationService extends AbstractEmulationService {
         if (!session) throw new Error('unreachable: handleSnapshot without session');
 
         void this.snapshotService.storeSnapshot(snapshot, session.id);
-    }
-
-    protected override getCloudpilotInstance(): Promise<Cloudpilot> {
-        return this.cloudpilotPromise;
     }
 
     protected override getUarmModule(): Promise<WebAssembly.Module> {

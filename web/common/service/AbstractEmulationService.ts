@@ -37,6 +37,10 @@ const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
 export type Executor = <T>(fn: () => T) => T;
 
 export abstract class AbstractEmulationService {
+    constructor(protected cloudpilotPromise: Promise<Cloudpilot>) {
+        void cloudpilotPromise.then((instance) => instance.fatalErrorEvent.addHandler(this.onFatalError));
+    }
+
     handlePointerMove(x: number, y: number, isSilkscreen: boolean): void {
         if (!this.engine?.isRunning()) return;
 
@@ -172,8 +176,6 @@ export abstract class AbstractEmulationService {
 
     protected abstract handleSnapshot(snapshot: SnapshotContainer): void;
 
-    protected abstract getCloudpilotInstance(): Promise<Cloudpilot>;
-
     protected abstract getUarmModule(): Promise<WebAssembly.Module>;
 
     protected abstract handleFatalInNativeCode(error: Error): void;
@@ -198,15 +200,14 @@ export abstract class AbstractEmulationService {
         this.shouldRun = false;
 
         const engine = await this.createEngine(engineType(deviceId));
-        this.bindEngineHandlers(engine);
 
         engine.updateSettings(this.engineSettings);
 
         if (!(await engine.openSession(rom, deviceId, nand, memory, state, card))) {
-            this.unbindEngineHandlers(this.engine);
             return false;
         }
 
+        this.bindEngineHandlers(engine);
         this.engine = engine;
 
         this.resetCanvas();
@@ -298,7 +299,7 @@ export abstract class AbstractEmulationService {
         switch (engineType) {
             case 'cloudpilot':
                 return new EngineCloudpilotImpl(
-                    await this.getCloudpilotInstance(),
+                    await this.cloudpilotPromise,
                     this.clandestineExecute,
                     this.engineSettings,
                 );
@@ -348,11 +349,19 @@ export abstract class AbstractEmulationService {
         engine.timesliceEvent.addHandler(this.onEngineTimesliceEvent);
         engine.snapshotEvent.addHandler(this.onSnapshotEvent);
         engine.palmosStateChangeEvent.addHandler(this.onPalmosStateChangeEvent);
-        engine.fatalError.addHandler(this.onFatalError);
         engine.snapshotSuccessEvent.addHandler(this.onSnapshotSuccessEvent);
 
-        if (engine.type === 'cloudpilot') {
-            engine.configuredHotsyncNameUpdateEvent.addHandler(this.onEngineConfigureHotsyncNameEvent);
+        switch (engine.type) {
+            case 'cloudpilot':
+                engine.configuredHotsyncNameUpdateEvent.addHandler(this.onEngineConfigureHotsyncNameEvent);
+                break;
+
+            case 'uarm':
+                engine.fatalError.addHandler(this.onFatalError);
+                break;
+
+            default:
+                engine satisfies never;
         }
     }
 
@@ -364,11 +373,19 @@ export abstract class AbstractEmulationService {
         engine.timesliceEvent.removeHandler(this.onEngineTimesliceEvent);
         engine.snapshotEvent.removeHandler(this.onSnapshotEvent);
         engine.palmosStateChangeEvent.removeHandler(this.onPalmosStateChangeEvent);
-        engine.fatalError.removeHandler(this.onFatalError);
         engine.snapshotSuccessEvent.removeHandler(this.onSnapshotSuccessEvent);
 
-        if (engine.type === 'cloudpilot') {
-            engine.configuredHotsyncNameUpdateEvent.removeHandler(this.onEngineConfigureHotsyncNameEvent);
+        switch (engine.type) {
+            case 'cloudpilot':
+                engine.configuredHotsyncNameUpdateEvent.removeHandler(this.onEngineConfigureHotsyncNameEvent);
+                break;
+
+            case 'uarm':
+                engine.fatalError.removeHandler(this.onFatalError);
+                break;
+
+            default:
+                engine satisfies never;
         }
     }
 
