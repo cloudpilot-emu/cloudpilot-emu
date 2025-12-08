@@ -58,7 +58,6 @@ bool EmSession::Initialize(EmDevice* device, uint8* romImage, size_t romLength) 
 
     this->romImage = unique_ptr<uint8[]>(romImage);
     romSize = romLength;
-    memcpy(this->romImage.get(), romImage, romSize);
 
     onSystemClockChangeHandle =
         EmHAL::onSystemClockChange.AddHandler(bind(&EmSession::RecalculateClocksPerSecond, this));
