@@ -205,44 +205,7 @@ uint8* gFramebufferDirtyPages;
 */
 
 MemAccessFlags gMemAccessFlags = {
-    MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH,
-    MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH,
-    MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH,
-    MASTER_RUNTIME_VALIDATE_SWITCH,
-
-    // User prevention flags.
-
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    false,  // SRAM-get
-    true,   // SRAM-set
-    false,  // ROM-get
-    true,   // ROM-set (HACK: We really want it to be true!)
-    MASTER_RUNTIME_PREVENT_SWITCH, MASTER_RUNTIME_PREVENT_SWITCH,
-
-    //	false,	// fCheck_UserChunkGet
-    //	false,	// fCheck_UserChunkSet
-    //	false,	// fCheck_SysChunkGet
-    //	false,	// fCheck_SysChunkSet
-
-    // System prevention flags.
-
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	false,	// SRAM-get
-    //	true,	// SRAM-set
-    false,  // ROM-get
-    true,   // ROM-set (HACK: We really want it to be true!)
-    //	MASTER_RUNTIME_PREVENT_SWITCH,
-    //	MASTER_RUNTIME_PREVENT_SWITCH
+    true  // SRAM-set
 };
 
 MemAccessFlags kZeroMemAccessFlags;

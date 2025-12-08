@@ -93,47 +93,13 @@
     #define UNALIGNED_LONG_ACCESS 1
 #endif
 
-// Define a utility symbol that is guaranteed to be one in debug mode
-// and zero in non-debug mode (I don't know what _DEBUG is actually
-// defined to, so I'm not going to make any assumptions...)
-
-#if defined(_DEBUG)
-    #define ON_IN_DEBUG_MODE 1
-#else
-    #define ON_IN_DEBUG_MODE 0
-#endif
-
 // Define PROFILE_MEMORY to 1 to turn on profiling of memory access.
 // Profiling means collecting how often various sections of memory
 // are accessed and how they are accessed (read vs. write, byte vs.
 // word vs. long.)
 
-#define PROFILE_MEMORY 0
-
 // Define REGISTER_HISTORY to 1 to keep a history of the last 512
 // register states.
-
-#define REGISTER_HISTORY ON_IN_DEBUG_MODE
-
-// Define EXCEPTION_HISTORY to 1 to keep a history of the last 512
-// exceptions encountered.
-
-#define EXCEPTION_HISTORY ON_IN_DEBUG_MODE
-
-// The number of ticks between calls to WaitNextEvent (Mac only).
-
-#define EVENT_THRESHHOLD 6
-
-// Define NATIVE_DISPATCHING to 1 to have the emulator manage
-// the dispatching of SYSTRAP functions.  Otherwise, the ROM
-// handles the dispatching.  The advantage of having the emulator
-// do the dispatching is that it's faster.
-
-#define NATIVE_DISPATCHING 1
-
-#define HAS_TRACER 0
-
-#define HAS_OMNI_THREAD 0
 
 // Define sub-flags for specific internal features.
 
@@ -162,40 +128,8 @@
 // turned on, but the runtime flags turned off, startup time is
 // about 1508 msecs.
 
-#define VALIDATE_DUMMY_GET 1
-#define VALIDATE_DUMMY_SET 1
-#define VALIDATE_REGISTER_GET 0
-#define VALIDATE_REGISTER_SET 0
-#define VALIDATE_DRAM_GET 0
-#define VALIDATE_DRAM_SET 0
-#define VALIDATE_SRAM_GET 0
-#define VALIDATE_SRAM_SET 0
-#define VALIDATE_ROM_GET 0
-#define VALIDATE_ROM_SET 1
-
-#define PREVENT_USER_LOWMEM_GET 1
-#define PREVENT_USER_LOWMEM_SET 1
-#define PREVENT_USER_GLOBAL_GET 1
-#define PREVENT_USER_GLOBAL_SET 1
-#define PREVENT_USER_SCREEN_GET 1
-#define PREVENT_USER_SCREEN_SET 1
-#define PREVENT_USER_SRAM_GET 0
-#define PREVENT_USER_SRAM_SET 1
-#define PREVENT_USER_ROM_GET 0
-#define PREVENT_USER_ROM_SET 1
-#define PREVENT_USER_REGISTER_GET 1
-#define PREVENT_USER_REGISTER_SET 1
-
-#define PREVENT_SYSTEM_LOWMEM_GET 1
-#define PREVENT_SYSTEM_LOWMEM_SET 1
-#define PREVENT_SYSTEM_ROM_GET 0
-#define PREVENT_SYSTEM_ROM_SET 1
-
 #define CHECK_FOR_ADDRESS_ERROR 1
 #define CHECK_FOR_LOW_STACK_ACCESS 1
 #define CHECK_CHUNK_ACCESS 0
-
-#define MASTER_RUNTIME_VALIDATE_SWITCH 1
-#define MASTER_RUNTIME_PREVENT_SWITCH 1
 
 #endif /* _SWITCHES_H_ */

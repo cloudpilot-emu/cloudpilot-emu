@@ -181,18 +181,6 @@ uint32 EmBankSRAM::GetLong(emuptr address) {
     }
 #endif
 
-#if (PREVENT_USER_SRAM_GET)
-    if (gMemAccessFlags.fProtect_SRAMGet) {
-        ProtectedAccess(address, sizeof(uint32), true);
-    }
-#endif
-
-#if (VALIDATE_SRAM_GET)
-    if (gMemAccessFlags.fValidate_SRAMGet && !ValidAddress(address, sizeof(uint32))) {
-        InvalidAccess(address, sizeof(uint32), true);
-    }
-#endif
-
     address &= gRAMBank_Mask;
 
     return EmMemDoGet32(ram + address);
@@ -203,26 +191,10 @@ uint32 EmBankSRAM::GetLong(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankSRAM::GetWord(emuptr address) {
-#if PROFILE_MEMORY
-    gMemoryAccess[kSRAMWordRead]++;
-#endif
-
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint16), true);
         address &= ~1;
-    }
-#endif
-
-#if (PREVENT_USER_SRAM_GET)
-    if (gMemAccessFlags.fProtect_SRAMGet) {
-        ProtectedAccess(address, sizeof(uint16), true);
-    }
-#endif
-
-#if (VALIDATE_SRAM_GET)
-    if (gMemAccessFlags.fValidate_SRAMGet && !ValidAddress(address, sizeof(uint16))) {
-        InvalidAccess(address, sizeof(uint16), true);
     }
 #endif
 
@@ -236,26 +208,6 @@ uint32 EmBankSRAM::GetWord(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankSRAM::GetByte(emuptr address) {
-#if PROFILE_MEMORY
-    gMemoryAccess[kSRAMByteRead]++;
-#endif
-
-#if (PREVENT_USER_SRAM_GET)
-    if (gMemAccessFlags.fProtect_SRAMGet) {
-        ProtectedAccess(address, sizeof(uint8), true);
-    }
-#endif
-
-#if (VALIDATE_SRAM_GET)
-    if (gMemAccessFlags.fValidate_SRAMGet && !ValidAddress(address, sizeof(uint8))) {
-        InvalidAccess(address, sizeof(uint8), true);
-    }
-#endif
-
-#if HAS_PROFILING
-    CYCLE_GETBYTE(WAITSTATES_SRAM);
-#endif
-
     address &= gRAMBank_Mask;
 
     return EmMemDoGet8(ram + address);
@@ -266,11 +218,6 @@ uint32 EmBankSRAM::GetByte(emuptr address) {
 // ---------------------------------------------------------------------------
 
 void EmBankSRAM::SetLong(emuptr address, uint32 value) {
-#if PROFILE_MEMORY
-    gMemoryAccess[kSRAMLongWrite]++;
-    if (address & 2) gMemoryAccess[kSRAMLongWrite2]++;
-#endif
-
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint32), false);
@@ -278,17 +225,9 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
     }
 #endif
 
-#if (PREVENT_USER_SRAM_SET)
     if (gMemAccessFlags.fProtect_SRAMSet) {
         ProtectedAccess(address, sizeof(uint32), false);
     }
-#endif
-
-#if (VALIDATE_SRAM_SET)
-    if (gMemAccessFlags.fValidate_SRAMSet && !ValidAddress(address, sizeof(uint32))) {
-        InvalidAccess(address, sizeof(uint32), false);
-    }
-#endif
 
     emuptr phyAddress = address;
     phyAddress &= gRAMBank_Mask;
@@ -317,17 +256,9 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
     }
 #endif
 
-#if (PREVENT_USER_SRAM_SET)
     if (gMemAccessFlags.fProtect_SRAMSet) {
         ProtectedAccess(address, sizeof(uint16), false);
     }
-#endif
-
-#if (VALIDATE_SRAM_SET)
-    if (gMemAccessFlags.fValidate_SRAMSet && !ValidAddress(address, sizeof(uint16))) {
-        InvalidAccess(address, sizeof(uint16), false);
-    }
-#endif
 
     emuptr phyAddress = address;
     phyAddress &= gRAMBank_Mask;
@@ -348,17 +279,9 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmBankSRAM::SetByte(emuptr address, uint32 value) {
-#if (PREVENT_USER_SRAM_SET)
     if (gMemAccessFlags.fProtect_SRAMSet) {
         ProtectedAccess(address, sizeof(uint8), false);
     }
-#endif
-
-#if (VALIDATE_SRAM_SET)
-    if (gMemAccessFlags.fValidate_SRAMSet && !ValidAddress(address, sizeof(uint8))) {
-        InvalidAccess(address, sizeof(uint8), false);
-    }
-#endif
 
     emuptr phyAddress = address;
     phyAddress &= gRAMBank_Mask;

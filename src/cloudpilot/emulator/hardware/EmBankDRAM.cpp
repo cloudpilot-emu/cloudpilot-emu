@@ -173,11 +173,6 @@ uint32 EmBankDRAM::GetLong(emuptr address) {
         address &= ~1;
     }
 
-    if (VALIDATE_DRAM_GET && gMemAccessFlags.fValidate_DRAMGet &&
-        !InlineValidAddress(address, sizeof(uint32))) {
-        InvalidAccess(address, sizeof(uint32), true);
-    }
-
     return EmMemDoGet32(ram + address);
 }
 
@@ -193,11 +188,6 @@ uint32 EmBankDRAM::GetWord(emuptr address) {
         address &= ~1;
     }
 
-    if (VALIDATE_DRAM_GET && gMemAccessFlags.fValidate_DRAMGet &&
-        !InlineValidAddress(address, sizeof(uint16))) {
-        InvalidAccess(address, sizeof(uint16), true);
-    }
-
     return EmMemDoGet16(ram + address);
 }
 
@@ -207,11 +197,6 @@ uint32 EmBankDRAM::GetWord(emuptr address) {
 
 uint32 EmBankDRAM::GetByte(emuptr address) {
     if (address > dynamicHeapSize) return EmBankSRAM::GetByte(address);
-
-    if (VALIDATE_DRAM_GET && gMemAccessFlags.fValidate_DRAMGet &&
-        !InlineValidAddress(address, sizeof(uint8))) {
-        InvalidAccess(address, sizeof(uint8), true);
-    }
 
     return EmMemDoGet8(ram + address);
 }
@@ -229,11 +214,6 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
     if (CHECK_FOR_ADDRESS_ERROR && (address & 1) != 0) {
         AddressError(address, sizeof(uint32), false);
         address &= ~1;
-    }
-
-    if (VALIDATE_DRAM_SET && gMemAccessFlags.fValidate_DRAMSet &&
-        !InlineValidAddress(address, sizeof(uint32))) {
-        InvalidAccess(address, sizeof(uint32), false);
     }
 
     EmMemDoPut32(ram + address, value);
@@ -260,11 +240,6 @@ void EmBankDRAM::SetWord(emuptr address, uint32 value) {
         AddressError(address, sizeof(uint16), false);
     }
 
-    if (VALIDATE_DRAM_SET && gMemAccessFlags.fValidate_DRAMSet &&
-        !InlineValidAddress(address, sizeof(uint16))) {
-        InvalidAccess(address, sizeof(uint16), false);
-    }
-
     EmMemDoPut16(ram + address, value);
 
     markDirty(address);
@@ -281,11 +256,6 @@ void EmBankDRAM::SetByte(emuptr address, uint32 value) {
     if (address > dynamicHeapSize) {
         EmBankSRAM::SetByte(address, value);
         return;
-    }
-
-    if (VALIDATE_DRAM_SET && gMemAccessFlags.fValidate_DRAMSet &&
-        !InlineValidAddress(address, sizeof(uint8))) {
-        InvalidAccess(address, sizeof(uint8), false);
     }
 
     EmMemDoPut8(ram + address, value);

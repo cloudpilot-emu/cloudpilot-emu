@@ -280,47 +280,7 @@ class EmStream;
 // ranges of memory.
 
 struct MemAccessFlags {
-    Bool fValidate_DummyGet;
-    Bool fValidate_DummySet;
-    Bool fValidate_RegisterGet;
-    Bool fValidate_RegisterSet;
-    Bool fValidate_DRAMGet;
-    Bool fValidate_DRAMSet;
-    Bool fValidate_SRAMGet;
-    Bool fValidate_SRAMSet;
-    Bool fValidate_ROMGet;
-    Bool fValidate_ROMSet;
-
-    //	Bool				fProtect_LowMemGet;
-    //	Bool				fProtect_LowMemSet;
-    //	Bool				fProtect_GlobalGet;
-    //	Bool				fProtect_GlobalSet;
-    //	Bool				fProtect_ScreenGet;
-    //	Bool				fProtect_ScreenSet;
-    Bool fProtect_SRAMGet;
     Bool fProtect_SRAMSet;
-    Bool fProtect_ROMGet;
-    Bool fProtect_ROMSet;
-    Bool fProtect_RegisterGet;
-    Bool fProtect_RegisterSet;
-
-    //	Bool				fCheck_UserChunkGet;
-    //	Bool				fCheck_UserChunkSet;
-    //	Bool				fCheck_SysChunkGet;
-    //	Bool				fCheck_SysChunkSet;
-
-    //	Bool				fProtect_SysLowMemGet;
-    //	Bool				fProtect_SysLowMemSet;
-    //	Bool				fProtect_SysGlobalGet;
-    //	Bool				fProtect_SysGlobalSet;
-    //	Bool				fProtect_SysScreenGet;
-    //	Bool				fProtect_SysScreenSet;
-    //	Bool				fProtect_SysSRAMGet;
-    //	Bool				fProtect_SysSRAMSet;
-    Bool fProtect_SysROMGet;
-    Bool fProtect_SysROMSet;
-    //	Bool				fProtect_SysRegisterGet;
-    //	Bool				fProtect_SysRegisterSet;
 };
 
 // Globals.

@@ -227,12 +227,6 @@ void EmBankRegs::SetBankHandlers(void) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankRegs::GetLong(emuptr address) {
-#if (VALIDATE_REGISTER_GET)
-    if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint32))) {
-        EmBankRegs::InvalidAccess(address, sizeof(uint32), true);
-    }
-#endif
-
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint32));
 
     if (bank) {
@@ -255,12 +249,6 @@ uint32 EmBankRegs::GetLong(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankRegs::GetWord(emuptr address) {
-#if (VALIDATE_REGISTER_GET)
-    if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint16))) {
-        EmBankRegs::InvalidAccess(address, sizeof(uint16), true);
-    }
-#endif
-
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint16));
 
     if (bank) {
@@ -283,12 +271,6 @@ uint32 EmBankRegs::GetWord(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankRegs::GetByte(emuptr address) {
-#if (VALIDATE_REGISTER_GET)
-    if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint8))) {
-        EmBankRegs::InvalidAccess(address, sizeof(uint8), true);
-    }
-#endif
-
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint8));
 
     if (bank) {
@@ -304,12 +286,6 @@ uint32 EmBankRegs::GetByte(emuptr address) {
 // ---------------------------------------------------------------------------
 
 void EmBankRegs::SetLong(emuptr address, uint32 value) {
-#if (VALIDATE_REGISTER_SET)
-    if (gMemAccessFlags.fValidate_RegisterSet && !ValidAddress(address, sizeof(uint32))) {
-        EmBankRegs::InvalidAccess(address, sizeof(uint32), false);
-    }
-#endif
-
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint32));
 
     if (bank) {
@@ -333,12 +309,6 @@ void EmBankRegs::SetLong(emuptr address, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmBankRegs::SetWord(emuptr address, uint32 value) {
-#if (VALIDATE_REGISTER_SET)
-    if (gMemAccessFlags.fValidate_RegisterSet && !ValidAddress(address, sizeof(uint16))) {
-        EmBankRegs::InvalidAccess(address, sizeof(uint16), false);
-    }
-#endif
-
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint16));
 
     if (bank) {
@@ -362,12 +332,6 @@ void EmBankRegs::SetWord(emuptr address, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmBankRegs::SetByte(emuptr address, uint32 value) {
-#if (VALIDATE_REGISTER_SET)
-    if (gMemAccessFlags.fValidate_RegisterSet && !ValidAddress(address, sizeof(uint8))) {
-        EmBankRegs::InvalidAccess(address, sizeof(uint8), false);
-    }
-#endif
-
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint8));
 
     if (bank) {

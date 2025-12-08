@@ -161,24 +161,6 @@ uint32 EmBankROM::GetLong(emuptr address) {
     }
 #endif
 
-#if (VALIDATE_ROM_GET)
-    if (gMemAccessFlags.fValidate_ROMGet && !ValidAddress(address, sizeof(uint32))) {
-        InvalidAccess(address, sizeof(uint32), true);
-    }
-#endif
-
-#if (PREVENT_USER_ROM_GET || PREVENT_SYSTEM_ROM_GET)
-    if (EmMemory::IsPCInRAM()) {
-        if (PREVENT_USER_ROM_GET && gMemAccessFlags.fProtect_ROMGet) {
-            InvalidAccess(address, sizeof(uint32), true);
-        }
-    } else {
-        if (PREVENT_SYSTEM_ROM_GET && gMemAccessFlags.fProtect_SysROMGet) {
-            InvalidAccess(address, sizeof(uint32), true);
-        }
-    }
-#endif
-
     address &= gROMBank_Mask;
 
     return EmMemDoGet32(gROM_Memory + address);
@@ -196,24 +178,6 @@ uint32 EmBankROM::GetWord(emuptr address) {
     }
 #endif
 
-#if (VALIDATE_ROM_GET)
-    if (gMemAccessFlags.fValidate_ROMGet && !ValidAddress(address, sizeof(uint16))) {
-        InvalidAccess(address, sizeof(uint16), true);
-    }
-#endif
-
-#if (PREVENT_USER_ROM_GET || PREVENT_SYSTEM_ROM_GET)
-    if (EmMemory::IsPCInRAM()) {
-        if (PREVENT_USER_ROM_GET && gMemAccessFlags.fProtect_ROMGet) {
-            InvalidAccess(address, sizeof(uint16), true);
-        }
-    } else {
-        if (PREVENT_SYSTEM_ROM_GET && gMemAccessFlags.fProtect_SysROMGet) {
-            InvalidAccess(address, sizeof(uint16), true);
-        }
-    }
-#endif
-
     address &= gROMBank_Mask;
 
     return EmMemDoGet16(gROM_Memory + address);
@@ -224,24 +188,6 @@ uint32 EmBankROM::GetWord(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankROM::GetByte(emuptr address) {
-#if (VALIDATE_ROM_GET)
-    if (gMemAccessFlags.fValidate_ROMGet && !ValidAddress(address, sizeof(uint8))) {
-        InvalidAccess(address, sizeof(uint8), true);
-    }
-#endif
-
-#if (PREVENT_USER_ROM_GET || PREVENT_SYSTEM_ROM_GET)
-    if (EmMemory::IsPCInRAM()) {
-        if (PREVENT_USER_ROM_GET && gMemAccessFlags.fProtect_ROMGet) {
-            InvalidAccess(address, sizeof(uint8), true);
-        }
-    } else {
-        if (PREVENT_SYSTEM_ROM_GET && gMemAccessFlags.fProtect_SysROMGet) {
-            InvalidAccess(address, sizeof(uint8), true);
-        }
-    }
-#endif
-
     address &= gROMBank_Mask;
 
     return EmMemDoGet8(gROM_Memory + address);
@@ -260,23 +206,7 @@ void EmBankROM::SetLong(emuptr address, uint32 value) {
 
     EmAssert(ValidAddress(address, sizeof(uint32)));
 
-#if (PREVENT_USER_ROM_SET || PREVENT_SYSTEM_ROM_SET)
-    if (EmMemory::IsPCInRAM()) {
-        if (PREVENT_USER_ROM_SET && gMemAccessFlags.fProtect_ROMSet) {
-            InvalidAccess(address, sizeof(uint32), false);
-            return;
-        }
-    } else {
-        if (PREVENT_SYSTEM_ROM_SET && gMemAccessFlags.fProtect_SysROMSet) {
-            InvalidAccess(address, sizeof(uint32), false);
-            return;
-        }
-    }
-#endif
-
-    address &= gROMBank_Mask;
-
-    EmMemDoPut32(gROM_Memory + address, value);
+    InvalidAccess(address, sizeof(uint32), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -292,23 +222,7 @@ void EmBankROM::SetWord(emuptr address, uint32 value) {
 
     EmAssert(ValidAddress(address, sizeof(uint16)));
 
-#if (PREVENT_USER_ROM_SET || PREVENT_SYSTEM_ROM_SET)
-    if (EmMemory::IsPCInRAM()) {
-        if (PREVENT_USER_ROM_SET && gMemAccessFlags.fProtect_ROMSet) {
-            InvalidAccess(address, sizeof(uint16), false);
-            return;
-        }
-    } else {
-        if (PREVENT_SYSTEM_ROM_SET && gMemAccessFlags.fProtect_SysROMSet) {
-            InvalidAccess(address, sizeof(uint16), false);
-            return;
-        }
-    }
-#endif
-
-    address &= gROMBank_Mask;
-
-    EmMemDoPut16(gROM_Memory + address, value);
+    InvalidAccess(address, sizeof(uint16), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -318,23 +232,7 @@ void EmBankROM::SetWord(emuptr address, uint32 value) {
 void EmBankROM::SetByte(emuptr address, uint32 value) {
     EmAssert(ValidAddress(address, sizeof(uint8)));
 
-#if (PREVENT_USER_ROM_SET || PREVENT_SYSTEM_ROM_SET)
-    if (EmMemory::IsPCInRAM()) {
-        if (PREVENT_USER_ROM_SET && gMemAccessFlags.fProtect_ROMSet) {
-            InvalidAccess(address, sizeof(uint8), false);
-            return;
-        }
-    } else {
-        if (PREVENT_SYSTEM_ROM_SET && gMemAccessFlags.fProtect_SysROMSet) {
-            InvalidAccess(address, sizeof(uint8), false);
-            return;
-        }
-    }
-#endif
-
-    address &= gROMBank_Mask;
-
-    EmMemDoPut8(gROM_Memory + address, value);
+    InvalidAccess(address, sizeof(uint8), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -892,6 +790,7 @@ void EmBankFlash::SetLong(emuptr address, uint32 value) { EmBankROM::SetLong(add
 // ---------------------------------------------------------------------------
 
 void EmBankFlash::SetWord(emuptr address, uint32 value) {
+    cout << "FLASH write" << endl;
     switch (gState) {
         case kAMDState_Normal:
             // Read-only mode. Acts like a normal ROM.
