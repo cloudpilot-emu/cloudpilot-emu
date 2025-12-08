@@ -50,13 +50,13 @@ namespace {
 
 EmSession* gSession = &_gSession;
 
-bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLength) {
+bool EmSession::Initialize(EmDevice* device, uint8* romImage, size_t romLength) {
     if (isInitialized) {
         Deinitialize();
     }
     isInitialized = true;
 
-    this->romImage = make_unique<uint8[]>(romLength);
+    this->romImage = unique_ptr<uint8[]>(romImage);
     romSize = romLength;
     memcpy(this->romImage.get(), romImage, romSize);
 

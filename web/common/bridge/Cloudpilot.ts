@@ -252,8 +252,6 @@ export class Cloudpilot {
 
         const result = this.cloudpilot.InitializeSession(buffer, rom.length, deviceType);
 
-        this.cloudpilot.Free(buffer);
-
         return result;
     }
 

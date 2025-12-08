@@ -100,12 +100,9 @@ bool util::initializeSession(string file, optional<string> deviceId) {
 
     cout << "using device: " << device->GetIDString() << endl;
 
-    if (!gSession->Initialize(device, fileBuffer.get(), fileSize)) {
-        cerr << "Session failed to initialize" << endl;
+    if (!gSession->Initialize(device, fileBuffer.get(), fileSize)) return false;
 
-        return false;
-    }
-
+    fileBuffer.release();
     return true;
 }
 

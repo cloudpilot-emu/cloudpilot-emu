@@ -29,7 +29,7 @@ class EmSession {
     enum class ResetType : uint8 { sys = 0x01, soft = 0x02, noext = 0x03, hard = 0x04 };
 
    public:
-    bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
+    bool Initialize(EmDevice* device, uint8* romImage, size_t romLength);
 
     bool SaveImage(SessionImage& image);
     bool LoadImage(SessionImage& image);

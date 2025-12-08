@@ -114,9 +114,12 @@ bool Cloudpilot::InitializeSession(void* buffer, int size, const char* deviceTyp
         return false;
     }
 
-    if (!gSession->Initialize(device.release(), (uint8*)buffer, size)) {
-        cerr << "Session failed to initialize" << endl << flush;
+    reader.release();
 
+    if (!gSession->Initialize(device.release(), (uint8*)buffer, size)) {
+        free(buffer);
+
+        cerr << "Session failed to initialize" << endl << flush;
         return false;
     }
 
