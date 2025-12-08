@@ -9,7 +9,7 @@ CFLAGS_EMCC_EXTRA = -g
 
 LDFLAGS_TEST_EXTRA ?= -lgtest_main
 
-LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
+LDFLAGS_EMCC = $(EMCC_OPT) -Wno-version-check -Wl,-u,fileno -g \
 	--post-js $(WEBIDL_BINDING_JS) \
 	-s EXIT_RUNTIME=0 \
 	-s MODULARIZE=1 \
