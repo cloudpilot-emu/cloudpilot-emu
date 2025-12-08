@@ -303,7 +303,6 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
     EmBankMapped::Initialize();
 
     EmAssert(gSession);
-    if (gSession->GetDevice().HasFlash()) EmBankFlash::Initialize();
 
     return success;
 }
@@ -334,7 +333,6 @@ void Memory::Reset(Bool hardwareReset) {
     EmBankMapped::Reset(hardwareReset);
 
     EmAssert(gSession);
-    if (gSession->GetDevice().HasFlash()) EmBankFlash::Reset(hardwareReset);
 
     Memory::ResetBankHandlers();
 }
@@ -374,18 +372,6 @@ void Memory::Dispose(void) {
     EmBankDRAM::Dispose();
     EmBankROM::Dispose();
     EmBankMapped::Dispose();
-
-    // We can't reliably call GetDevice here.  That's because the
-    // session may not have been initialized (we could be disposing
-    // of everything because an error condition occurred), and so
-    // there may be no assigned device yet.  So we can't ask that
-    // device if there's flash.  However, EmBankFlash::Dispose
-    // doesn't do anything, so we don'thave to worry about it
-    // being called.
-
-    //	EmAssert (gSession);
-    //	if (gSession->GetDevice ().HasFlash ())
-    //		EmBankFlash::Dispose ();
 }
 
 // ---------------------------------------------------------------------------
@@ -426,7 +412,6 @@ void Memory::ResetBankHandlers(void) {
     }
 
     EmAssert(gSession);
-    if (gSession->GetDevice().HasFlash()) EmBankFlash::SetBankHandlers();
 }
 
 // ---------------------------------------------------------------------------

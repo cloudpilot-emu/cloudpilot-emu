@@ -48,26 +48,4 @@ class EmBankROM {
     static emuptr gROMMemoryStart;
 };
 
-class EmBankFlash {
-   public:
-    static void Initialize(void);
-    static void Reset(Bool hardwareReset);
-    static void Dispose(void);
-
-    static void SetBankHandlers(void);
-
-    static uint32 GetLong(emuptr address);
-    static uint32 GetWord(emuptr address);
-    static uint32 GetByte(emuptr address);
-    static void SetLong(emuptr address, uint32 value);
-    static void SetWord(emuptr address, uint32 value);
-    static void SetByte(emuptr address, uint32 value);
-    static int ValidAddress(emuptr address, uint32 size);
-    static uint8* GetRealAddress(emuptr address);
-    static uint8* GetMetaAddress(emuptr address);
-    static void AddOpcodeCycles(void);
-
-    static emuptr GetMemoryStart(void) { return kDefaultROMMemoryStart; }
-};
-
 #endif /* EmBankROM_h */
