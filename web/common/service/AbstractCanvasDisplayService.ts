@@ -710,9 +710,11 @@ export abstract class AbstractCanvasDisplayService {
                 return SkinElement.HARD_BUTTONS_M130;
 
             case DeviceId.i710:
+                return SkinElement.HARD_BUTTONS_TUNGSTEN_W;
+
             case DeviceId.te2:
             case DeviceId.frankene2:
-                return SkinElement.HARD_BUTTONS_TUNGSTEN_W;
+                return SkinElement.HARD_BUTTONS_TUNGSTEN_E2;
 
             case DeviceId.iii:
             case DeviceId.iiix:

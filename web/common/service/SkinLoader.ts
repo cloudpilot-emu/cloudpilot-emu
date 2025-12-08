@@ -27,6 +27,7 @@ export const enum SkinElement {
     HARD_BUTTONS_PEG_NR70 = 'hard-buttons/clie-nr70.svg',
     HARD_BUTTONS_ACER_S10 = 'hard-buttons/acer-s10.svg',
     HARD_BUTTONS_LEGEND_P168 = 'hard-buttons/lp168.svg',
+    HARD_BUTTONS_TUNGSTEN_E2 = 'hard-buttons/te2.svg',
     SILKSCREEN_IIIC = 'silkscreen/iiic.svg',
     SILKSCREEN_M100 = 'silkscreen/m100.svg',
     SILKSCREEN_M130 = 'silkscreen/m130.svg',
