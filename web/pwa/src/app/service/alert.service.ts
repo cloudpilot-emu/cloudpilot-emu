@@ -29,7 +29,7 @@ export class AlertService {
             backdropDismiss: false,
             message: this.sanitizeMessage(message),
             buttons: [{ text: buttonLabel, role: 'cancel' }],
-            cssClass: 'alert-error',
+            cssClass: 'cpe-alert-error',
         });
 
         await alert.present();
@@ -150,7 +150,7 @@ export class AlertService {
                     : []),
                 { text: 'Reload', handler: () => window.location.reload() },
             ],
-            cssClass: 'alert-error',
+            cssClass: 'cpe-alert-error',
         });
 
         await alert.present();
