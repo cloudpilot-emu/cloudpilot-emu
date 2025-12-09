@@ -152,7 +152,7 @@ Many apps still work fine, but your mileage may vary.
 
 # Native app
 
-## OS4
+## OS4 and earlier
 
 In addition to the web version, CloudpilotEmu can be built as a native app.
 The native version targets developers and does not provide skins or audio
