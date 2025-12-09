@@ -3711,7 +3711,6 @@ void cpuSave(ArmCpu *cpu, T &savestate) {
 
 template <typename T>
 void cpuLoad(ArmCpu *cpu, T &loader) {
-    mmuTlbFlush(cpu->mmu);
     icacheInval(cpu->ic);
 
     paceLoad(loader);

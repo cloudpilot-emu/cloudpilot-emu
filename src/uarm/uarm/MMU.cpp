@@ -428,6 +428,8 @@ void mmuLoad(struct ArmMmu *mmu, T &loader) {
 
     LoadChunkHelper helper(*chunk);
     mmu->DoSaveLoad(helper);
+
+    mmuTlbFlush(mmu);
 }
 
 template <typename T>
