@@ -3,7 +3,7 @@
 CloudpilotEmu is a web-based emulator for PalmOS. It emulates both Dragonball
 based devices (OS 1-4) and the Palm Tungsten E2 (ARM-based, OS5). Emulation
 of Dragonball devices is based on the original POSE emulator, and OS5
-emulation is based on uARM.
+emulation is based on [uARM](https://github.com/uARM-Palm/uARM).
 
 OS5 emulation is currently available in the preview build (see below) and
 pending to be released with CloudpilotEmu 2.0.
