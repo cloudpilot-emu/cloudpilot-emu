@@ -40,7 +40,7 @@ struct ArmMmu {
 };
 
 void mmuTlbFlush(struct ArmMmu *mmu) {
-    mmu->revision++;
+    mmu->revision = (mmu->revision + 1) & 0x0f;
 
     if (mmu->revision == 0) {
         mmu->revision = 1;
