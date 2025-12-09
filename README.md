@@ -23,11 +23,19 @@ The current version of the emulator can be found at
 https://cloudpilot-emu.github.io/app
 
 The emulator can be added as an app to the homescreen of iOS and Android devices.
-Please check out the documentation in the app.
+Please check out the documentation in the app. A native app for iOS is available
+in the [Appstore](https://apps.apple.com/de/app/cloudpilotemu/id6478502699).
 
-In addition, starting with version 1.10.12, the release files on
+## Self hosting
+
+Starting with version 1.10.12, the release files on
 [https://github.com/cloudpilot-emu/cloudpilot-emu/releases](Github)
 include the prebuilt web app for self hosting.
+
+CloudpilotEmu is a purely client side application, so you can simply serve
+the unzipped files with a web server of your choice. However, some parts
+of CloudpilotEmu (notably PCM audio) will only work if the app is served
+via HTTPS.
 
 ## Embedded emulator
 
@@ -83,9 +91,68 @@ The following devices are currently emulated:
 A preview build of the next version of CloudpilotEmu is available
 [here](https://cloudpilot-emu.github.io/app-preview).
 
-## Native app
+# Notes on emulation of OS4 and earlier
 
-### OS4
+## Relationship to POSE
+
+CloudpilotEmu is derived from the original POSE sources. It is not a
+straightforward port, though, as the original code has been adapted and partly
+rewritten to fit well with a browser environment. In addition, it contains
+bug fixes and many new features. In particular:
+
+-   The codebase has been updated to build and run on both 32bit and 64bit
+    little endian systems. Big endian systems should work, but I cannot test
+    this (are there even any relevant big endian systems left?).
+-   POSE was built as a tool for debugging and profiling PalmOS applications.
+    Most of this functionality has been removed in CloudpilotEmu.
+-   All UI parts and in particular threading were removed from the source.
+-   Dispatch and timing have been partly rewritten, timing should now be pretty
+    close to the original device.
+-   Adjusting the grayscale in 2bpp mode works.
+-   All 16MB of the Palm m515 are usable.
+-   A few conditions that can cause interrupt storms have been fixed.
+-   Savestate code has been rewritten to work with a fixed buffer without
+    allocations.
+-   Event injection works without generating null events.
+-   Reminders and alarms trigger propely.
+-   Clié devices use full MQ11xx video acceleration.
+-   SD card and Memory Stick emulation.
+-   A GDB stub for debugging PalmOS and apps written with a suitable toolchain.
+
+# Notes on OS5 emulation
+
+## Relationship to uARM
+
+OS5 emulation is based on Dmitry Grinberg's [uARM](https://github.com/uARM-Palm/uARM).
+emulator. However, CloudpilotEmu is not a straightforward port, but a fork that trails behind
+Dmitry's original sources and adds the following of features:
+
+-   Optimizations that give a significant performance boost at the expense of RAM and
+    portability.
+-   PACE replaced with direct m68k emulation on the host, using the same m68k core as POSE.
+-   Accurate timing.
+-   Audio emulation.
+-   Savestates.
+-   Power off (which crashes the emulator) is disabled.
+-   Database installation and export.
+
+## Performance
+
+OS5 was designed to run on ARM CPUs clocked at several 100 MHz. Those chips were
+fast enough to play music, decode video and run demanding games and even
+emulators.
+
+CloudpilotEmu pulls many tricks and optimizations to run OS5 as fast as
+possible, and applications targeting OS4 or earlier will run at comparable
+speeds on OS5, but native OS5 software requires a fast host. Apple Silicon Macs
+and recent iOS devices (iPhone 13 or later) run even demanding ARM apps at
+decent or even faster-than-real speeds, and the same goes for fast x86 desktops,
+but older and slower devices (which includes most Android devices) may struggle.
+Many apps still work fine, but your mileage may vary.
+
+# Native app
+
+## OS4
 
 In addition to the web version, CloudpilotEmu can be built as a native app.
 The native version targets developers and does not provide skins or audio
@@ -110,7 +177,7 @@ as command line argument. Command line options exist for activating the
 GDN stub, mounting a card on launch and more. Run `cloudpilot-emu --help` in
 order to get an overview of the supported options.
 
-### OS5
+## OS5
 
 The OS5 emulation part of CloudpilotEmu likewise comes with a native app.
 Similar to `cloudpilot-emu`, `cp-uarm` provides a CLI and a set of
@@ -147,66 +214,6 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
     currently available.
 -   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
     the skin suggests otherwise.
-
-# OS4 and earlier
-
-## Relationship to POSE
-
-CloudpilotEmu is derived from the original POSE sources. It is not a
-straightforward port, though, as the original code has been adapted and partly
-rewritten to fit well with a browser environment. In addition, it contains
-bug fixes and many new features. In particular:
-
--   The codebase has been updated to build and run on both 32bit and 64bit
-    little endian systems. Big endian systems should work, but I cannot test
-    this (are there even any relevant big endian systems left?).
--   POSE was built as a tool for debugging and profiling PalmOS applications.
-    Most of this functionality has been removed in CloudpilotEmu.
--   All UI parts and in particular threading were removed from the source.
--   Dispatch and timing have been partly rewritten, timing should now be pretty
-    close to the original device.
--   Adjusting the grayscale in 2bpp mode works.
--   All 16MB of the Palm m515 are usable.
--   A few conditions that can cause interrupt storms have been fixed.
--   Savestate code has been rewritten to work with a fixed buffer without
-    allocations.
--   Event injection works without generating null events.
--   Reminders and alarms trigger propely.
--   Clié devices use full MQ11xx video acceleration.
--   SD card and Memory Stick emulation.
--   A GDB stub for debugging PalmOS and apps written with a suitable toolchain.
--
-
-# OS5
-
-## Relationship to uARM
-
-OS5 emulation is based on Dmitry Grinberg's [uARM](https://github.com/uARM-Palm/uARM).
-emulator. However, CloudpilotEmu is not a straightforward port, but a fork that trails behind
-Dmitry's original sources and adds the following of features:
-
--   Optimizations that give a significant performance boost at the expense of RAM and
-    portability.
--   PACE replaced with direct m68k emulation on the host, using the same m68k core as POSE.
--   Accurate timing.
--   Audio.
--   Savestates.
--   Power off (which crashes the emulator) is disabled.
--   Database installation and export.
-
-## performance
-
-OS5 was designed to run on ARM CPUs clocked at several 100 MHz. Those chips were
-fast enough to play music, decode video and run demanding games and even
-emulators.
-
-CloudpilotEmu pulls many tricks and optimizations to run OS5 as fast as
-possible, and applications targeting OS4 or earlier will run at comparable
-speeds on OS5, but native OS5 software requires a fast host. Apple Silicon Macs
-and recent iOS devices (iPhone 13 or later) run even demanding ARM apps at
-decent or even faster-than-real speeds, and the same goes for fast x86 desktops,
-but older and slower devices (which includes most Android devices) may struggle.
-Many apps still work fine, but your mileage may vary.
 
 # Building
 
