@@ -1,9 +1,12 @@
 # What is this?
 
-CloudpilotEmu is an emulator for Dragonball-based PalmOS devices that runs in a web
-browser. In particular, the emulator works on iOS. The emulator is derived from
-the original POSE emulator. Please see below for the list of currently supported
-devices.
+CloudpilotEmu is a web-based emulator for PalmOS. It emulates both Dragonball
+based devices (OS 1-4) and the Palm Tungsten E2 (ARM-based, OS5). Emulation
+of Dragonball devices is based on the original POSE emulator, and OS5
+emulation is based on uARM.
+
+OS5 emulation is currently available in the preview build (see below) and
+pending to be released with CloudpilotEmu 2.0.
 
 <img src="doc/images/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
 &nbsp;
@@ -61,8 +64,9 @@ The following devices are currently emulated:
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Palm i705
 -   Tungsten W (silkscreen version)
--   Handera 330
--   Handera 330c (the lost color version of the 330c)
+-   Tungsten E2, E3 (a widescreen version of the E2 created specifically for emulation by
+    Dmitry Grinberg)
+-   Handera 330, 330c (the lost color version of the 330c)
 -   Sony PEG-S300, PEG-S320
 -   Sony PEG-S500C series
 -   Sony PEG-T400 series
@@ -72,7 +76,7 @@ The following devices are currently emulated:
 -   Sony PEG-T650C series
 -   Sony PEG-NR70 series
 -   Acer S1x
--   Legend P168 (no support for SD card)
+-   Legend P168 (no SD card support)
 
 ## Other versions
 
@@ -80,6 +84,8 @@ A preview build of the next version of CloudpilotEmu is available
 [here](https://cloudpilot-emu.github.io/app-preview).
 
 ## Native app
+
+### OS4
 
 In addition to the web version, CloudpilotEmu can be built as a native app.
 The native version targets developers and does not provide skins or audio
@@ -103,6 +109,13 @@ be started from the command line by supplying a session image or a ROM file
 as command line argument. Command line options exist for activating the
 GDN stub, mounting a card on launch and more. Run `cloudpilot-emu --help` in
 order to get an overview of the supported options.
+
+### OS5
+
+The OS5 emulation part of CloudpilotEmu likewise comes with a native app.
+Similar to `cloudpilot-emu`, `cp-uarm` provides a CLI and a set of
+command line options, and help is accessible with `--help` on the commandline
+and `help` in the CLI.
 
 # Reporting issues
 
@@ -130,8 +143,14 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
     locks up PalmOS.
 -   Native CLI app: switching between devices with different display resolution
     does not work properly.
+-   On OS5, keyboard input, clipboard and network integration are not
+    currently available.
+-   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
+    the skin suggests otherwise.
 
-# Source code and relationship to POSE
+# OS4 and earlier
+
+## Relationship to POSE
 
 CloudpilotEmu is derived from the original POSE sources. It is not a
 straightforward port, though, as the original code has been adapted and partly
@@ -156,6 +175,38 @@ bug fixes and many new features. In particular:
 -   Clié devices use full MQ11xx video acceleration.
 -   SD card and Memory Stick emulation.
 -   A GDB stub for debugging PalmOS and apps written with a suitable toolchain.
+-
+
+# OS5
+
+## Relationship to uARM
+
+OS5 emulation is based on Dmitry Grinberg's [uARM](https://github.com/uARM-Palm/uARM).
+emulator. However, CloudpilotEmu is not a straightforward port, but a fork that trails behind
+Dmitry's original sources and adds the following of features:
+
+-   Optimizations that give a significant performance boost at the expense of RAM and
+    portability.
+-   PACE replaced with direct m68k emulation on the host, using the same m68k core as POSE.
+-   Accurate timing.
+-   Audio.
+-   Savestates.
+-   Power off (which crashes the emulator) is disabled.
+-   Database installation and export.
+
+## performance
+
+OS5 was designed to run on ARM CPUs clocked at several 100 MHz. Those chips were
+fast enough to play music, decode video and run demanding games and even
+emulators.
+
+CloudpilotEmu pulls many tricks and optimizations to run OS5 as fast as
+possible, and applications targeting OS4 or earlier will run at comparable
+speeds on OS5, but native OS5 software requires a fast host. Apple Silicon Macs
+and recent iOS devices (iPhone 13 or later) run even demanding ARM apps at
+decent or even faster-than-real speeds, and the same goes for fast x86 desktops,
+but older and slower devices (which includes most Android devices) may struggle.
+Many apps still work fine, but your mileage may vary.
 
 # Building
 
@@ -224,7 +275,7 @@ least version 8.0.0 and needs to be built with websocket support, which may or
 not be the case for the libcurl shipped with your system. CloudpilotEmu will
 build and run against any version of libcurl, but the proxy will be disabled.
 On MacOS you can use libcurl from homebrew (which enables websocket support), on
-Ubuntu you currently need to build libcurl yourself for websocket support. 
+Ubuntu you currently need to build libcurl yourself for websocket support.
 
 On Ubuntu the following will give you the necessary packages:
 
@@ -235,7 +286,7 @@ On Ubuntu the following will give you the necessary packages:
 On Fedora
 
 ```
-    $ dnf install readline-devel libcurl-devel SDL2_image-devel SDL2-devel 
+    $ dnf install readline-devel libcurl-devel SDL2_image-devel SDL2-devel
 ```
 
 The build is accomplished with
@@ -244,45 +295,27 @@ The build is accomplished with
     $ make bin
 ```
 
-and you will up with a `src/cloudpilot/cloudpilot-emu` binary.
-
-# OS5 emulation and uARM
-
-CloudpilotEmu contains a fork of Dmitry Grinberg's brilliant
-[uARM](https://github.com/uARM-Palm/uARM). This fork
-is heavily optimized and currently restricted to emulating a Tungsten E2. uARM will
-eventually be integrated into the CloudpilotEmu web app, but at the moment it
-is available as a separate prototype.
-
-You can try a live build of the current code
-[here](https://cloudpilot-emu.github.io/uarm-preview/). You'll need Tungsten E2
-NAND and NOR images
-(for example from [PalmDB](https://palmdb.net/app/palm-roms-complete)), and you can
-mount an optional SD card image.
-
-A native build of this version of uARM is built via `make bin` (alongside
-`cloudpilot-emu`) and you can find it as `src/uarm/cp-uarm`.
+and you will up with `src/cloudpilot/cloudpilot-emu` and `src/uarm/cp-uarm` binaries.
 
 # Credits
 
-Artwork for CloudpilotEmu was done by Paolo Lazatin.
-
-SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
-[Mu](https://github.com/meepingsnesroms/Mu).
-
-Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
-
-Protobuf (de)serialization in C++ is done using the awesome
-[NanoPB](https://github.com/nanopb/nanopb) library.
-
-The native build uses [argparse](https://github.com/p-ranav/argparse) and
-[uri-library](https://github.com/ben-zen/uri-library). Stacktraces in the native
-build are based on Farooq Melas [gist](https://gist.github.com/fmela/591333).
-HTTP and Websocket I/O in the native build use
-[libcurl](https://curl.se/libcurl/c/libcurl-ws.html). FAT support
-is built on [dosfstools](https://github.com/dosfstools/dosfstools) and
-[FatFs](http://elm-chan.org/fsw/ff). Parts of the GDB stub are taken from
-[uARM](https://github.com/uARM-Palm/uARM).
+-   Artwork for CloudpilotEmu was done by Paolo Lazatin.
+-   SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
+    [Mu](https://github.com/meepingsnesroms/Mu).
+-   Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
+-   Protobuf (de)serialization in C++ is done using the awesome
+    [NanoPB](https://github.com/nanopb/nanopb) library.
+-   The native build uses [argparse](https://github.com/p-ranav/argparse) and
+    [uri-library](https://github.com/ben-zen/uri-library).
+-   Stacktraces in the native
+    build are based on Farooq Melas [gist](https://gist.github.com/fmela/591333).
+-   HTTP and Websocket I/O in the native build use
+    [libcurl](https://curl.se/libcurl/c/libcurl-ws.html).
+-   FAT support
+    is built on [dosfstools](https://github.com/dosfstools/dosfstools) and
+    [FatFs](http://elm-chan.org/fsw/ff).
+-   Parts of the GDB stub are taken from
+    [uARM](https://github.com/uARM-Palm/uARM).
 
 # LICENSE
 

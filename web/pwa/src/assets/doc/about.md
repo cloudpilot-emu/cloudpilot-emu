@@ -169,10 +169,10 @@ games and even emulators.
 CloudpilotEmu pulls many tricks and optimizations to run OS5 as fast
 as possible, and applications targeting OS4 or earlier will run at
 comparable speeds on OS5, but native OS5 software requires a fast
-host. Apple Silicon Macs and recent iOS devices (iPhone 13 or later) will
-run even demanding ARM apps ranging from decent to faster-than-real speeds, and the same
+host. Apple Silicon Macs and recent iOS devices (iPhone 13 or later)
+run even demanding ARM apps at decent or even faster-than-real speeds, and the same
 goes for fast x86 desktops, but older and slower devices (which includes most
-Android devices) may struggle. Many apps will still work fine, but your mileage may
+Android devices) may struggle. Many apps still work fine, but your mileage may
 vary.
 
 Note that mobiles may throttle under high load. You can try to counter this by limiting
