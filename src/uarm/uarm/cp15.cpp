@@ -98,7 +98,8 @@ static bool cp15prvCoprocRegXferFunc(struct ArmCpu* cpu, void* userData, bool tw
                             "cp15: unknown bits changed (0x%08lx) 0x%08lx -> 0x%08lx, halting\n",
                             (unsigned long)(tmp & 0x84F0UL), (unsigned long)cp15->control,
                             (unsigned long)origVal);
-                        while (true);
+
+                        ERR("CP15: unknown bits changed");
                     }
 
                     if (tmp & 0x00002000UL) {  // V bit
