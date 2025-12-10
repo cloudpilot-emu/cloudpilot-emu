@@ -1,4 +1,4 @@
-# Version 2.0.ß
+# Version 2.0.0
 
 This release celebrates five years of CloudilotEmu by adding support for
 emulating the Tungsten E2 (PalmOS 5!) through a fork of
