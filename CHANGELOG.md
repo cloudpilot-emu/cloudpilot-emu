@@ -1,6 +1,6 @@
 # Version 2.0.0
 
-This release celebrates five years of CloudilotEmu by adding support for
+This release celebrates five years of CloudpilotEmu by adding support for
 emulating the Tungsten E2 (PalmOS 5!) through a fork of
 [uARM](https://github.com/uARM-Palm/uARM), including full audio support. That's
 right, you can now play back video and mp3 and play Bike or Die 2, and all
