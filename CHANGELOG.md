@@ -19,9 +19,9 @@ older host devices may vary ;)
 -   Add "Save screenshot" option to emulation menu to capture the current screen
     as PNG.
 -   Greatly improved stability of the audio driver --- audio should reliably
-    resume after the app is suspended or backgrounded now.
+    resume after the app is suspended or backgrounded.
 -   Improved loading spinner consistency. Spinners are now always shown if file
-    loads are slow (e.g. iCloud).
+    loads are slow (e.g. when opening from iCloud).
 -   Various bug fixes.
 -   Add a "Don't restrict file picker" option to work around non-selectable
     files on old versions of iOS.
