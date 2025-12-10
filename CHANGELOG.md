@@ -7,7 +7,7 @@ right, you can now play back video and mp3 and play Bike or Die 2, and all
 that in a virtual Pilot in your browser!
 
 Please note that, unlike previous devices, OS5 devices were based on ARM
-processors, and emulating them requiers serious CPU horsepower. Your mileage with
+processors, and emulating them requires serious CPU horsepower. Your mileage with
 older host devices may vary ;)
 
 -   Support for Tungsten E2 / OS5.
