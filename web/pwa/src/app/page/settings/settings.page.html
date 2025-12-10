@@ -109,6 +109,8 @@
                 >
             </ion-item>
 
+            <h1 *ngIf="isIOS">Interface quirks</h1>
+
             <ion-item lines="none" *ngIf="isIOS">
                 <ion-toggle labelPlacement="fixed" formControlName="dontRestrictFilePicker"
                     >Don't restrict file picker</ion-toggle

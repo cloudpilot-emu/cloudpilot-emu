@@ -82,7 +82,13 @@ from remote URLs. Please note that those will have to be served via HTTPS
 (unless you are hosting CloudpilotEmu yourself via HTTP), and the file server
 has to support CORS.
 
-:::div{.ios}
+:::div{.feature-ios}
+# Interface quirks
+
+The following options are workarounds for specific browser bugs.
+:::
+
+:::div{.feature-ios}
 ### Don't restrict file picker
 
 CloudpilotEmu restricts the file picker to local files. Some old versions
@@ -92,7 +98,7 @@ media type picker that opens when loading files.
 :::
 
 :::div{.feature-indicator-fix}
-### Fix iOS home indicator (iOS Safari only)
+### Fix iOS home indicator
 
 Safari on iOS has a glitch that may display the home indicator (the white-ish bar
 at the bottom of the screen) on top of the UI instead below it. Whether you are
