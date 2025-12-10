@@ -2,7 +2,7 @@
 
 This release celebrates five years of CloudilotEmu by adding support for
 emulating the Tungsten E2 (PalmOS 5!) through a fork of
-[uarm](https://github.com/uARM-Palm/uARM), including full audio support. That's
+[uARM](https://github.com/uARM-Palm/uARM), including full audio support. That's
 right, you can now play back video and mp3 and play Bike or Die 2!
 
 Please note that, unlike previous devices, OS5 devices were based on ARM
