@@ -202,8 +202,8 @@ export class EmulationPage implements DragDropClient {
             await this.alertService.message(
                 'Slow emulation',
                 `
-                Your host is too slow to run your virtual device at the configured minimum
-                speed.
+                Your host is too slow to run your virtual device at the minimum
+                speed configured in your session settings.
         `,
             );
         }
