@@ -201,6 +201,9 @@ speed and host utilization in the session settings.
 
     If you suspect this is happening to you, go to the "About" tab, scroll down
     and select the "reset worker" link at the bottom of the page.
+
+-   On old versions of iOS, the file picker may gray out some file types. You can work around this
+    by selecting "Don't restrict file picker" in the settings.
 :::
 
 :::div{.feature-native-app}
@@ -212,6 +215,8 @@ speed and host utilization in the session settings.
 -   A browser bug may cause the web app and the homescreen app to stop registering touches
     for a few seconds. Usually this is extremely rare, but there are a few conditions
     that can increase the likelihood. This issue is not present in the native app.
+-   On old versions of iOS, the file picker may gray out some file types. You can work around this
+    by selecting "Don't restrict file picker" in the settings.
 :::
 
 ### Emulation limitations

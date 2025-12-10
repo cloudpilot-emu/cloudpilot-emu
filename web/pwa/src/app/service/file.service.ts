@@ -153,7 +153,7 @@ export class FileService {
 
         this.input.multiple = multiple;
         this.input.type = 'file';
-        if (isIOS) this.input.accept = 'application/octet-stream';
+        if (isIOS && !this.kvsService.kvs.dontRestrictFilePicker) this.input.accept = 'application/octet-stream';
 
         this.input.addEventListener('change', async (e) => {
             const target = e.target as HTMLInputElement;

@@ -25,4 +25,5 @@ export interface Kvs {
     infoId?: number;
     ios174UpdateWarningId?: number;
     dontEmulateDPad?: boolean;
+    dontRestrictFilePicker?: boolean;
 }

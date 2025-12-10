@@ -109,6 +109,12 @@
                 >
             </ion-item>
 
+            <ion-item lines="none" *ngIf="isIOS">
+                <ion-toggle labelPlacement="fixed" formControlName="dontRestrictFilePicker"
+                    >Don't restrict file picker</ion-toggle
+                >
+            </ion-item>
+
             <ion-item lines="none" *ngIf="isIndicatorFixApplicable">
                 <ion-select label="Fix iOS home indicator" formControlName="indicatorFixMode">
                     <ion-select-option [value]="indicatorFixNone">Off</ion-select-option>

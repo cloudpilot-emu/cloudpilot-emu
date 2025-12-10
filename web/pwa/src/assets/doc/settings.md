@@ -82,6 +82,15 @@ from remote URLs. Please note that those will have to be served via HTTPS
 (unless you are hosting CloudpilotEmu yourself via HTTP), and the file server
 has to support CORS.
 
+:::div{.ios}
+### Don't restrict file picker
+
+CloudpilotEmu restricts the file picker to local files. Some old versions
+of Safari do not correctly interpret this and don't allow some file types to be
+opened. This option disables this restriction, at the price of an additional
+media type picker that opens when loading files.
+:::
+
 :::div{.feature-indicator-fix}
 ### Fix iOS home indicator (iOS Safari only)
 

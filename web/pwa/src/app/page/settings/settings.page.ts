@@ -37,6 +37,7 @@ const enum fields {
     indicatorFixMode = 'indicatorFixMode',
     fixedFontSize = 'fixedFontSize',
     emulateDPad = 'emulateDPad',
+    dontRestrictFilePicker = 'dontRestrictFilePicker',
 }
 @Component({
     selector: 'app-settings',
@@ -105,6 +106,7 @@ export class SettingsPage implements OnInit {
             enableAudioOnFirstInteraction: this.formGroup.get(fields.audioOnStart)?.value,
             snapshotIntegrityCheck: this.formGroup.get(fields.snapshotIntegrityCheck)?.value,
             dontEmulateDPad: !this.formGroup.get(fields.emulateDPad)?.value,
+            dontRestrictFilePicker: !!this.formGroup.get(fields.dontRestrictFilePicker)?.value,
         });
 
         if (this.mutexReleasePromise) {
@@ -164,6 +166,10 @@ export class SettingsPage implements OnInit {
         return isIndicatorFixApplicable();
     }
 
+    get isIOS(): boolean {
+        return isIOS;
+    }
+
     get dynmicFontsSupprted(): boolean {
         return dynamicFontsSupport();
     }
@@ -189,6 +195,7 @@ export class SettingsPage implements OnInit {
             [fields.snapshotIntegrityCheck]: new UntypedFormControl(this.kvsService.kvs.snapshotIntegrityCheck),
             [fields.indicatorFixMode]: new UntypedFormControl(getIndicatorFixMode()),
             [fields.fixedFontSize]: new UntypedFormControl(!dynamicFontsEnabled()),
+            [fields.dontRestrictFilePicker]: new UntypedFormControl(!!this.kvsService.kvs.dontRestrictFilePicker),
             [fields.emulateDPad]: new UntypedFormControl(!this.kvsService.kvs.dontEmulateDPad),
         });
 
