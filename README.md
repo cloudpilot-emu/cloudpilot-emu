@@ -8,13 +8,13 @@ emulation is based on [uARM](https://github.com/uARM-Palm/uARM).
 OS5 emulation is currently available in the preview build (see below) and
 pending to be released with CloudpilotEmu 2.0.
 
-<img src="doc/images/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
+<img src="doc/images/m515.jpeg" width="310" height="671" alt="Palm m515 emulation"></img>
 &nbsp;
-<img src="doc/images/palmvx.jpeg" width="310" height="552" alt="Palm Vx emulation"></img>
+<img src="doc/images/v.jpeg" width="310" height="671" alt="Palm Vx emulation"></img>
 &nbsp;
-<img src="doc/images/tungstenw.jpeg" width="310" height="552" alt="Tungsten W emulation"></img>
+<img src="doc/images/t675c.jpeg" width="310" height="671" alt="Tungsten W emulation"></img>
 &nbsp;
-<img src="doc/images/palmpilot.jpeg" width="310" height="552" alt="Palm Pilot emulation"></img>
+<img src="doc/images/e2.jpeg" width="310" height="671" alt="Palm Pilot emulation"></img>
 
 # The emulator
 
