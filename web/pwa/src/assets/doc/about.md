@@ -187,13 +187,11 @@ speed and host utilization in the session settings.
     screen) may display on top of the UI if the toolbar is minimized. This is
     cannot be detected, but there is a setting on the settings page that you can
     change to work around.
-
 -   Safari: Safari will delete all data stored by the app if the page is not
     opened for more than seven days. The only way to circumvent this is to
     install CloudpilotEmu from the
     [App Store](https://apps.apple.com/de/app/cloudpilotemu/id6478502699)
     or as a homescreen app (on iOS) or to add it to the dock (Safari on MacOS).
-
 -   Safari: On rare occasions there have been issues with Safari handling 
     CloudpilotEmu's service worker. Symptoms of this are either repeated
     (bogus) update notifications without the "New version..." dialog on reload, or
@@ -201,7 +199,6 @@ speed and host utilization in the session settings.
 
     If you suspect this is happening to you, go to the "About" tab, scroll down
     and select the "reset worker" link at the bottom of the page.
-
 -   On old versions of iOS, the file picker may gray out some file types. You can work around this
     by selecting "Don't restrict file picker" in the settings.
 :::
@@ -224,27 +221,22 @@ speed and host utilization in the session settings.
 -   Audio timing on OS4 and earlier is not perfect and processed at the refresh rate
     of the emulator. Sound effects that rely on quickly modulating the audio signal may
     not be reproduced correctly.
-
 -   On rare occasions installing files or changing the hotsync name can catch
     PalmOS on the wrong foot and crash the emulator.
-
 -   Some devices cannot enter and exit sleep correctly. For those, CloudpilotEmu
     patches PalmOS to prevent sleeping.
-
 -   On Clié devices, audio is not emulated beyond the usual beeps.
-  
 -   The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
     framebuffer support, 2D acceleration is not available.
-    
 -   Formatting an unformatted memory stick in Clié devices that run OS 3.x
     locks up PalmOS. CloudpilotEmu formats newly created cards, so there is
     no need to reformat them in PalmOS.
-
 -   On OS5, keyboard input, clipboard and network integration are not
     currently available.
-
 -   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
     the skin suggests otherwise.
+-   There is no support for changing the hotsync user name on OS5. Please use
+    MultiUserHack or a similar application for that.
 
 # CloudpilotEmu on the web
 

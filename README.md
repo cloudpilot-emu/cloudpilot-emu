@@ -211,6 +211,8 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
     currently available.
 -   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
     the skin suggests otherwise.
+-   There is no support for changing the hotsync user name on OS5. Please use
+    MultiUserHack or a similar application for that.
 
 # Building
 
