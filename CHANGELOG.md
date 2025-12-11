@@ -1,3 +1,8 @@
+# Version 2.0.1
+
+-   Document missing support for changing the hotsync name on OS5 and recommend
+    MultiUserHack instead.
+
 # Version 2.0.0
 
 This release celebrates five years of CloudpilotEmu by adding support for
