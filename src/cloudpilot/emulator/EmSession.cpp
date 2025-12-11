@@ -154,10 +154,15 @@ bool EmSession::LoadImage(SessionImage& image) {
         return false;
     }
 
-    if (!Initialize(device, static_cast<uint8*>(image.GetRomImage()), image.GetRomImageSize())) {
+    unique_ptr<uint8[]> romImage = make_unique<uint8[]>(image.GetRomImageSize());
+    memcpy(romImage.get(), image.GetRomImage(), image.GetRomImageSize());
+
+    if (!Initialize(device, romImage.get(), image.GetRomImageSize())) {
         logPrintf("failed to initialize session");
         return false;
     }
+
+    romImage.release();
 
     size_t memorySize = image.GetMemoryImageSize();
     void* memoryImage = image.GetMemoryImage();
