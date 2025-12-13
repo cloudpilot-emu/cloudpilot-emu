@@ -1,3 +1,8 @@
+# Version 2.0.2
+
+-   Warn about potential PalmOS bugs when creating a session from an original
+    E2 ROM without a accompanying NAND image.
+
 # Version 2.0.1
 
 -   Document missing support for changing the hotsync name on OS5 and recommend
