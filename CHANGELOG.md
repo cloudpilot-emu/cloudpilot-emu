@@ -1,7 +1,7 @@
 # Version 2.0.2
 
 -   Warn about potential PalmOS bugs when creating a session from an original
-    E2 ROM without a accompanying NAND image.
+    E2 ROM without an accompanying NAND image.
 
 # Version 2.0.1
 
