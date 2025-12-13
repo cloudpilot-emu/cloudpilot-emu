@@ -115,6 +115,7 @@ export interface RomInfo5<VoidPtr> {
     GetCardName(): string;
     GetManufacturer(): string;
     GetRomName(): string;
+    NeedsNand(): boolean;
 
     GetCompanyId(): number;
     GetHalId(): number;

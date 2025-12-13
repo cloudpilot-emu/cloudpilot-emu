@@ -17,6 +17,7 @@ class RomInfo5 {
     const char* GetCardName() const;
     const char* GetManufacturer() const;
     const char* GetRomName() const;
+    bool NeedsNand() const;
 
     uint32_t GetCompanyId() const;
     uint32_t GetHalId() const;

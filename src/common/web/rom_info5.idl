@@ -9,6 +9,7 @@ interface RomInfo5 {
 
     long GetCompanyId();
     long GetHalId();
+    boolean NeedsNand();
 
     long GetDeviceType();
 

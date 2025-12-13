@@ -387,6 +387,7 @@ export class SessionsPage implements DragDropClient, OnInit {
                     romInfo.supportedDevices[0],
                     romInfo.supportedDevices,
                     nandSize(romInfo.supportedDevices[0]),
+                    romInfo.engine === 'uarm' ? romInfo.needsNand : false,
                 )) ?? [];
 
             if (device !== undefined) {
@@ -402,6 +403,7 @@ export class SessionsPage implements DragDropClient, OnInit {
         device: DeviceId,
         availableDevices = [device],
         selectNandSize?: number,
+        needsNand = false,
     ): Promise<[DeviceId, Uint8Array | undefined] | undefined> {
         return new Promise((resolve) => {
             let modal: HTMLIonModalElement;
@@ -415,7 +417,16 @@ export class SessionsPage implements DragDropClient, OnInit {
                         availableDevices,
                         device,
                         selectNandSize,
-                        onSave: (device: DeviceId, nand: Uint8Array | undefined) => {
+                        onSave: async (device: DeviceId, nand: Uint8Array | undefined) => {
+                            if (
+                                needsNand &&
+                                selectNandSize !== undefined &&
+                                !nand &&
+                                !(await this.continueWithoutNand())
+                            ) {
+                                return;
+                            }
+
                             void modal.dismiss();
                             resolve([device, nand]);
                         },
@@ -430,6 +441,27 @@ export class SessionsPage implements DragDropClient, OnInit {
                     void modal.present();
                 });
         });
+    }
+
+    private async continueWithoutNand(): Promise<boolean> {
+        let doContinue = true;
+
+        await this.alertService.message(
+            'NAND image required',
+            `
+                You are creating a session from an original Palm ROM. This requires and additional NAND
+                image for proper operation. You can continue without it, but PalmOS is known to be
+                buggy in this configuration.
+            `,
+            {
+                Cancel: () => {
+                    doContinue = false;
+                },
+            },
+            'Continue',
+        );
+
+        return doContinue;
     }
 
     private disambiguateSessionName(originalName: string) {

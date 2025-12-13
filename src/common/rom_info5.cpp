@@ -55,13 +55,17 @@ const char* RomInfo5::GetManufacturer() const { return manufacturer.c_str(); }
 
 const char* RomInfo5::GetRomName() const { return romName.c_str(); }
 
+bool RomInfo5::NeedsNand() const {
+    return (GetCardName() == string("PalmCard") && GetHalId() == HAL_ID_TUNGSTEN_E2);
+}
+
 uint32_t RomInfo5::GetCompanyId() const { return companyId; }
 
 uint32_t RomInfo5::GetHalId() const { return halId; }
 
 uint32_t RomInfo5::GetRecommendedRamSize() const {
-    return (GetCardName() == string("PalmCard") && GetHalId() == 'hspr') ? (16ul << 20)
-                                                                         : (32ul << 20);
+    return (GetCardName() == string("PalmCard") && GetHalId() == HAL_ID_TUNGSTEN_E2) ? (16ul << 20)
+                                                                                     : (32ul << 20);
 }
 
 DeviceType5 RomInfo5::GetDeviceType() const {
