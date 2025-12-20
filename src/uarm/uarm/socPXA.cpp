@@ -47,11 +47,13 @@
 #include "mem.h"
 #include "memory_buffer.h"
 #include "pace_patch.h"
+#include "patch68k.h"
 #include "patch_dispatch.h"
 #include "patches.h"
 #include "peephole.h"
 #include "queue.h"
 #include "reschedule.h"
+#include "rom_info5.h"
 #include "savestate/savestateAll.h"
 #include "scheduler.h"
 #include "sdcard.h"
@@ -303,6 +305,8 @@ static void socAllocateBuffers(SoC *soc) {
 
 SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const uint32_t romSize,
              uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev) {
+    RomInfo5 romInfo(romData, romSize);
+
     SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
 
@@ -355,6 +359,7 @@ SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const
 
     pacePatchInit(soc->pacePatch, ROM_BASE, peepholeBuffer, romSize);
     peepholeOptimize((uint32_t *)peepholeBuffer, romSize);
+    patch68kInit(romInfo.NeedsNandPatch() ? PATCH_68K_NVFS : 0);
 
     switch (deviceGetRamTerminationStyle()) {
         case RamTerminationMirror:

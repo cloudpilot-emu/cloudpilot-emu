@@ -17,6 +17,7 @@
 #include "mem.h"
 #include "memcpy.h"
 #include "pace.h"
+#include "patch68k.h"
 #include "patch_dispatch.h"
 #include "peephole.h"
 #include "savestate/savestateAll.h"
@@ -3278,6 +3279,8 @@ static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
 
         return;
     }
+
+    if (patch68kHandle(trapWord)) return;
 
     cpuPrvPaceSyscall(cpu, trapWord);
 

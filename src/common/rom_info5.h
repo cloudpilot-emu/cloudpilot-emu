@@ -18,6 +18,7 @@ class RomInfo5 {
     const char* GetManufacturer() const;
     const char* GetRomName() const;
     bool NeedsNand() const;
+    bool NeedsNandPatch() const;
 
     uint32_t GetCompanyId() const;
     uint32_t GetHalId() const;
@@ -29,6 +30,8 @@ class RomInfo5 {
    private:
     bool Parse();
     bool ParseAt(size_t offset);
+
+    bool IsDmitryPatched() const;
 
     uint32_t Read32(size_t offset, bool& error) const;
     std::string ReadString(size_t offset, uint8_t maxLen, bool& error) const;

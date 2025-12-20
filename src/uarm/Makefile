@@ -54,6 +54,7 @@ SOURCE_C = 								\
 	uarm/pxa270_WMMX.c 					\
 	uarm/pace_patch.c 					\
 	uarm/peephole.c						\
+	uarm/patch68k.c 					\
 	uarm/uae/cpudefs.c 					\
 	uarm/uae/cpuemu.c 					\
 	uarm/uae/cpustbl.c 					\
