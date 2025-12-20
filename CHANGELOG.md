@@ -1,3 +1,8 @@
+# Version 2.0.3
+
+-   Fix PalmFiction and similar programs on E2 ROMs without NVFS.
+-   Document Bluetooth locking up on OS5 and recovery procedure.
+
 # Version 2.0.2
 
 -   Warn about potential PalmOS bugs when creating a session from an original

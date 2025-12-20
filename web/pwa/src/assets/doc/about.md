@@ -237,6 +237,9 @@ speed and host utilization in the session settings.
     the skin suggests otherwise.
 -   There is no support for changing the hotsync user name on OS5. Please use
     MultiUserHack or a similar application for that.
+-   Enabling bluetooth on OS5 will hang the device and keep it from booting
+    properly. You can recover by booting without extensions and using FileZ or a
+    similar program to delete the abtp / BtManPnl preference.
 
 # CloudpilotEmu on the web
 
