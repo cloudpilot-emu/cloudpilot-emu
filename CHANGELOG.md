@@ -1,3 +1,7 @@
+# Version 2.0.4
+
+-   Fix session save if the app was opened in another tab.
+
 # Version 2.0.3
 
 -   Fix PalmFiction and similar programs on E2 ROMs without NVFS.
