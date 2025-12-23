@@ -65,8 +65,8 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         return this.cloudpilotInstance.fatalErrorEvent;
     }
 
-    get snapshotSuccessEvent(): EventInterface<SnapshotStatistics> {
-        return this.snapshotContainer.snapshotSuccessEvent;
+    get snapshotDoneEvent(): EventInterface<SnapshotStatistics> {
+        return this.snapshotContainer.snapshotDoneEvent;
     }
 
     penDown(x: number, y: number): void {

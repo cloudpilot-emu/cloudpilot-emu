@@ -92,7 +92,7 @@ export interface EngineCommon {
     readonly snapshotEvent: EventInterface<SnapshotContainer>;
     readonly palmosStateChangeEvent: EventInterface<void>;
     readonly fatalError: EventInterface<Error>;
-    readonly snapshotSuccessEvent: EventInterface<SnapshotStatistics>;
+    readonly snapshotDoneEvent: EventInterface<SnapshotStatistics>;
 }
 
 export interface EngineCloudpilot extends EngineCommon {

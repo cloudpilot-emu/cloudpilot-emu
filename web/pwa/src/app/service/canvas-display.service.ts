@@ -176,7 +176,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
             ...(!snapshotStatistics && !emulationStatistics ? ['collecting statistics...'] : []),
             ...(snapshotStatistics
                 ? [
-                      `last snapshot          : ${new Date(snapshotStatistics.timestamp).toLocaleTimeString()}`,
+                      `last snapshot ${snapshotStatistics.success ? '        ' : '[failed]'} : ${new Date(snapshotStatistics.timestamp).toLocaleTimeString()}`,
                       `snapshot size          : ${snapshotStatistics.size >>> 10} kB`,
                       `snapshot time total    : ${snapshotStatistics.timeTotal.toFixed(2)} msec`,
                       `snapshot time blocking : ${snapshotStatistics.timeBlocking.toFixed(2)} msec`,

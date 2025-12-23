@@ -64,7 +64,7 @@ export class EmulationService extends AbstractEmulationService {
         super(cloudpilotPromise);
 
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
-        errorService.fatalErrorEvent.addHandler(this.stop);
+        errorService.fatalErrorEvent.addHandler(this.pause);
         this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
 
         void cloudpilotPromise.then((instance) => {
@@ -106,6 +106,7 @@ export class EmulationService extends AbstractEmulationService {
 
     switchSession = (id: number, options: { showLoader?: boolean } = {}): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
+            if (this.errorService.hasFatalError()) return false;
             if (id === this.emulationContext.session()?.id) return true;
 
             await this.stopUnchecked();
@@ -143,6 +144,8 @@ export class EmulationService extends AbstractEmulationService {
 
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
+            if (this.errorService.hasFatalError()) return;
+
             await this.kvsService.mutex.runExclusive(() => this.updateSettings());
             await this.doResume();
         });
@@ -243,6 +246,7 @@ export class EmulationService extends AbstractEmulationService {
         if (!this.emulationContext.session()) return;
 
         await this.doStop();
+
         await this.snapshotNow();
 
         this.storageCardService.onEmulatorStop();

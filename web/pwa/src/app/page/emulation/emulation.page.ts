@@ -110,7 +110,7 @@ export class EmulationPage implements DragDropClient {
 
             this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
             this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
-            this.emulationService.snapshotSuccessEvent.removeHandler(this.onSnapshotSuccess);
+            this.emulationService.snapshotDoneEvent.removeHandler(this.onSnapshotDone);
 
             this.eventHandlingService.release();
 
@@ -314,7 +314,7 @@ export class EmulationPage implements DragDropClient {
         this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
-        this.emulationService.snapshotSuccessEvent.addHandler(this.onSnapshotSuccess);
+        this.emulationService.snapshotDoneEvent.addHandler(this.onSnapshotDone);
 
         await this.emulationService.resume();
 
@@ -336,7 +336,7 @@ export class EmulationPage implements DragDropClient {
         this.canvasDisplayService.updateEmulationCanvas(canvas);
     };
 
-    private onSnapshotSuccess = (statistics: SnapshotStatistics): void => {
+    private onSnapshotDone = (statistics: SnapshotStatistics): void => {
         if (this.kvsService.kvs.showStatistics) {
             void this.canvasDisplayService.updateStatistics(statistics, this.emulationService.getStatistics());
         }

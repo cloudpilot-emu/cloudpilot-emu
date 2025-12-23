@@ -102,15 +102,26 @@ export class SnapshotService {
 
     storeSnapshot = (snapshotContainer: SnapshotContainer, sessionId: number): Promise<void> =>
         this.ngZone.runOutsideAngular(async () => {
-            if (this.snapshotInProgress) throw new Error('cannot happen: snapshot while snapshot is in progress');
+            try {
+                if (this.snapshotInProgress) {
+                    throw new Error('cannot happen: snapshot while snapshot is in progress');
+                }
 
-            this.snapshotInProgress = true;
+                if (this.errorService.hasFatalError()) {
+                    throw new Error('refusing to store snapshot after fatal error');
+                }
 
-            // there is not way to reset the sessionId while the snapshot is in progress, so if the
-            // ID matches now we can safely assume that it will still match the snapshot when we store
-            // it later.
-            if (sessionId !== this.sessionId) {
-                throw new Error(`bad snapshot: session ID mismatch: ${this.sessionId} vs ${sessionId}`);
+                this.snapshotInProgress = true;
+
+                // there is not way to reset the sessionId while the snapshot is in progress, so if the
+                // ID matches now we can safely assume that it will still match the snapshot when we store
+                // it later.
+                if (sessionId !== this.sessionId) {
+                    throw new Error(`bad snapshot: session ID mismatch: ${this.sessionId} vs ${sessionId}`);
+                }
+            } catch (e) {
+                snapshotContainer.release(false, 0, 0);
+                throw e;
             }
 
             try {
@@ -132,19 +143,24 @@ export class SnapshotService {
     private async storeSnapshotUnguarded(snapshotContainer: SnapshotContainer): Promise<void> {
         this.timeBlocking = this.timeBackground = 0;
         this.timeoutDeltaMsecPerKb = this.timeoutDeltaMsecPerKbStart;
+        let success = false;
 
+        try {
+            success = await this.storeSnapshotWithRetry(snapshotContainer);
+        } finally {
+            snapshotContainer.release(success, this.timeBlocking, this.timeBackground);
+        }
+    }
+
+    private async storeSnapshotWithRetry(snapshotContainer: SnapshotContainer): Promise<boolean> {
         while (true) {
             try {
-                snapshotContainer.release(
-                    await this.attemptToStoreSnapshot(snapshotContainer),
-                    this.timeBlocking,
-                    this.timeBackground,
-                );
+                const success = await this.attemptToStoreSnapshot(snapshotContainer);
                 this.consecutiveErrorCount = 0;
 
                 this.hideLoader();
 
-                return;
+                return success;
             } catch (e) {
                 this.hideLoader();
 

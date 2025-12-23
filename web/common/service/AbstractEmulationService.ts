@@ -332,7 +332,7 @@ export abstract class AbstractEmulationService {
 
     private onSnapshotEvent = (snapshot: SnapshotContainer) => this.handleSnapshot(snapshot);
 
-    private onSnapshotSuccessEvent = (statistics: SnapshotStatistics) => this.snapshotSuccessEvent.dispatch(statistics);
+    private onSnapshotDoneEvent = (statistics: SnapshotStatistics) => this.snapshotDoneEvent.dispatch(statistics);
 
     private onPalmosStateChangeEvent = () => {
         this.handlePalmosStateChange();
@@ -349,7 +349,7 @@ export abstract class AbstractEmulationService {
         engine.timesliceEvent.addHandler(this.onEngineTimesliceEvent);
         engine.snapshotEvent.addHandler(this.onSnapshotEvent);
         engine.palmosStateChangeEvent.addHandler(this.onPalmosStateChangeEvent);
-        engine.snapshotSuccessEvent.addHandler(this.onSnapshotSuccessEvent);
+        engine.snapshotDoneEvent.addHandler(this.onSnapshotDoneEvent);
 
         switch (engine.type) {
             case 'cloudpilot':
@@ -373,7 +373,7 @@ export abstract class AbstractEmulationService {
         engine.timesliceEvent.removeHandler(this.onEngineTimesliceEvent);
         engine.snapshotEvent.removeHandler(this.onSnapshotEvent);
         engine.palmosStateChangeEvent.removeHandler(this.onPalmosStateChangeEvent);
-        engine.snapshotSuccessEvent.removeHandler(this.onSnapshotSuccessEvent);
+        engine.snapshotDoneEvent.removeHandler(this.onSnapshotDoneEvent);
 
         switch (engine.type) {
             case 'cloudpilot':
@@ -394,7 +394,7 @@ export abstract class AbstractEmulationService {
     emulationStateChangeEvent = new Event<boolean>();
     palmosStateChangeEvent = new Event<void>();
     openSessionEvent = new Event<void>();
-    snapshotSuccessEvent = new Event<SnapshotStatistics>();
+    snapshotDoneEvent = new Event<SnapshotStatistics>();
 
     protected abstract readonly clandestineExecute: Executor;
 

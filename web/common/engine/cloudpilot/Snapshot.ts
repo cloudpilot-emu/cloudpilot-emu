@@ -118,7 +118,8 @@ export class SnapshotContainerImpl implements SnapshotContainer {
                 if (!persistenceSuccess) this.mergeBack();
             });
 
-            this.snapshotSuccessEvent.dispatch({
+            this.snapshotDoneEvent.dispatch({
+                success: persistenceSuccess,
                 size: this.size,
                 timeBlocking: timeBlocking + this.timed.get(),
                 timeTotal: timeBlocking + timeBackground + this.timed.get(),
@@ -248,7 +249,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         };
     }
 
-    snapshotSuccessEvent = new Event<SnapshotStatistics>();
+    snapshotDoneEvent = new Event<SnapshotStatistics>();
     snapshotReleaseEvent = new Event<void>();
 
     private state = SnapshotState.idle;

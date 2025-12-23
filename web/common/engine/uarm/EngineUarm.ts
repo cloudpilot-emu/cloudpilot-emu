@@ -223,8 +223,8 @@ export class EngineUarmImpl implements EngineUarm {
             this.rpcHost,
             this.dispatchMessage,
         );
-        this.snapshotContainer.snapshotSuccessEvent.addHandler((statistics) =>
-            this.snapshotSuccessEvent.dispatch(statistics),
+        this.snapshotContainer.snapshotDoneEvent.addHandler((statistics) =>
+            this.snapshotDoneEvent.dispatch(statistics),
         );
 
         const cardState = await this.rpcHost.call('getSdCardState', undefined);
@@ -442,7 +442,7 @@ export class EngineUarmImpl implements EngineUarm {
     snapshotEvent = new Event<SnapshotContainer>();
     palmosStateChangeEvent = new Event<void>();
     fatalError = new Event<Error>();
-    snapshotSuccessEvent = new Event<SnapshotStatistics>();
+    snapshotDoneEvent = new Event<SnapshotStatistics>();
 
     private deviceId: DeviceId | undefined;
     private running = false;

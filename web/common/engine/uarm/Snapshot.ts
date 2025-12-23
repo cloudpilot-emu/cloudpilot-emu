@@ -103,7 +103,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         const timestamp = this.uarmSnapshot.timestamp;
 
         this.uarmSnapshot = undefined;
-        this.snapshotSuccessEvent.dispatch({ size, timeBlocking, timeTotal, timestamp });
+        this.snapshotDoneEvent.dispatch({ success: persistenceSuccess, size, timeBlocking, timeTotal, timestamp });
     }
 
     getStorageKey(): string | undefined {
@@ -175,7 +175,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
         this.updateSnapshot(this.snapshotSd, uarmSnapshot.sd.snapshot);
     }
 
-    snapshotSuccessEvent = new Event<SnapshotStatistics>();
+    snapshotDoneEvent = new Event<SnapshotStatistics>();
 
     private snapshotMemory: Writeable<Snapshot>;
     private snapshotNand: Writeable<Snapshot>;
