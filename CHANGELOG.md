@@ -1,3 +1,7 @@
+# Version 2.0.5
+
+-   Fix a rare crash when switching sessions.
+
 # Version 2.0.4
 
 -   Fix session save if the app was opened in another tab.
