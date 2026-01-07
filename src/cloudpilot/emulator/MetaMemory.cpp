@@ -22,7 +22,7 @@
 
 set<emuptr> MetaMemory::breakpoints;
 
-void MetaMemory::Clear() { EmAssert(breakpoints.size() == 0); }
+void MetaMemory::Clear() { breakpoints.clear(); }
 
 void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
     if (end <= start) return;
