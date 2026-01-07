@@ -12,6 +12,7 @@
 class MainLoop {
    public:
     MainLoop(SDL_Window* window, SDL_Renderer* renderer, int scale);
+    ~MainLoop();
 
     bool IsRunning() const;
 

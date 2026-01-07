@@ -43,6 +43,12 @@ MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer, int scale)
                           screenDimensions.Width(), screenDimensions.Height());
 }
 
+MainLoop::~MainLoop() {
+    SDL_DestroyTexture(silkscreenTexture);
+    SDL_DestroyTexture(lcdTexture);
+    SDL_DestroyTexture(lcdTempTexture);
+}
+
 bool MainLoop::IsRunning() const { return !eventHandler.IsQuit(); }
 
 void MainLoop::Cycle() {

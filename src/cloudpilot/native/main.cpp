@@ -57,6 +57,7 @@ struct Options {
     bool traceInstaller;
     optional<string> mountImage;
     DebuggerConfiguration debuggerConfiguration;
+    bool smallWindow;
 };
 
 void handleSuspend() {
@@ -147,14 +148,20 @@ void setupDebugger(GdbStub& gdbStub, const Options& options) {
     }
 }
 
-void initSDL(SDL_Window*& window, SDL_Renderer*& renderer, int& scale) {
+void initSDL() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_PNG);
     SDL_StartTextInput();
+}
+
+void recreateWindow(SDL_Window*& window, SDL_Renderer*& renderer, int& scale, bool smallWindow) {
+    if (renderer) SDL_DestroyRenderer(renderer);
+    if (window) SDL_DestroyWindow(window);
 
     ScreenDimensions::Kind screenDimensionsKind = gSession->GetDevice().GetScreenDimensions();
     ScreenDimensions screenDimensions(screenDimensionsKind);
-    scale = screenDimensionsKind == ScreenDimensions::screen160x160 ? 3 : 2;
+    scale = screenDimensionsKind == ScreenDimensions::screen160x160 ? (smallWindow ? 2 : 3)
+                                                                    : (smallWindow ? 1 : 2);
 
     const int windowWidth = screenDimensions.Width() * scale;
     const int windowHeight =
@@ -165,6 +172,8 @@ void initSDL(SDL_Window*& window, SDL_Renderer*& renderer, int& scale) {
         cerr << "unable to create SDL window: " << SDL_GetError() << endl;
         exit(1);
     }
+
+    SDL_SetWindowTitle(window, "CloudpilotEmu");
 
     int renderHeight = windowHeight, renderWidth = windowWidth;
     SDL_GetRendererOutputSize(renderer, &renderWidth, &renderHeight);
@@ -194,19 +203,29 @@ void run(const Options& options) {
 
     Feature::SetClipboardIntegration(true);
 
-    SDL_Window* window;
-    SDL_Renderer* renderer;
+    ScreenDimensions::Kind screenDimensionsKind = gSession->GetDevice().GetScreenDimensions();
+    SDL_Window* window{nullptr};
+    SDL_Renderer* renderer{nullptr};
     int scale;
-    initSDL(window, renderer, scale);
 
-    MainLoop mainLoop(window, renderer, scale);
+    initSDL();
+    recreateWindow(window, renderer, scale, options.smallWindow);
+
+    unique_ptr<MainLoop> mainLoop = make_unique<MainLoop>(window, renderer, scale);
 
     commands::Register();
     cli::Start(options.scriptFile);
     commands::Context commandContext = {.debugger = gDebugger, .gdbStub = gdbStub};
 
-    while (mainLoop.IsRunning()) {
-        mainLoop.Cycle();
+    while (mainLoop->IsRunning()) {
+        if (gSession->GetDevice().GetScreenDimensions() != screenDimensionsKind) {
+            screenDimensionsKind = gSession->GetDevice().GetScreenDimensions();
+
+            recreateWindow(window, renderer, scale, options.smallWindow);
+            mainLoop = make_unique<MainLoop>(window, renderer, scale);
+        }
+
+        mainLoop->Cycle();
 
         if (cli::Execute(&commandContext)) break;
 
@@ -326,6 +345,11 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
+    program.add_argument("--small-window")
+        .help("use small window")
+        .default_value(false)
+        .implicit_value(true);
+
     try {
         program.parse_args(argc, argv);
     } catch (const bad_device_id& e) {
@@ -359,6 +383,7 @@ int main(int argc, const char** argv) {
     options.scriptFile = program.present("--script");
     options.proxyInsecure = program.get<bool>("--proxy-insecure");
     options.proxyCa = program.present("--proxy-ca");
+    options.smallWindow = program.get<bool>("--small-window");
 
 #ifdef ENABLE_DEBUGGER
     if (auto port = program.present<unsigned int>("--listen"))
