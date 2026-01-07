@@ -43,6 +43,7 @@ struct Options {
     bool disableAudio;
     optional<string> script;
     optional<unsigned int> ramSize;
+    bool smallWindow;
 };
 
 extern "C" int socExtSerialReadChar(void) { return CHAR_NONE; }
@@ -58,7 +59,6 @@ extern "C" void socExtSerialWriteChar(int chr) {
 
 namespace {
     constexpr size_t AUDIO_QUEUE_SIZE = 44100 / MAIN_LOOP_FPS * 10;
-    constexpr int SCALE = 2;
     constexpr size_t NAND_SIZE = 34603008;
 
     int windowWidth(DeviceDisplayConfiguration& displayConfiguration, Rotation rotation) {
@@ -262,15 +262,16 @@ namespace {
         deviceGetDisplayConfiguration(romInfo.GetDeviceType(), &displayConfiguration);
 
         Rotation rotation = Rotation::portrait_0;
+        const int scale = options.smallWindow ? 1 : 2;
 
-        SDL_Window* window = initSdl(displayConfiguration, SCALE, rotation);
+        SDL_Window* window = initSdl(displayConfiguration, scale, rotation);
         if (!window) {
             cerr << "failed to init SDL" << endl;
             return false;
         }
 
-        auto sdlRenderer = make_unique<SdlRenderer>(window, soc, SCALE, rotation);
-        SdlEventHandler sdlEventHandler(soc, SCALE, displayConfiguration, rotation);
+        auto sdlRenderer = make_unique<SdlRenderer>(window, soc, scale, rotation);
+        SdlEventHandler sdlEventHandler(soc, scale, displayConfiguration, rotation);
 
         SdlAudioDriver audioDriver(soc, audioQueue);
         if (!options.disableAudio) audioDriver.Start();
@@ -319,9 +320,9 @@ namespace {
                 rotation = commandContext.rotation;
 
                 sdlRenderer.reset();
-                sdlResizeWindow(window, displayConfiguration, SCALE, rotation);
+                sdlResizeWindow(window, displayConfiguration, scale, rotation);
 
-                sdlRenderer = make_unique<SdlRenderer>(window, soc, SCALE, rotation);
+                sdlRenderer = make_unique<SdlRenderer>(window, soc, scale, rotation);
                 sdlEventHandler.SetRotation(rotation);
 
                 socSetFramebufferDirty(soc);
@@ -371,6 +372,11 @@ int main(int argc, const char** argv) {
         .scan<'u', unsigned int>()
         .default_value(100u);
 
+    program.add_argument("--small-window")
+        .help("use small window")
+        .default_value(false)
+        .implicit_value(true);
+
     program.add_argument("--script").help("execute script on startup").metavar("<script file>");
 
     try {
@@ -394,7 +400,8 @@ int main(int argc, const char** argv) {
                        .mips = program.get<unsigned int>("--mips"),
                        .disableAudio = program.get<bool>("--no-sound"),
                        .script = program.present("--script"),
-                       .ramSize = program.present<unsigned int>("--ram-size")};
+                       .ramSize = program.present<unsigned int>("--ram-size"),
+                       .smallWindow = program.get<bool>("--small-window")};
 
     logEnable();
 
