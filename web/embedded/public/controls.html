@@ -245,6 +245,7 @@
                 // Update statistics
                 function updateStatistics() {
                     const statistics = emulator.getStatistics();
+                    if (!statistics) return;
 
                     statisticsContainer.style.display = 'block';
                     hostSpeedContainer.innerText = `host speed: ${statistics.hostSpeed.toFixed(2)} x`;

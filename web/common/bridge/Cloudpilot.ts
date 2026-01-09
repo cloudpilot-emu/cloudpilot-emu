@@ -739,9 +739,10 @@ export class Cloudpilot {
     }
 
     @guard()
-    decompressCard(key: string, compressedData: Uint8Array): boolean {
+    decompress(compressedData: Uint8Array): Uint8Array | undefined {
         const buffer = this.copyIn(compressedData);
         let gunzipContext: GunzipContext | undefined = undefined;
+
         try {
             gunzipContext = new this.module.GunzipContext(buffer, compressedData.length, 512 * 1024);
 
@@ -751,19 +752,10 @@ export class Cloudpilot {
 
             if (gunzipContext.GetState() === GunzipState.error) {
                 console.error(`gunzip failed: ${gunzipContext.GetError()}`);
-                return false;
+                return;
             }
 
-            if (gunzipContext.GetUncompressedSize() % 512 !== 0) {
-                console.error('failed to allocate card: invalid size of decompressed image');
-                return false;
-            }
-
-            return this.cloudpilot.AdoptCard(
-                key,
-                gunzipContext.ReleaseUncompressedData(),
-                gunzipContext.GetUncompressedSize() >>> 9,
-            );
+            this.copyOut(gunzipContext.ReleaseUncompressedData(), gunzipContext.GetUncompressedSize());
         } finally {
             this.cloudpilot.Free(buffer);
             if (gunzipContext) this.module.destroy(gunzipContext);

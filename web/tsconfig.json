@@ -26,6 +26,7 @@
             "@native-uarm/*": ["../src/uarm/*"],
             "@pwa/*": ["pwa/src/app/*"],
             "@assets/*": ["pwa/src/assets/*"],
+            "@embedded/*": ["embedded/src/*"],
             "@root/*": ["../*"],
         },
         "useDefineForClassFields": false,

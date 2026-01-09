@@ -1,108 +1,115 @@
 import { Cloudpilot, SessionImage } from '@common/bridge/Cloudpilot';
+import { Engine } from '@common/engine/Engine';
+import { SnapshotContainer } from '@common/engine/Snapshot';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
-import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
+import { AbstractEmulationService, Executor } from '@common/service/AbstractEmulationService';
 import { Session } from '@embedded/model/Session';
+import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
 
 export class EmbeddedEmulationService extends AbstractEmulationService {
-    pause(): void {
-        this.doPause();
+    constructor(cloudpilot: Cloudpilot) {
+        super(Promise.resolve(cloudpilot));
+
+        this.syncSettings();
     }
 
-    resume(): void {
-        void this.doResume();
-    }
+    pause = (): Promise<void> => this.mutex.runExclusive(() => this.doStop());
 
-    initWithRom(cloudpilot: Cloudpilot, rom: Uint8Array, device: DeviceId, session: Session): boolean {
-        if (this.isRunning()) {
-            void this.doStop();
-            this.session = undefined;
-        }
+    resume = (): Promise<void> => this.mutex.runExclusive(() => this.doResume());
 
-        cloudpilot.clearExternalStorage();
+    initWithRom = (rom: Uint8Array, device: DeviceId, session: Session): Promise<boolean> =>
+        this.mutex.runExclusive(async () => {
+            if (this.isRunning()) {
+                await this.doStop();
+                this.session = undefined;
+            }
 
-        if (this.openSession(cloudpilot, rom, device)) {
-            this.session = session;
-            return true;
-        }
+            if (await this.openSession(rom, device)) {
+                this.setSession(session);
+                return true;
+            }
 
-        return false;
-    }
+            return false;
+        });
 
-    initWithSessionImage(cloudpilot: Cloudpilot, sessionImage: SessionImage<unknown>, session: Session): boolean {
-        if (this.isRunning()) {
-            void this.doStop();
-            this.session = undefined;
-        }
+    initWithSessionImage = (sessionImage: SessionImage<unknown>, session: Session): Promise<boolean> =>
+        this.mutex.runExclusive(async () => {
+            if (this.isRunning()) {
+                await this.doStop();
+                this.session = undefined;
+            }
 
-        cloudpilot.clearExternalStorage();
+            if (
+                await this.openSession(
+                    sessionImage.rom,
+                    sessionImage.deviceId,
+                    undefined,
+                    sessionImage.memory,
+                    sessionImage.savestate,
+                )
+            ) {
+                this.setSession(session);
+                return true;
+            }
 
-        if (
-            this.openSession(
-                cloudpilot,
-                sessionImage.rom,
-                sessionImage.deviceId,
-                sessionImage.memory,
-                sessionImage.savestate,
-            )
-        ) {
-            this.session = session;
-
-            return true;
-        }
-
-        return false;
-    }
+            return false;
+        });
 
     getSession(): Session | undefined {
         return this.session;
     }
 
-    forceUpdateHotsyncName(): void {
-        if (!this.cloudpilotInstance) return;
-
-        if (this.cloudpilotInstance.isUiInitialized() && !this.cloudpilotInstance.isPowerOff()) {
-            this.checkAndUpdateHotsyncName();
-        }
+    syncSettings(): void {
+        this.updateEngineSettings({
+            manageHotsyncName: true,
+            hotsyncName: this.session?.hotsyncName,
+            speed: this.session?.speed ?? 1,
+            schedulerKind: this.session?.runInBackground ? SchedulerKind.timeout : SchedulerKind.animationFrame,
+        });
     }
 
-    protected getConfiguredSpeed(): number {
-        return this.session?.speed ?? 1;
+    getEngine(): Engine | undefined {
+        return this.engine;
     }
 
-    protected manageHotsyncName(): boolean {
-        return true;
-    }
-
-    protected getConfiguredHotsyncName(): string | undefined {
-        return this.session?.hotsyncName;
-    }
-
-    protected updateConfiguredHotsyncName(hotsyncName: string): void {
+    protected override updateConfiguredHotsyncName(hotsyncName: string): void {
         if (this.session) {
             this.session.hotsyncName = hotsyncName;
         }
     }
 
-    protected getConfiguredSchdedulerKind(): SchedulerKind {
-        return this.session?.runInBackground ? SchedulerKind.timeout : SchedulerKind.animationFrame;
-    }
-
-    protected hasFatalError(): boolean {
-        return !!this.cloudpilotInstance?.hasFatalError();
-    }
-
-    protected skipEmulationUpdate(): boolean {
-        return false;
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected override onAfterAdvanceEmulation(timestamp: number, cycles: number): void {
+    protected override onAfterAdvanceEmulation(sliceSizeSeconds: number): void {
         this.timesliceEvent.dispatch();
     }
 
+    protected override handleSuspend(): void {}
+
+    protected override handleSnapshot(snapshot: SnapshotContainer): void {
+        snapshot.release(false, 0, 0);
+    }
+
+    protected override getUarmModule(): Promise<WebAssembly.Module> {
+        throw new Error('Method not implemented.');
+    }
+
+    protected override handleFatalInNativeCode(error: Error): void {
+        console.error(error);
+    }
+
+    protected override handlePalmosStateChange(): void {}
+
+    protected override clandestineExecute: Executor = (fn) => fn();
+
+    private setSession(session: Session) {
+        this.session = session;
+        this.syncSettings();
+    }
+
     private session: Session | undefined;
+    private mutex = new Mutex();
 
     readonly timesliceEvent = new Event<void>();
 }

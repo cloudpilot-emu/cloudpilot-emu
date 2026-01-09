@@ -1,11 +1,13 @@
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
+import { Engine } from '@common/engine/Engine';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { EventTarget } from '@common/service/GenericEventHandlingService';
 import { SkinLoader } from '@common/service/SkinLoader';
+import { Mutex } from 'async-mutex';
 import { Event as EventImpl } from 'microevent.ts';
 
 import { Event } from './Event';
@@ -28,6 +30,13 @@ const DEFAULT_SESSION: Session = {
 
 const CARD_KEY = 'MEMORY_CARD';
 
+function assertEngineInitialized(engine: Engine | undefined): asserts engine is Engine {
+    if (!engine) throw new Error('session not initialized');
+}
+
+/**
+ *
+ */
 export interface Emulator {
     /**
      * Load a ROM and put the emulator in paused state.
@@ -35,38 +44,38 @@ export interface Emulator {
      * @param rom Device ROM
      * @param deviceId Optional: device ID, autodetected if not specified
      */
-    loadRom(rom: Uint8Array, deviceId?: DeviceId): this;
+    loadRom(rom: Uint8Array, deviceId?: DeviceId): Promise<void>;
 
     /**
      * Load a Cloudpilot session and put the emulator in paused state.
      *
      * @param session Session image
      */
-    loadSession(session: Uint8Array): this;
+    loadSession(session: Uint8Array): Promise<void>;
 
     /**
      * Attach and mount a gzip compressed card image.
      *
      * @param cardImage Gzip compressed image data
      */
-    insertCompressedCardImage(cardImage: Uint8Array): this;
+    insertCompressedCardImage(cardImage: Uint8Array): Promise<void>;
 
     /**
      * Attach and mount a plain card image.
      *
      * @param cardImage Image data
      */
-    insertCardImage(cardImage: Uint8Array): this;
+    insertCardImage(cardImage: Uint8Array): Promise<void>;
 
     /**
      * Eject a previously inserted card image:
      */
-    ejectCard(): this;
+    ejectCard(): Promise<void>;
 
     /**
      * Check whether a card is currently mounted.
      */
-    isCardMounted(): boolean;
+    isCardMounted(): Promise<boolean>;
 
     /**
      * Configure the canvas element used for displaying the emulator.
@@ -301,7 +310,7 @@ export interface Emulator {
     /**
      * Get performance statistics
      */
-    getStatistics(): EmulationStatistics;
+    getStatistics(): EmulationStatistics | undefined;
 
     /**
      * Get serial transport for IR transceiver.
@@ -347,7 +356,7 @@ export interface Emulator {
 
 export class EmulatorImpl implements Emulator {
     constructor(private cloudpilot: Cloudpilot) {
-        this.emulationService = new EmbeddedEmulationService();
+        this.emulationService = new EmbeddedEmulationService(cloudpilot);
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(new SkinLoader(Promise.resolve(cloudpilot)));
         this.eventHandlingService = new EmbeddedEventHandlingServie(this.emulationService, this.canvasDisplayService);
         this.audioService = new EmbeddedAudioService(this.emulationService);
@@ -363,97 +372,84 @@ export class EmulatorImpl implements Emulator {
         this.hotsyncNameWatcher = new Watcher(() => this.getHotsyncName() || '');
     }
 
-    getStatistics(): EmulationStatistics {
+    getStatistics(): EmulationStatistics | undefined {
         return this.emulationService.getStatistics();
     }
 
-    loadRom(rom: Uint8Array, deviceId?: DeviceId): this {
-        if (deviceId === undefined) {
-            const rominfo = this.cloudpilot.getRomInfo(rom);
-            if (!rominfo || rominfo.supportedDevices.length === 0) {
-                throw new Error('unsupported device');
+    loadRom = (rom: Uint8Array, deviceId?: DeviceId) =>
+        this.mutex.runExclusive(async () => {
+            if (deviceId === undefined) {
+                const rominfo = this.cloudpilot.getRomInfo(rom);
+                if (!rominfo || rominfo.supportedDevices.length === 0) {
+                    throw new Error('unsupported device');
+                }
+
+                deviceId = rominfo.supportedDevices[0];
+            }
+            this.session = { ...DEFAULT_SESSION, deviceId };
+
+            if (!(await this.emulationService.initWithRom(rom, deviceId, this.session))) {
+                throw new Error('failed to initialize session');
             }
 
-            deviceId = rominfo.supportedDevices[0];
-        }
-        this.session = { ...DEFAULT_SESSION, deviceId };
+            await this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
+        });
 
-        if (this.emulationService.initWithRom(this.cloudpilot, rom, deviceId, this.session)) {
-            void this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
-            return this;
-        }
+    loadSession = (session: Uint8Array) =>
+        this.mutex.runExclusive(async () => {
+            const sessionImage = this.cloudpilot.deserializeSessionImage<SessionMetadata>(session);
+            if (!sessionImage) throw new Error('bad session image');
 
-        throw new Error('failed to initialize session');
-    }
+            this.session = {
+                hotsyncName: sessionImage.metadata?.hotsyncName,
+                speed: sessionImage.metadata?.speed ?? 1,
+                orientation: sessionImage.metadata?.deviceOrientation ?? DeviceOrientation.portrait,
+                runInBackground: false,
+                deviceId: sessionImage.deviceId,
+            };
 
-    loadSession(session: Uint8Array): this {
-        const sessionImage = this.cloudpilot.deserializeSessionImage<SessionMetadata>(session);
-        if (!sessionImage) throw new Error('bad session image');
+            if (!(await this.emulationService.initWithSessionImage(sessionImage, this.session))) {
+                throw new Error('failed to initialize session');
+            }
 
-        this.session = {
-            hotsyncName: sessionImage.metadata?.hotsyncName,
-            speed: sessionImage.metadata?.speed ?? 1,
-            orientation: sessionImage.metadata?.deviceOrientation ?? DeviceOrientation.portrait,
-            runInBackground: false,
-            deviceId: sessionImage.deviceId,
-        };
+            await this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
+        });
 
-        if (this.emulationService.initWithSessionImage(this.cloudpilot, sessionImage, this.session)) {
-            void this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
-            return this;
-        }
-
-        throw new Error('failed to initialize session');
-    }
-
-    insertCompressedCardImage(cardImage: Uint8Array): this {
-        if (!this.cloudpilot.decompressCard(CARD_KEY, cardImage)) {
+    async insertCompressedCardImage(cardImage: Uint8Array): Promise<void> {
+        const decompressedImage = this.cloudpilot.decompress(cardImage);
+        if (!decompressedImage) {
             throw new Error('failed to decompress and mount card image');
         }
 
-        if (!this.cloudpilot.mountCard(CARD_KEY)) {
-            throw new Error('failed to mount card image');
-        }
-
-        return this;
+        await this.insertCardImage(decompressedImage);
     }
 
-    insertCardImage(cardImage: Uint8Array): this {
-        if (cardImage.length % 512 !== 0) {
-            throw new Error('card image size must be a multiple of 512');
-        }
+    insertCardImage = (cardImage: Uint8Array) =>
+        this.mutex.runExclusive(async () => {
+            const engine = this.emulationService.getEngine();
+            assertEngineInitialized(engine);
 
-        if (!this.cloudpilot.allocateCard(CARD_KEY, cardImage.length)) {
-            throw new Error('failed to allocate card image');
-        }
+            if (cardImage.length % 512 !== 0) throw new Error('card image size must be a multiple of 512');
 
-        const cardData = this.cloudpilot.getCardData(CARD_KEY);
-        if (!cardData) {
-            throw new Error('failed to allocate card image');
-        }
+            if (await this.isCardMountedUnguarded()) throw new Error('card already mounted');
 
-        cardData.set(new Uint32Array(cardImage.buffer, cardImage.byteOffset, cardImage.byteLength >>> 2));
+            const allocatedImage = engine.allocateCard(CARD_KEY, cardImage.length);
+            allocatedImage.set(new Uint32Array(cardImage.buffer, cardImage.byteOffset, cardImage.byteLength >>> 2));
 
-        if (!this.cloudpilot.mountCard(CARD_KEY)) {
-            throw new Error('failed to mount card image');
-        }
+            if (!(await engine.mountCard(CARD_KEY))) throw new Error('failed to mount card image');
+        });
 
-        return this;
-    }
+    ejectCard = () =>
+        this.mutex.runExclusive(async () => {
+            const engine = this.emulationService.getEngine();
+            assertEngineInitialized(engine);
 
-    ejectCard(): this {
-        if (!this.isCardMounted()) return this;
+            if (!(await this.isCardMountedUnguarded())) return;
 
-        if (!this.cloudpilot.removeCard(CARD_KEY)) {
-            throw new Error('failed to eject card');
-        }
+            await engine.releaseCard(CARD_KEY);
+        });
 
-        return this;
-    }
-
-    isCardMounted(): boolean {
-        return this.cloudpilot.getMountedKey() === CARD_KEY;
-    }
+    isCardMounted = () => this.mutex.runExclusive(() => this.isCardMountedUnguarded());
 
     setCanvas(canvas: HTMLCanvasElement): this {
         void this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
@@ -500,7 +496,7 @@ export class EmulatorImpl implements Emulator {
                 const name = walker.GetCurrentEntryName();
 
                 if (!content) {
-                    throw new Error(`unable to read ${name} from zupfile`);
+                    throw new Error(`unable to read ${name} from zipfile`);
                 }
 
                 this.installDatabase(content);
@@ -629,7 +625,7 @@ export class EmulatorImpl implements Emulator {
 
     setHotsyncName(hotsyncName: string | undefined): this {
         this.session.hotsyncName = hotsyncName;
-        this.emulationService.forceUpdateHotsyncName();
+        this.emulationService.updateEngineSettings({ hotsyncName });
 
         return this;
     }
@@ -712,7 +708,16 @@ export class EmulatorImpl implements Emulator {
         this.hotsyncNameWatcher.update();
     };
 
+    private async isCardMountedUnguarded(): Promise<boolean> {
+        const engine = this.emulationService.getEngine();
+        if (!engine) return false;
+
+        return (await engine.getMountedKey()) === CARD_KEY;
+    }
+
     readonly audioInitializedEvent = new EventImpl<void>();
+
+    private mutex = new Mutex();
 
     private emulationService: EmbeddedEmulationService;
     private canvasDisplayService: EmbeddedCanvasDisplayService;
