@@ -380,8 +380,8 @@ export class EmulatorImpl implements Emulator {
         return this.emulationService.getStatistics();
     }
 
-    loadRom = (rom: Uint8Array, deviceId?: DeviceId) =>
-        this.mutex.runExclusive(async () => {
+    async loadRom(rom: Uint8Array, deviceId?: DeviceId): Promise<void> {
+        await this.mutex.runExclusive(async () => {
             if (deviceId === undefined) {
                 const rominfo = this.cloudpilot.getRomInfo(rom);
                 if (!rominfo || rominfo.supportedDevices.length === 0) {
@@ -398,9 +398,10 @@ export class EmulatorImpl implements Emulator {
 
             await this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
         });
+    }
 
-    loadSession = (session: Uint8Array) =>
-        this.mutex.runExclusive(async () => {
+    async loadSession(session: Uint8Array): Promise<void> {
+        await this.mutex.runExclusive(async () => {
             const sessionImage = this.cloudpilot.deserializeSessionImage<SessionMetadata>(session);
             if (!sessionImage) throw new Error('bad session image');
 
@@ -418,6 +419,7 @@ export class EmulatorImpl implements Emulator {
 
             await this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
         });
+    }
 
     async insertCompressedCardImage(cardImage: Uint8Array): Promise<void> {
         const decompressedImage = this.cloudpilot.decompress(cardImage);
@@ -428,8 +430,8 @@ export class EmulatorImpl implements Emulator {
         await this.insertCardImage(decompressedImage);
     }
 
-    insertCardImage = (cardImage: Uint8Array) =>
-        this.mutex.runExclusive(async () => {
+    async insertCardImage(cardImage: Uint8Array): Promise<void> {
+        await this.mutex.runExclusive(async () => {
             const engine = this.getEngine();
 
             if (cardImage.length % 512 !== 0) throw new Error('card image size must be a multiple of 512');
@@ -441,17 +443,21 @@ export class EmulatorImpl implements Emulator {
 
             if (!(await engine.mountCard(CARD_KEY))) throw new Error('failed to mount card image');
         });
+    }
 
-    ejectCard = () =>
-        this.mutex.runExclusive(async () => {
+    async ejectCard(): Promise<void> {
+        await this.mutex.runExclusive(async () => {
             const engine = this.getEngine();
 
             if (!(await this.isCardMountedUnguarded())) return;
 
             await engine.releaseCard(CARD_KEY);
         });
+    }
 
-    isCardMounted = () => this.mutex.runExclusive(() => this.isCardMountedUnguarded());
+    async isCardMounted(): Promise<boolean> {
+        return await this.mutex.runExclusive(() => this.isCardMountedUnguarded());
+    }
 
     setCanvas(canvas: HTMLCanvasElement): void {
         void this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
@@ -469,7 +475,9 @@ export class EmulatorImpl implements Emulator {
         this.eventHandlingService.release();
     }
 
-    installDatabase = (file: Uint8Array) => this.mutex.runExclusive(() => this.installDatabaseUnguarded(file));
+    async installDatabase(file: Uint8Array): Promise<void> {
+        await this.mutex.runExclusive(() => this.installDatabaseUnguarded(file));
+    }
 
     async installAndLaunchDatabase(file: Uint8Array): Promise<void> {
         await this.installDatabase(file);
@@ -480,8 +488,8 @@ export class EmulatorImpl implements Emulator {
         await this.installFromZipfileAndLaunch(file);
     }
 
-    installFromZipfileAndLaunch = (file: Uint8Array, launchFile?: string) =>
-        this.mutex.runExclusive(async () => {
+    async installFromZipfileAndLaunch(file: Uint8Array, launchFile?: string): Promise<void> {
+        await this.mutex.runExclusive(async () => {
             let launch: Uint8Array | undefined;
 
             await this.cloudpilot.withZipfileWalker(file, async (walker) => {
@@ -508,31 +516,51 @@ export class EmulatorImpl implements Emulator {
             if (launchFile !== undefined && !launch) throw new Error(`database ${launchFile} not found `);
             if (launch) await this.launchDatabaseUnguarded(launch);
         });
+    }
 
-    launchByName = (name: string) =>
-        this.mutex.runExclusive(async () => {
+    async launchByName(name: string): Promise<void> {
+        await this.mutex.runExclusive(async () => {
             const engine = this.getEngine();
 
             if (!(await engine.launchAppByName(name))) throw new Error(`failed to launch ${name}`);
         });
+    }
 
-    launchDatabase = (database: Uint8Array) => this.mutex.runExclusive(() => this.launchDatabaseUnguarded(database));
+    async launchDatabase(database: Uint8Array): Promise<void> {
+        await this.mutex.runExclusive(() => this.launchDatabaseUnguarded(database));
+    }
 
-    reset = () => this.mutex.runExclusive(() => this.emulationService.reset());
+    async reset(): Promise<void> {
+        await this.mutex.runExclusive(() => this.emulationService.reset());
+    }
 
-    resetNoExtensions = () => this.mutex.runExclusive(() => this.emulationService.resetNoExtensions());
+    async resetNoExtensions(): Promise<void> {
+        await this.mutex.runExclusive(() => this.emulationService.resetNoExtensions());
+    }
 
-    resetHard = () => this.mutex.runExclusive(() => this.emulationService.resetHard());
+    async resetHard(): Promise<void> {
+        await this.mutex.runExclusive(() => this.emulationService.resetHard());
+    }
 
-    isRunning = (): Promise<boolean> => this.mutex.runExclusive(() => this.emulationService.isRunning());
+    async isRunning(): Promise<boolean> {
+        return await this.mutex.runExclusive(() => this.emulationService.isRunning());
+    }
 
-    isPowerOff = (): Promise<boolean> => this.mutex.runExclusive(() => this.emulationService.isPowerOff());
+    async isPowerOff(): Promise<boolean> {
+        return await this.mutex.runExclusive(() => this.emulationService.isPowerOff());
+    }
 
-    isUiInitialized = (): Promise<boolean> => this.mutex.runExclusive(() => this.emulationService.isUiInitialized());
+    async isUiInitialized(): Promise<boolean> {
+        return await this.mutex.runExclusive(() => this.emulationService.isUiInitialized());
+    }
 
-    resume = () => this.mutex.runExclusive(() => this.emulationService.resume());
+    async resume(): Promise<void> {
+        await this.mutex.runExclusive(() => this.emulationService.resume());
+    }
 
-    pause = () => this.mutex.runExclusive(() => this.emulationService.pause());
+    async pause(): Promise<void> {
+        await this.mutex.runExclusive(() => this.emulationService.pause());
+    }
 
     buttonDown(button: Button): void {
         this.emulationService.handleButtonDown(button as number);
@@ -577,11 +605,12 @@ export class EmulatorImpl implements Emulator {
         return this.session.orientation;
     }
 
-    setHotsyncName = (hotsyncName: string | undefined): Promise<void> =>
-        this.mutex.runExclusive(() => {
+    async setHotsyncName(hotsyncName: string | undefined): Promise<void> {
+        await this.mutex.runExclusive(() => {
             this.session.hotsyncName = hotsyncName;
             this.emulationService.syncSettings();
         });
+    }
 
     getHotsyncName(): string | undefined {
         return this.session.hotsyncName;
@@ -648,11 +677,11 @@ export class EmulatorImpl implements Emulator {
         return this.emulationService.timesliceEvent;
     }
 
-    private onTimeslice = (): void => {
+    private onTimeslice(): void {
         this.powerOffWatcher.update();
         this.uiInitializedWatcher.update();
         this.hotsyncNameWatcher.update();
-    };
+    }
 
     private async isCardMountedUnguarded(): Promise<boolean> {
         const engine = this.emulationService.getEngine();
