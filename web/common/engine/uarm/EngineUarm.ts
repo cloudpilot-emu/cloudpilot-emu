@@ -339,6 +339,14 @@ export class EngineUarmImpl implements EngineUarm {
         return this.rpcHost.call('backup', { includeRom });
     }
 
+    launchAppByName(name: string): Promise<boolean> {
+        throw new Error('Method not implemented.');
+    }
+
+    launchAppByHeader(header: Uint8Array): Promise<boolean> {
+        throw new Error('Method not implemented.');
+    }
+
     private dispatchMessage = (mesage: HostMessage, transferables?: Array<Transferable>) => {
         this.worker.postMessage(mesage, transferables as Array<Transferable>);
     };

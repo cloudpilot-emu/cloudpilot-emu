@@ -469,6 +469,14 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         });
     }
 
+    async launchAppByName(name: string): Promise<boolean> {
+        return this.cloudpilotInstance.launchAppByName(name);
+    }
+
+    async launchAppByHeader(header: Uint8Array): Promise<boolean> {
+        return this.cloudpilotInstance.launchAppByDbHeader(header);
+    }
+
     private schedule() {
         this.scheduler.cancel();
 

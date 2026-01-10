@@ -86,6 +86,9 @@ export interface EngineCommon {
     installDb(data: Uint8Array): Promise<DbInstallResult>;
     backup(includeRomDatabases: boolean): Promise<BackupResult | undefined>;
 
+    launchAppByName(name: string): Promise<boolean>;
+    launchAppByHeader(header: Uint8Array): Promise<boolean>;
+
     readonly newFrameEvent: EventInterface<void>;
     readonly timesliceEvent: EventInterface<number>;
     readonly suspendEvent: EventInterface<void>;

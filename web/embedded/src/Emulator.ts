@@ -34,6 +34,9 @@ function assertEngineInitialized(engine: Engine | undefined): asserts engine is 
     if (!engine) throw new Error('session not initialized');
 }
 
+// TODO: D-Pad
+// TODO: uARM
+
 /**
  *
  */
@@ -132,14 +135,14 @@ export interface Emulator {
      *
      * @param name Database name
      */
-    launchByName(name: string): this;
+    launchByName(name: string): Promise<void>;
 
     /**
      * Attempt to extract the name from a database and launch it.
      *
      * @param database Database data (only the first 32 bytes are required)
      */
-    launchDatabase(database: Uint8Array): this;
+    launchDatabase(database: Uint8Array): Promise<void>;
 
     /**
      * Perform a soft reset (equivalent of pushing the reset button).
@@ -426,8 +429,7 @@ export class EmulatorImpl implements Emulator {
 
     insertCardImage = (cardImage: Uint8Array) =>
         this.mutex.runExclusive(async () => {
-            const engine = this.emulationService.getEngine();
-            assertEngineInitialized(engine);
+            const engine = this.getEngine();
 
             if (cardImage.length % 512 !== 0) throw new Error('card image size must be a multiple of 512');
 
@@ -441,8 +443,7 @@ export class EmulatorImpl implements Emulator {
 
     ejectCard = () =>
         this.mutex.runExclusive(async () => {
-            const engine = this.emulationService.getEngine();
-            assertEngineInitialized(engine);
+            const engine = this.getEngine();
 
             if (!(await this.isCardMountedUnguarded())) return;
 
@@ -462,7 +463,7 @@ export class EmulatorImpl implements Emulator {
         if (!canvas) {
             throw new Error('you must set up the canvas setCanvas before calling bindInput');
         }
-        this.eventHandlingService.bind(canvas, keyEventTarget);
+        this.eventHandlingService.bind(canvas, false, keyEventTarget);
 
         return this;
     }
@@ -517,17 +518,19 @@ export class EmulatorImpl implements Emulator {
         return this;
     }
 
-    launchByName(name: string): this {
-        if (!this.cloudpilot.launchAppByName(name)) throw new Error(`failed to launch ${name}`);
+    launchByName = (name: string) =>
+        this.mutex.runExclusive(async () => {
+            const engine = this.getEngine();
 
-        return this;
-    }
+            if (!(await engine.launchAppByName(name))) throw new Error(`failed to launch ${name}`);
+        });
 
-    launchDatabase(database: Uint8Array): this {
-        if (!this.cloudpilot.launchAppByDbHeader(database)) throw new Error('failed to launch database');
+    launchDatabase = (database: Uint8Array) =>
+        this.mutex.runExclusive(async () => {
+            const engine = this.getEngine();
 
-        return this;
-    }
+            if (!(await engine.launchAppByHeader(database))) throw new Error(`failed to launch ${name}`);
+        });
 
     reset(): this {
         this.emulationService.reset();
@@ -713,6 +716,13 @@ export class EmulatorImpl implements Emulator {
         if (!engine) return false;
 
         return (await engine.getMountedKey()) === CARD_KEY;
+    }
+
+    private getEngine(): Engine {
+        const engine = this.emulationService.getEngine();
+        assertEngineInitialized(engine);
+
+        return engine;
     }
 
     readonly audioInitializedEvent = new EventImpl<void>();
