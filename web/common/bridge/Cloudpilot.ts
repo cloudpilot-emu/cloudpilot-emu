@@ -605,33 +605,6 @@ export class Cloudpilot {
         }
     }
 
-    withZipfileWalkerSync<T>(buffer: Uint8Array, callback: (walker: ZipfileWalker) => T): T {
-        const walker = this.guard(() => {
-            const ptr = this.copyIn(buffer);
-            const newWalker = new this.module.ZipfileWalker(buffer.length, ptr);
-
-            this.cloudpilot.Free(ptr);
-
-            return newWalker;
-        });
-
-        try {
-            return callback(
-                this.wrap(
-                    Object.setPrototypeOf(
-                        {
-                            GetCurrentEntryContent: () =>
-                                this.copyOut(walker.GetCurrentEntryContent(), walker.GetCurrentEntrySize()),
-                        },
-                        walker,
-                    ),
-                ),
-            );
-        } finally {
-            this.module.destroy(walker);
-        }
-    }
-
     @guard()
     serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Uint8Array | undefined {
         if (sessionImage.engine === 'cloudpilot' && sessionImage.nand) {

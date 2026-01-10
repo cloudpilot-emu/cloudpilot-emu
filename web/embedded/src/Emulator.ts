@@ -36,6 +36,7 @@ function assertEngineInitialized(engine: Engine | undefined): asserts engine is 
 
 // TODO: D-Pad
 // TODO: uARM
+// TODO: refactor reset to be transactional
 
 /**
  *
@@ -85,7 +86,7 @@ export interface Emulator {
      *
      * @param canvas Canvas for displaying the emulator
      */
-    setCanvas(canvas: HTMLCanvasElement): this;
+    setCanvas(canvas: HTMLCanvasElement): void;
 
     /**
      * Receive input events from the specified sources. If this method is called
@@ -93,33 +94,33 @@ export interface Emulator {
      *
      * @param keyboardTarget Optional: target for keyboard events, default: `window`
      */
-    bindInput(keyboardTarget?: EventTarget): this;
+    bindInput(keyboardTarget?: EventTarget): void;
 
     /**
      * Unbind the handlers previous bound with `bindInput`.
      */
-    releaseInput(): this;
+    releaseInput(): void;
 
     /**
      * Install a prc or pdb database to the device.
      *
      * @param file The database data.
      */
-    installDatabase(file: Uint8Array): this;
+    installDatabase(file: Uint8Array): Promise<void>;
 
     /**
      * Install a prc database to the device and attempt to launch it.
      *
      * @param file The database data.
      */
-    installAndLaunchDatabase(file: Uint8Array): this;
+    installAndLaunchDatabase(file: Uint8Array): Promise<void>;
 
     /**
      * Extract all databases from a zip archive and install them.
      *
      * @param file The zip archive data.
      */
-    installFromZipfile(file: Uint8Array): this;
+    installFromZipfile(file: Uint8Array): Promise<void>;
 
     /**
      * Extract all databases from a zip archive and install them, then attampt to
@@ -128,7 +129,7 @@ export interface Emulator {
      * @param file The zip archive data.
      * @param launchFile The file name of the database that Cloudpilot will try to launch.
      */
-    installFromZipfileAndLaunch(file: Uint8Array, launchFile: string): this;
+    installFromZipfileAndLaunch(file: Uint8Array, launchFile: string): Promise<void>;
 
     /**
      * Attemot to launch the database with the specified name.
@@ -147,52 +148,52 @@ export interface Emulator {
     /**
      * Perform a soft reset (equivalent of pushing the reset button).
      */
-    reset(): this;
+    reset(): Promise<void>;
 
     /**
      * Reset w/o system extensions (equivalent to holding "down" while pushing the
      * reset button).
      */
-    resetNoExtensions(): this;
+    resetNoExtensions(): Promise<void>;
 
     /**
      * Hard reset (equivalent to holding "power" while pushing the
      * reset button).
      */
-    resetHard(): this;
+    resetHard(): Promise<void>;
 
     /**
      * Is the emulator running?
      */
-    isRunning(): boolean;
+    isRunning(): Promise<boolean>;
 
     /**
      * Is the device powered off?
      */
-    isPowerOff(): boolean;
+    isPowerOff(): Promise<boolean>;
 
     /**
      * Has the emulated device passed UI initialization (during boot)? This
      * is required before software can be installed.
      */
-    isUiInitialized(): boolean;
+    isUiInitialized(): Promise<boolean>;
 
     /**
      * Resume a paused device.
      */
-    resume(): this;
+    resume(): Promise<void>;
 
     /**
      * Pause a running device.
      */
-    pause(): this;
+    pause(): Promise<void>;
 
     /**
      * Push a hardware button.
      *
      * @param button The desired button
      */
-    buttonDown(button: Button): this;
+    buttonDown(button: Button): void;
 
     /**
      * Release a hardware button.
@@ -200,14 +201,14 @@ export interface Emulator {
      * @param button The desired button
      */
 
-    buttonUp(button: Button): this;
+    buttonUp(button: Button): void;
 
     /**
      * Adjust speed of the emulated device.
      *
      * @param speed Speed factor
      */
-    setSpeed(speed: number): this;
+    setSpeed(speed: number): void;
 
     /**
      * Query configured speed factor.
@@ -219,7 +220,7 @@ export interface Emulator {
      *
      * @param volume Volume (1 = 100%, 0 = silent)
      */
-    setVolume(volume: number): this;
+    setVolume(volume: number): void;
 
     /**
      * Query audio volume
@@ -242,7 +243,7 @@ export interface Emulator {
      *
      * @param gameModeActive Desired state
      */
-    setGameMode(gameModeActive: boolean): this;
+    setGameMode(gameModeActive: boolean): void;
 
     /**
      * Is game mode enabled?
@@ -254,7 +255,7 @@ export interface Emulator {
      *
      * @param enableGamemodeHotkey Desired state
      */
-    setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): this;
+    setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): void;
 
     /**
      * Can game mode be toggled via shift-ctrl?
@@ -267,7 +268,7 @@ export interface Emulator {
      *
      * @param gameModeIndicatorEnabled Desired state
      */
-    setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean): this;
+    setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean): void;
 
     /**
      * Is game mode overlay enabled?
@@ -279,7 +280,7 @@ export interface Emulator {
      *
      * @param orientation Desired orientation
      */
-    setOrientation(orientation: DeviceOrientation): this;
+    setOrientation(orientation: DeviceOrientation): void;
 
     /**
      * Query device orientation
@@ -291,7 +292,7 @@ export interface Emulator {
      *
      * @param hotsyncName Desired hotsync name
      */
-    setHotsyncName(hotsyncName: string | undefined): this;
+    setHotsyncName(hotsyncName: string | undefined): Promise<void>;
 
     /**
      * Get hotsync name.
@@ -303,7 +304,7 @@ export interface Emulator {
      *
      * @param toggle Desired state
      */
-    setRunHidden(toggle: boolean): this;
+    setRunHidden(toggle: boolean): void;
 
     /**
      * Keep running if the emulator tab is not visible?
@@ -318,12 +319,12 @@ export interface Emulator {
     /**
      * Get serial transport for IR transceiver.
      */
-    getSerialPortIR(): SerialPort;
+    getSerialPortIR(): SerialPort | undefined;
 
     /**
      * Get serial transport for serial port.
      */
-    getSerialPortSerial(): SerialPort;
+    getSerialPortSerial(): SerialPort | undefined;
 
     /**
      * Fires when the device turns on or off.
@@ -452,71 +453,61 @@ export class EmulatorImpl implements Emulator {
 
     isCardMounted = () => this.mutex.runExclusive(() => this.isCardMountedUnguarded());
 
-    setCanvas(canvas: HTMLCanvasElement): this {
+    setCanvas(canvas: HTMLCanvasElement): void {
         void this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
-
-        return this;
     }
 
-    bindInput(keyEventTarget?: EventTarget): this {
+    bindInput(keyEventTarget?: EventTarget): void {
         const canvas = this.canvasDisplayService.getCanvas();
         if (!canvas) {
             throw new Error('you must set up the canvas setCanvas before calling bindInput');
         }
         this.eventHandlingService.bind(canvas, false, keyEventTarget);
-
-        return this;
     }
 
-    releaseInput(): this {
+    releaseInput(): void {
         this.eventHandlingService.release();
-
-        return this;
     }
 
-    installDatabase(file: Uint8Array): this {
-        if (this.cloudpilot.installDb(file) < 0) throw new Error('failed to install database');
+    installDatabase = (file: Uint8Array) => this.mutex.runExclusive(() => this.installDatabaseUnguarded(file));
 
-        return this;
+    async installAndLaunchDatabase(file: Uint8Array): Promise<void> {
+        await this.installDatabase(file);
+        await this.launchDatabase(file);
     }
 
-    installAndLaunchDatabase(file: Uint8Array): this {
-        return this.installDatabase(file).launchDatabase(file);
+    async installFromZipfile(file: Uint8Array): Promise<void> {
+        await this.installFromZipfileAndLaunch(file);
     }
 
-    installFromZipfile(file: Uint8Array): this {
-        return this.installFromZipfileAndLaunch(file);
-    }
+    installFromZipfileAndLaunch = (file: Uint8Array, launchFile?: string) =>
+        this.mutex.runExclusive(async () => {
+            let launch: Uint8Array | undefined;
 
-    installFromZipfileAndLaunch(file: Uint8Array, launchFile?: string): this {
-        let launch: Uint8Array | undefined;
+            await this.cloudpilot.withZipfileWalker(file, async (walker) => {
+                while (walker.GetState() === ZipfileWalkerState.open) {
+                    const content = walker.GetCurrentEntryContent();
+                    const name = walker.GetCurrentEntryName();
 
-        this.cloudpilot.withZipfileWalkerSync(file, (walker) => {
-            while (walker.GetState() === ZipfileWalkerState.open) {
-                const content = walker.GetCurrentEntryContent();
-                const name = walker.GetCurrentEntryName();
+                    if (!content) {
+                        throw new Error(`unable to read ${name} from zipfile`);
+                    }
 
-                if (!content) {
-                    throw new Error(`unable to read ${name} from zipfile`);
+                    await this.installDatabaseUnguarded(content);
+
+                    if (name.toLowerCase() === launchFile?.toLowerCase()) launch = content.subarray(0, 32).slice();
+
+                    walker.Next();
                 }
 
-                this.installDatabase(content);
+                if (walker.GetState() === ZipfileWalkerState.error) {
+                    throw new Error('error reading zipfile');
+                }
+            });
 
-                if (name.toLowerCase() === launchFile?.toLowerCase()) launch = content.subarray(0, 32).slice();
-
-                walker.Next();
-            }
-
-            if (walker.GetState() === ZipfileWalkerState.error) {
-                throw new Error('error reading zipfile');
-            }
+            if (launchFile !== undefined && !launch) throw new Error(`database ${launchFile} not found `);
+            if (launch) await this.launchDatabaseUnguarded(launch);
         });
-
-        if (launchFile !== undefined && !launch) throw new Error(`database ${launchFile} not found `);
-        if (launch) this.launchDatabase(launch);
-
-        return this;
-    }
 
     launchByName = (name: string) =>
         this.mutex.runExclusive(async () => {
@@ -525,81 +516,43 @@ export class EmulatorImpl implements Emulator {
             if (!(await engine.launchAppByName(name))) throw new Error(`failed to launch ${name}`);
         });
 
-    launchDatabase = (database: Uint8Array) =>
-        this.mutex.runExclusive(async () => {
-            const engine = this.getEngine();
+    launchDatabase = (database: Uint8Array) => this.mutex.runExclusive(() => this.launchDatabaseUnguarded(database));
 
-            if (!(await engine.launchAppByHeader(database))) throw new Error(`failed to launch ${name}`);
-        });
+    reset = () => this.mutex.runExclusive(() => this.emulationService.reset());
 
-    reset(): this {
-        this.emulationService.reset();
+    resetNoExtensions = () => this.mutex.runExclusive(() => this.emulationService.resetNoExtensions());
 
-        return this;
-    }
+    resetHard = () => this.mutex.runExclusive(() => this.emulationService.resetHard());
 
-    resetNoExtensions(): this {
-        this.emulationService.resetNoExtensions();
+    isRunning = (): Promise<boolean> => this.mutex.runExclusive(() => this.emulationService.isRunning());
 
-        return this;
-    }
+    isPowerOff = (): Promise<boolean> => this.mutex.runExclusive(() => this.emulationService.isPowerOff());
 
-    resetHard(): this {
-        this.emulationService.resetHard();
+    isUiInitialized = (): Promise<boolean> => this.mutex.runExclusive(() => this.emulationService.isUiInitialized());
 
-        return this;
-    }
+    resume = () => this.mutex.runExclusive(() => this.emulationService.resume());
 
-    isRunning(): boolean {
-        return this.emulationService.isRunning();
-    }
+    pause = () => this.mutex.runExclusive(() => this.emulationService.pause());
 
-    isPowerOff(): boolean {
-        return this.emulationService.isPowerOff();
-    }
-
-    isUiInitialized(): boolean {
-        return this.emulationService.isUiInitialized();
-    }
-
-    resume(): this {
-        this.emulationService.resume();
-
-        return this;
-    }
-
-    pause(): this {
-        this.emulationService.pause();
-
-        return this;
-    }
-
-    buttonDown(button: Button): this {
+    buttonDown(button: Button): void {
         this.emulationService.handleButtonDown(button as number);
-
-        return this;
     }
 
-    buttonUp(button: Button): this {
+    buttonUp(button: Button): void {
         this.emulationService.handleButtonUp(button as number);
-
-        return this;
     }
 
-    setSpeed(speed: number): this {
+    setSpeed(speed: number): void {
         this.session.speed = speed;
-
-        return this;
+        this.emulationService.syncSettings();
     }
 
     getSpeed(): number {
         return this.session.speed;
     }
 
-    setVolume(volume: number): this {
+    setVolume(volume: number): void {
         this.audioService.setVolume(volume);
-
-        return this;
     }
 
     getVolume(): number {
@@ -615,32 +568,28 @@ export class EmulatorImpl implements Emulator {
         return this.audioService.isInitialized();
     }
 
-    setOrientation(orientation: DeviceOrientation): this {
+    setOrientation(orientation: DeviceOrientation): void {
         this.session.orientation = orientation;
         this.canvasDisplayService.updateOrientation(this.session.orientation);
-
-        return this;
     }
 
     getOrientation(): DeviceOrientation {
         return this.session.orientation;
     }
 
-    setHotsyncName(hotsyncName: string | undefined): this {
-        this.session.hotsyncName = hotsyncName;
-        this.emulationService.updateEngineSettings({ hotsyncName });
-
-        return this;
-    }
+    setHotsyncName = (hotsyncName: string | undefined): Promise<void> =>
+        this.mutex.runExclusive(() => {
+            this.session.hotsyncName = hotsyncName;
+            this.emulationService.syncSettings();
+        });
 
     getHotsyncName(): string | undefined {
         return this.session.hotsyncName;
     }
 
-    setRunHidden(toggle: boolean): this {
+    setRunHidden(toggle: boolean): void {
         this.session.runInBackground = toggle;
-
-        return this;
+        this.emulationService.syncSettings();
     }
 
     getRunHidden(): boolean {
@@ -651,37 +600,31 @@ export class EmulatorImpl implements Emulator {
         return this.eventHandlingService.isGameMode();
     }
 
-    setGameMode(gameModeActive: boolean): this {
+    setGameMode(gameModeActive: boolean): void {
         this.eventHandlingService.setGameMode(gameModeActive);
-
-        return this;
     }
 
     isGameModeHotkeyEnabled(): boolean {
         return this.eventHandlingService.isGameModeHotkeyEnabled();
     }
 
-    setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): this {
+    setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): void {
         this.eventHandlingService.setGameModeHotkeyEnabled(enableGamemodeHotkey);
-
-        return this;
     }
 
     isGameModeIndicatorEnabled(): boolean {
         return this.canvasDisplayService.isGameModeIndicatorEnabled();
     }
 
-    setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean): this {
+    setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean): void {
         this.canvasDisplayService.setGameModeIndicatorEnabled(gameModeIndicatorEnabled);
-
-        return this;
     }
 
-    getSerialPortIR(): SerialPort {
+    getSerialPortIR(): SerialPort | undefined {
         return this.emulationService.getSerialPortIR();
     }
 
-    getSerialPortSerial(): SerialPort {
+    getSerialPortSerial(): SerialPort | undefined {
         return this.emulationService.getSerialPortSerial();
     }
 
@@ -716,6 +659,18 @@ export class EmulatorImpl implements Emulator {
         if (!engine) return false;
 
         return (await engine.getMountedKey()) === CARD_KEY;
+    }
+
+    private async installDatabaseUnguarded(file: Uint8Array) {
+        const engine = this.getEngine();
+
+        if ((await engine.installDb(file)) < 0) throw new Error('failed to install database');
+    }
+
+    private async launchDatabaseUnguarded(database: Uint8Array) {
+        const engine = this.getEngine();
+
+        if (!(await engine.launchAppByHeader(database))) throw new Error(`failed to launch ${name}`);
     }
 
     private getEngine(): Engine {
