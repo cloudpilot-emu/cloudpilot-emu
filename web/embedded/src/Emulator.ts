@@ -36,7 +36,6 @@ function assertEngineInitialized(engine: Engine | undefined): asserts engine is 
 
 // TODO: D-Pad
 // TODO: uARM
-// TODO: refactor reset to be transactional
 
 /**
  *
@@ -371,9 +370,9 @@ export class EmulatorImpl implements Emulator {
 
         this.timesliceEvent.addHandler(this.onTimeslice);
 
-        this.powerOffWatcher = new Watcher(() => this.isPowerOff());
-        this.uiInitializedWatcher = new Watcher(() => this.isUiInitialized());
-        this.hotsyncNameWatcher = new Watcher(() => this.getHotsyncName() || '');
+        this.powerOffWatcher = new Watcher(() => this.emulationService.isPowerOff());
+        this.uiInitializedWatcher = new Watcher(() => this.emulationService.isUiInitialized());
+        this.hotsyncNameWatcher = new Watcher(() => this.session.hotsyncName ?? '');
     }
 
     getStatistics(): EmulationStatistics | undefined {
