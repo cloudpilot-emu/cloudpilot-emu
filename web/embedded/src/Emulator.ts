@@ -297,7 +297,7 @@ export interface Emulator {
     /**
      * Get hotsync name.
      */
-    getHotsyncName(): string | undefined;
+    getHotsyncName(): Promise<string | undefined>;
 
     /**
      * Keep running if the emulator tab is not visible?
@@ -612,8 +612,8 @@ export class EmulatorImpl implements Emulator {
         });
     }
 
-    getHotsyncName(): string | undefined {
-        return this.session.hotsyncName;
+    async getHotsyncName(): Promise<string | undefined> {
+        return this.mutex.runExclusive(() => this.session.hotsyncName);
     }
 
     setRunHidden(toggle: boolean): void {
