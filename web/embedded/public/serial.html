@@ -111,6 +111,9 @@
                 const emulator = await cloudpilot.createEmulator();
                 const canvas = document.getElementsByTagName('canvas')[0];
 
+                // The emulator needs to be initialized before the serial port is accessible
+                await emulator.loadSession(new Uint8Array(image));
+
                 emulator.getSerialPortSerial().receiveEvent.addHandler(({ data }) => terminal.write(data));
 
                 terminal.onData((data) =>
@@ -125,7 +128,10 @@
                     ),
                 );
 
-                emulator.loadSession(new Uint8Array(image)).setCanvas(canvas).bindInput(canvas).resume();
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
+                
+                await emulator.resume();
             })().catch((e) => console.error(e));
         </script>
     </body>

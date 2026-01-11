@@ -89,6 +89,10 @@
                 const canvas1 = document.getElementById('canvas-1');
                 const canvas2 = document.getElementById('canvas-2');
 
+                // The emulators need to be initialized before the serial port is accessible
+                await emulator1.loadRom(new Uint8Array(rom1));
+                await emulator2.loadRom(new Uint8Array(rom2));
+
                 emulator1.getSerialPortIR().setModeSync(true);
                 emulator2.getSerialPortIR().setModeSync(true);
 
@@ -103,9 +107,13 @@
                         emulator1.getSerialPortIR().send(data, isFrameComplete),
                     );
 
-                emulator1.loadRom(new Uint8Array(rom1)).setCanvas(canvas1).bindInput(canvas1).resume();
+                emulator1.setCanvas(canvas1);
+                emulator1.bindInput(canvas1);
+                emulator2.setCanvas(canvas2);
+                emulator2.bindInput(canvas2);
 
-                emulator2.loadRom(new Uint8Array(rom2)).setCanvas(canvas2).bindInput(canvas2).resume();
+                await emulator1.resume();
+                await emulator2.resume();
             })().catch((e) => console.error(e));
         </script>
     </body>

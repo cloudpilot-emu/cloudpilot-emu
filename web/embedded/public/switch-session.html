@@ -95,19 +95,26 @@
                 const launchRomButton = document.getElementById('launch-rom-button');
                 const loadSessionButton = document.getElementById('load-session-button');
 
-                emulator.setCanvas(canvas).bindInput(canvas);
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
 
                 launchRomButton.disabled = false;
                 loadSessionButton.disabled = false;
 
                 launchRomButton.addEventListener('click', () => {
-                    emulator.loadRom(new Uint8Array(rom)).resume();
+                    emulator
+                        .loadRom(new Uint8Array(rom))
+                        .then(() => emulator.resume())
+                        .catch(e => console.error(e));
 
                     canvas.style.visibility = 'visible';
                 });
 
                 loadSessionButton.addEventListener('click', () => {
-                    emulator.loadSession(new Uint8Array(image)).resume();
+                    emulator
+                        .loadSession(new Uint8Array(image))
+                        .then(() => emulator.resume())
+                        .catch(e => console.error(e));
 
                     canvas.style.visibility = 'visible';
                 });
