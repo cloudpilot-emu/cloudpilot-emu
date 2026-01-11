@@ -728,7 +728,7 @@ export class Cloudpilot {
                 return;
             }
 
-            this.copyOut(gunzipContext.ReleaseUncompressedData(), gunzipContext.GetUncompressedSize());
+            return this.copyOut(gunzipContext.ReleaseUncompressedData(), gunzipContext.GetUncompressedSize());
         } finally {
             this.cloudpilot.Free(buffer);
             if (gunzipContext) this.module.destroy(gunzipContext);

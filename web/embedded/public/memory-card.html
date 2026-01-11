@@ -94,15 +94,16 @@
                 const insertCardButton = document.getElementById('insert-card-button');
                 const ejectCardButton = document.getElementById('eject-card-button');
 
-                emulator
-                    .setCanvas(canvas)
-                    .bindInput(canvas)
-                    .loadSession(new Uint8Array(session))
-                    .insertCompressedCardImage(new Uint8Array(memoryCardImage))
-                    .resume();
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
+                    
+                await emulator.loadSession(new Uint8Array(session));
+                await emulator.insertCompressedCardImage(new Uint8Array(memoryCardImage));
+                
+                await emulator.resume();
 
-                const updateButtons = () => {
-                    if (emulator.isCardMounted()) {
+                const updateButtons = async () => {
+                    if (await emulator.isCardMounted()) {
                         insertCardButton.disabled = true;
                         ejectCardButton.disabled = false;
                     } else {
@@ -112,13 +113,17 @@
                 };
 
                 insertCardButton.addEventListener('click', () => {
-                    emulator.insertCompressedCardImage(new Uint8Array(memoryCardImage));
-                    updateButtons();
+                    emulator
+                        .insertCompressedCardImage(new Uint8Array(memoryCardImage))
+                        .then(() => updateButtons())
+                        .catch(e => console.error(e));
                 });
 
                 ejectCardButton.addEventListener('click', () => {
-                    emulator.ejectCard();
-                    updateButtons();
+                    emulator
+                        .ejectCard()
+                        .then(() => updateButtons())
+                        .catch(e => console.error(e));
                 });
 
                 updateButtons();
