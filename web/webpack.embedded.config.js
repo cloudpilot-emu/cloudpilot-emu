@@ -12,6 +12,34 @@ function getGitRev() {
     return rev;
 }
 
+// THat damnable bundler adds an UMD preamble to the generated worker bundles. This fails
+// in the worklet environment, so we hack around this by replacing `self` with `{}`. Yuck.
+class PostProcessWorkletPlugin {
+    apply(compiler) {
+        compiler.hooks.thisCompilation.tap('ModifyAfterEmitPlugin', (compilation) => {
+            compilation.hooks.processAssets.tap(
+                {
+                    name: 'ModifyAfterEmitPlugin',
+                    stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE,
+                },
+                (assets) => {
+                    Object.keys(assets).forEach((filename) => {
+                        if (filename !== 'pcm-worklet.js') return;
+
+                        const source = assets[filename].source().toString();
+                        const modified = source.replace(/(?<=\W)self(?=\W)/g, '{}');
+                        compilation.updateAsset(filename, new compiler.webpack.sources.RawSource(modified));
+                    });
+                },
+            );
+        });
+    }
+}
+
+module.exports = {
+    plugins: [new PostProcessWorkletPlugin()],
+};
+
 module.exports = (env, argv) => ({
     entry: './embedded/src/index.ts',
     devtool: argv.mode === 'development' ? 'eval-source-map' : 'source-map',
@@ -69,6 +97,7 @@ module.exports = (env, argv) => ({
         new webpack.optimize.LimitChunkCountPlugin({
             maxChunks: 1,
         }),
+        new PostProcessWorkletPlugin(),
     ],
     performance: {
         maxAssetSize: 3 * 1024 * 1024,
@@ -80,5 +109,7 @@ module.exports = (env, argv) => ({
         },
         compress: true,
         port: 9000,
+        // Hot reloading does not play well with workers. More yuck.
+        hot: false,
     },
 });
