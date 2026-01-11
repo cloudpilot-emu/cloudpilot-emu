@@ -676,11 +676,11 @@ export class EmulatorImpl implements Emulator {
         return this.emulationService.timesliceEvent;
     }
 
-    private onTimeslice(): void {
+    private onTimeslice = (): void => {
         this.powerOffWatcher.update();
         this.uiInitializedWatcher.update();
         this.hotsyncNameWatcher.update();
-    }
+    };
 
     private async isCardMountedUnguarded(): Promise<boolean> {
         const engine = this.emulationService.getEngine();
