@@ -181,7 +181,12 @@
                 const emulator = await cloudpilot.createEmulator();
 
                 // Load session and start emulator
-                emulator.loadSession(new Uint8Array(image)).setCanvas(canvas).bindInput(canvas).resume();
+                await emulator.loadSession(new Uint8Array(image))
+                
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
+
+                await emulator.resume();
 
                 // Get handles to the UI elements
                 const pauseResumeButton = document.getElementById('pause-resume-button');
@@ -211,35 +216,49 @@
                 const runHiddenButton = document.getElementById('run-hidden-button');
 
                 // Update UI to reflect emulator state
-                function updateUi() {
-                    pauseResumeButton.innerText = emulator.isRunning() ? 'Pause' : 'Resume';
+                let uiUpdateComplete = Promise.resolve();
 
-                    powerButton.innerText = emulator.isPowerOff() ? 'Power on' : 'Power off';
-                    uiStatusContainer.innerText = emulator.isUiInitialized() ? 'UI initialized' : 'UI not initialized';
-                    orientationButton.innerText =
-                        'Rotate to ' + orientationToString(nextOrientation(emulator.getOrientation()));
+                async function updateUi() {
+                    await uiUpdateComplete;
+                    
+                    uiUpdateComplete = (async () => {
+                        try {
+                            const isRunning = await emulator.isRunning();
+                            const isPowerOff = await emulator.isPowerOff();
+                            const isUiInitialized = await emulator.isUiInitialized()
 
-                    hotsyncNameContainer.innerText = `Hotsync name: ${emulator.getHotsyncName()}`;
-                    applyHotsyncNameButton.disabled = emulator.isPowerOff() || !emulator.isUiInitialized();
+                            pauseResumeButton.innerText = isRunning ? 'Pause' : 'Resume';
 
-                    enableAudioButton.style.display = emulator.isAudioInitialized() ? 'none' : undefined;
+                            powerButton.innerText = isPowerOff ? 'Power on' : 'Power off';
+                            uiStatusContainer.innerText = isUiInitialized ? 'UI initialized' : 'UI not initialized';
+                            orientationButton.innerText =
+                                'Rotate to ' + orientationToString(nextOrientation(emulator.getOrientation()));
 
-                    gameModeButton.innerText = emulator.isGameMode() ? 'Game mode off' : 'Game mode on';
-                    gameModeHotkeyButton.innerText = emulator.isGameModeHotkeyEnabled()
-                        ? 'Game mode hotkey off'
-                        : 'Game mode hotkey on';
-                    gameModeIndicatorButton.innerText = emulator.isGameModeIndicatorEnabled()
-                        ? 'Game mode indicator off'
-                        : 'Game mode hotkey on';
+                            hotsyncNameContainer.innerText = `Hotsync name: ${await emulator.getHotsyncName()}`;
+                            applyHotsyncNameButton.disabled = isPowerOff || !isUiInitialized;
 
-                    volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
-                    volumeInput.value = emulator.getVolume() * 100 + '';
-                    volumeLabel.innerText = `Volume: ${Math.floor(emulator.getVolume() * 100)}`;
+                            enableAudioButton.style.display = emulator.isAudioInitialized() ? 'none' : undefined;
 
-                    speedInput.value = emulator.getSpeed() * 100 + '';
-                    speedLabel.innerText = `Speed: ${emulator.getSpeed().toFixed(2)}x`;
+                            gameModeButton.innerText = emulator.isGameMode() ? 'Game mode off' : 'Game mode on';
+                            gameModeHotkeyButton.innerText = emulator.isGameModeHotkeyEnabled()
+                                ? 'Game mode hotkey off'
+                                : 'Game mode hotkey on';
+                            gameModeIndicatorButton.innerText = emulator.isGameModeIndicatorEnabled()
+                                ? 'Game mode indicator off'
+                                : 'Game mode hotkey on';
 
-                    runHiddenButton.innerText = emulator.getRunHidden() ? `pause if hidden` : `run while hidden`;
+                            volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
+                            volumeInput.value = emulator.getVolume() * 100 + '';
+                            volumeLabel.innerText = `Volume: ${Math.floor(emulator.getVolume() * 100)}`;
+
+                            speedInput.value = emulator.getSpeed() * 100 + '';
+                            speedLabel.innerText = `Speed: ${emulator.getSpeed().toFixed(2)}x`;
+
+                            runHiddenButton.innerText = emulator.getRunHidden() ? `pause if hidden` : `run while hidden`;
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    })();
                 }
 
                 // Update statistics
@@ -265,9 +284,9 @@
                 controlContainer.className = '';
 
                 // Pause / resume button
-                pauseResumeButton.addEventListener('click', () => {
-                    if (emulator.isRunning()) emulator.pause();
-                    else emulator.resume();
+                pauseResumeButton.addEventListener('click', async () => {
+                    if (await emulator.isRunning()) await emulator.pause();
+                    else await emulator.resume();
 
                     updateUi();
                 });
