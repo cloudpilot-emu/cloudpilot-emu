@@ -373,8 +373,6 @@ export class ContextMenuComponent {
         const name =
             cardId !== undefined ? this.storageCardService.cards().find((card) => card.id === cardId)?.name : undefined;
 
-        console.log(cardId, this.storageCardService.cards());
-
         return name ?? (this.hasMemorystick ? 'stick' : 'SD card');
     });
 }
