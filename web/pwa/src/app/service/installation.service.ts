@@ -265,7 +265,7 @@ export class InstallationService {
         void this.alertService.message(
             header,
             message,
-            filesRequireReset.length > 0 ? { 'Reset now': () => this.emulationService.reset() } : undefined,
+            filesRequireReset.length > 0 ? { 'Reset now': () => void this.emulationService.reset() } : undefined,
         );
     }
 

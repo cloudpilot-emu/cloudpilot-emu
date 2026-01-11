@@ -101,7 +101,8 @@ rpcClient
 
         addTransferables([state.rom.buffer, state.memory.buffer, state.nand.buffer, state.savestate.buffer]);
         return state;
-    });
+    })
+    .register('reset', (resetType) => unwrapEmulator().reset(resetType));
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;
@@ -141,10 +142,6 @@ async function onMessage(e: MessageEvent) {
 
         case HostMessageType.setBackgrounded:
             emulator?.setBackgrounded(message.backgrounded);
-            break;
-
-        case HostMessageType.reset:
-            emulator?.reset(message.resetType);
             break;
 
         case HostMessageType.setPcmStreaming:

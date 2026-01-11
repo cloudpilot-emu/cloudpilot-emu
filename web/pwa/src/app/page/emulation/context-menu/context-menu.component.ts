@@ -100,15 +100,15 @@ export class ContextMenuComponent {
             buttons: [
                 {
                     text: 'Normal boot',
-                    handler: () => this.emulationService.reset(),
+                    handler: () => void this.emulationService.reset(),
                 },
                 {
                     text: 'No extensions',
-                    handler: () => this.emulationService.resetNoExtensions(),
+                    handler: () => void this.emulationService.resetNoExtensions(),
                 },
                 {
                     text: 'Hard reset',
-                    handler: () => this.emulationService.resetHard(),
+                    handler: () => void this.emulationService.resetHard(),
                 },
                 {
                     text: 'Cancel',

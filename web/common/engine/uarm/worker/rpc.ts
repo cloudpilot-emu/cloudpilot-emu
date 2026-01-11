@@ -2,6 +2,7 @@ import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DbInstallResult } from '@native/cloudpilot_web';
 
+import { ResetType } from './ResetType';
 import { UarmSnapshot } from './Snapshot';
 
 interface RpcSchema {
@@ -90,6 +91,11 @@ interface RpcSchema {
     getFullState: {
         args: void;
         result: FullState;
+    };
+
+    reset: {
+        args: ResetType;
+        result: void;
     };
 }
 

@@ -139,16 +139,16 @@ export class EngineUarmImpl implements EngineUarm {
 
     keyStroke(key: number, ctrl?: boolean): void {}
 
-    reset(): void {
-        this.dispatchMessage({ type: HostMessageType.reset, resetType: ResetType.normal });
+    reset(): Promise<void> {
+        return this.rpcHost.call('reset', ResetType.normal);
     }
 
-    resetNoExtensions(): void {
-        this.dispatchMessage({ type: HostMessageType.reset, resetType: ResetType.noExtensions });
+    resetNoExtensions(): Promise<void> {
+        return this.rpcHost.call('reset', ResetType.noExtensions);
     }
 
-    resetHard(): void {
-        this.dispatchMessage({ type: HostMessageType.reset, resetType: ResetType.hard });
+    resetHard(): Promise<void> {
+        return this.rpcHost.call('reset', ResetType.hard);
     }
 
     isRunning(): boolean {
