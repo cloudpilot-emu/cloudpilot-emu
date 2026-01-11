@@ -24,7 +24,12 @@
                 const emulator = await cloudpilot.createEmulator();
                 const canvas = document.getElementsByTagName('canvas')[0];
 
-                emulator.loadSession(new Uint8Array(image)).setCanvas(canvas).bindInput(canvas).resume();
+                await emulator.loadSession(new Uint8Array(image));
+
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
+                
+                await emulator.resume();
             })().catch((e) => console.error(e));
         </script>
     </body>
