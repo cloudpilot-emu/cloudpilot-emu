@@ -12,7 +12,7 @@ function getGitRev() {
     return rev;
 }
 
-// THat damnable bundler adds an UMD preamble to the generated worker bundles. This fails
+// That damnable bundler adds an UMD preamble to the generated worker bundles. This fails
 // in the worklet environment, so we hack around this by replacing `self` with `{}`. Yuck.
 class PostProcessWorkletPlugin {
     apply(compiler) {
