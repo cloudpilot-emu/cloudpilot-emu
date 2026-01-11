@@ -92,7 +92,8 @@ export abstract class AbstractAudioService {
     protected updateState = () =>
         void this.mutex.runExclusive(async () => {
             if (!this.audio) return;
-            this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+
+            this.updateGain();
 
             if (this.shouldRun()) this.emulationService.enablePcmStreaming();
             else this.emulationService.disablePcmStreaming();
@@ -125,6 +126,11 @@ export abstract class AbstractAudioService {
                 }
             }
         });
+
+    protected updateGain(): void {
+        if (!this.audio) return;
+        this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+    }
 
     private bind(): void {
         this.unbind();

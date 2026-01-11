@@ -12,6 +12,10 @@ const GAME_ICON_SVG =
 const GAME_ICON_PRERENDERED = prerender(loadImage(svgToUrl(GAME_ICON_SVG)), GAME_ICON_SVG);
 
 export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
+    setDpadEnabled(dpad: boolean): void {
+        this.dpadEnabled = dpad;
+    }
+
     async initialize(canvas?: HTMLCanvasElement, deviceId = this.deviceId, orientation = this.orientation) {
         this.deviceId = deviceId;
         this.orientation = orientation;
@@ -24,7 +28,7 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
             theCanvas.style.objectFit = 'contain';
         }
 
-        await this.initWithCanvas(canvas);
+        await this.initWithCanvas(this.dpadEnabled, canvas);
     }
 
     updateOrientation(orientation: DeviceOrientation) {
@@ -105,6 +109,7 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
 
     private deviceId: DeviceId = DeviceId.m515;
     private orientation: DeviceOrientation = DeviceOrientation.portrait;
+    private dpadEnabled = false;
 
     private gameModeIndicatorEnabled = true;
     private gameModeActive = false;
