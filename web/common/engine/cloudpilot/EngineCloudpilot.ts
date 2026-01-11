@@ -1,3 +1,5 @@
+// The embedded build needs this for some incomprehensible reason.
+/// <reference lib="dom" />
 import { Cloudpilot, DbInstallResult, PalmButton, PwmUpdate, SuspendKind } from '@common/bridge/Cloudpilot';
 import { Average } from '@common/helper/Average';
 import { Fifo } from '@common/helper/Fifo';
