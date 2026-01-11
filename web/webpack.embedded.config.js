@@ -37,8 +37,8 @@ module.exports = (env, argv) => ({
             '@native-common': path.resolve(__dirname, '../src/common'),
             '@pwa': path.resolve(__dirname, './pwa/src/app'),
             '@embedded': path.resolve(__dirname, './embedded/src'),
-            '@native-fstools': path.resolve(__dirname, './src/fstools'),
-            '@native-uarm': path.resolve(__dirname, './src/uarm'),
+            '@native-fstools': path.resolve(__dirname, '../src/fstools'),
+            '@native-uarm': path.resolve(__dirname, '../src/uarm'),
         },
     },
     output: {

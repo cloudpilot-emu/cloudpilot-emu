@@ -2,10 +2,10 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "target": "es2015",
-        "module": "es2015",
+        "module": "es2020",
         "lib": ["dom", "es2015"],
         "declaration": true,
     },
     "include": ["common/**/*.ts", "embedded/**/*.ts"],
-    "exclude": ["node_modules", "common/test/*.ts"]
+    "exclude": ["node_modules", "common/test/*.ts"],
 }
