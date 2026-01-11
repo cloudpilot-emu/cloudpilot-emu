@@ -25,9 +25,17 @@ const TYPEDOC_DEST = path.normalize(path.join(OUT_DIR, 'reference'));
 const README = path.normalize(path.join(__dirname, '..', 'embedded', 'doc', 'README.md'));
 
 const NPM_PACKAGE_DIR = path.normalize(path.join(__dirname, '..', 'npm-embedded'));
-const NPM_DIST = ['cloudpilot-emu.js', 'cloudpilot-emu.d.ts', 'cloudpilot-emu.js.map', 'cloudpilot_web.wasm'].map((x) =>
-    path.normalize(path.join(BUILD_SRC, x)),
-);
+const NPM_DIST = [
+    'cloudpilot-emu.js',
+    'cloudpilot-emu.d.ts',
+    'cloudpilot-emu.js.map',
+    'uarm-worker.js',
+    'uarm-worker.js.map',
+    'pcm-worklet.js',
+    'pcm-worklet.js.map',
+    'cloudpilot_web.wasm',
+    'uarm_web.wasm',
+].map((x) => path.normalize(path.join(BUILD_SRC, x)));
 const NPM_DIST_TARGET = path.normalize(path.join(NPM_PACKAGE_DIR, 'dist'));
 
 const LICENSE = path.normalize(path.join(__dirname, '..', '..', 'LICENSE'));

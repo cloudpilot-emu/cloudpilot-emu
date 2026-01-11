@@ -164,7 +164,9 @@ export abstract class AbstractAudioService {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any;
 
-        const loader = new Worker(new URL('./audioworklet/pcm-worklet.worker.ts', import.meta.url));
+        const loader = new Worker(
+            /* webpackChunkName: "pcm-worklet" */ new URL('./audioworklet/pcm-worklet.worker.ts', import.meta.url),
+        );
         window.Worker = savedWorker;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

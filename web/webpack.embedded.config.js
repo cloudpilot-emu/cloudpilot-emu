@@ -44,6 +44,7 @@ module.exports = (env, argv) => ({
     output: {
         path: path.resolve(__dirname, 'build-embedded'),
         filename: 'cloudpilot-emu.js',
+        chunkFilename: '[name].js',
         library: {
             name: 'cloudpilot',
             type: 'umd',
@@ -54,6 +55,7 @@ module.exports = (env, argv) => ({
             patterns: [
                 { from: 'embedded/public', to: '.' },
                 { from: path.resolve(__dirname, '../src/cloudpilot/cloudpilot_web.wasm'), to: '.' },
+                { from: path.resolve(__dirname, '../src/uarm/uarm_web_optimized.wasm'), to: './uarm_web.wasm' },
             ],
         }),
         new webpack.EnvironmentPlugin({
@@ -63,6 +65,9 @@ module.exports = (env, argv) => ({
                     : env['RELEASE'] || process.env['CP_RELEASE']
                       ? pkg.version
                       : `${pkg.version}-${getGitRev()} (preview)`,
+        }),
+        new webpack.optimize.LimitChunkCountPlugin({
+            maxChunks: 1,
         }),
     ],
     performance: {
