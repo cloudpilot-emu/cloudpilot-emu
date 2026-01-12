@@ -1,6 +1,7 @@
 #include "db_installer.h"
 
 #include <cstdio>
+#include <functional>
 #include <iostream>
 
 #include "CPU.h"
