@@ -1,4 +1,5 @@
 #include <encoding.h>
+#include <string.h>
 
 using namespace std;
 
