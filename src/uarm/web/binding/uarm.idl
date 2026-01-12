@@ -81,6 +81,9 @@ interface Uarm {
     unsigned long InstallDatabase(unsigned long len, VoidPtr data);
 
     DbBackup NewDbBackup(long type);
+
+    boolean LaunchAppByName([Const] DOMString name);
+    boolean LaunchAppByDbHeader(VoidPtr buffer, long len);
 };
 
 interface DbBackup {

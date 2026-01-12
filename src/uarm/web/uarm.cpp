@@ -4,12 +4,14 @@
 
 #include "Defer.h"
 #include "SoC.h"
+#include "app_launcher.h"
 #include "audio_queue.h"
 #include "buffer.h"
 #include "cputil.h"
 #include "db_backup.h"
 #include "db_installer.h"
 #include "device.h"
+#include "encoding.h"
 #include "rom_info5.h"
 #include "sdcard.h"
 #include "system_state.h"
@@ -245,3 +247,16 @@ bool Uarm::IsOsVersionSet() {
 uint32_t Uarm::GetOsVersion() { return systemStateGetOsVersion(socGetSystemState(soc)); }
 
 bool Uarm::IsLcdEnabled() { return socLcdEnabled(soc); }
+
+bool Uarm::LaunchAppByName(const char* name) {
+    string encodedName = Utf8ToIsolatin1(name);
+    if (encodedName.length() > 31) return false;
+
+    return launchAppByName(socGetSyscallDispatch(soc), encodedName.c_str());
+}
+
+bool Uarm::LaunchAppByDbHeader(void* header, int len) {
+    if (len < 32 || strnlen(static_cast<const char*>(header), 32) == 32) return false;
+
+    return launchAppByName(socGetSyscallDispatch(soc), static_cast<const char*>(header));
+}

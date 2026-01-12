@@ -342,11 +342,11 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     launchAppByName(name: string): Promise<boolean> {
-        throw new Error('Method not implemented.');
+        return this.rpcHost.call('launchAppByName', name);
     }
 
     launchAppByHeader(header: Uint8Array): Promise<boolean> {
-        throw new Error('Method not implemented.');
+        return this.rpcHost.call('launchAppByHeader', header.subarray(0, 32).slice());
     }
 
     private dispatchMessage = (mesage: HostMessage, transferables?: Array<Transferable>) => {

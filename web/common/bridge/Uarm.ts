@@ -474,6 +474,22 @@ export class Uarm {
         return this.uarm.IsLcdEnabled();
     }
 
+    @guard()
+    launchAppByName(name: string): boolean {
+        return this.uarm.LaunchAppByName(name);
+    }
+
+    @guard()
+    launchAppByDbHeader(header: Uint8Array): boolean {
+        if (header.length < 32) return false;
+
+        const headerPtr = this.copyIn(header.subarray(0, 32));
+        const result = this.uarm.LaunchAppByDbHeader(headerPtr, 32);
+        this.bridge.Free(headerPtr);
+
+        return result;
+    }
+
     dead(): boolean {
         return this.amIdead;
     }

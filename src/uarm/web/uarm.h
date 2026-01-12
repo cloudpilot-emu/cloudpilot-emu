@@ -98,6 +98,9 @@ class Uarm {
 
     bool IsLcdEnabled();
 
+    bool LaunchAppByName(const char* name);
+    bool LaunchAppByDbHeader(void* header, int len);
+
    private:
     size_t ramSize{0};
 

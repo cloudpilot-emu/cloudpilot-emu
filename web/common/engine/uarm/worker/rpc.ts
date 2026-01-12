@@ -97,6 +97,16 @@ interface RpcSchema {
         args: ResetType;
         result: void;
     };
+
+    launchAppByName: {
+        args: string;
+        result: boolean;
+    };
+
+    launchAppByHeader: {
+        args: Uint8Array;
+        result: boolean;
+    };
 }
 
 export type RpcMethod = keyof RpcSchema;

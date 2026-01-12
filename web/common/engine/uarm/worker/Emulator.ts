@@ -289,6 +289,14 @@ export class Emulator {
         this.suspendPcm(false);
     }
 
+    launchAppByName(name: string): boolean {
+        return this.uarm.launchAppByName(name);
+    }
+
+    launchAppByHeader(header: Uint8Array): boolean {
+        return this.uarm.launchAppByDbHeader(header);
+    }
+
     private takeSnapshotUnguarded(timestamp?: number, timeOffset = 0): [UarmSnapshot, Array<Transferable>] {
         const timestampStart = Date.now();
         const savestate = this.uarm.saveState();

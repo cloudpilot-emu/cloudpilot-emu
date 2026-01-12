@@ -102,7 +102,9 @@ rpcClient
         addTransferables([state.rom.buffer, state.memory.buffer, state.nand.buffer, state.savestate.buffer]);
         return state;
     })
-    .register('reset', (resetType) => unwrapEmulator().reset(resetType));
+    .register('reset', (resetType) => unwrapEmulator().reset(resetType))
+    .register('launchAppByName', (name) => unwrapEmulator().launchAppByName(name))
+    .register('launchAppByHeader', (header) => unwrapEmulator().launchAppByHeader(header));
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;

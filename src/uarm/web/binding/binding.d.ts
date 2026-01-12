@@ -124,6 +124,9 @@ export interface Uarm {
     InstallDatabase(len: number, data: VoidPtr): DbInstallResult;
 
     NewDbBackup(type: BackupType): DbBackup;
+
+    LaunchAppByName(name: string): boolean;
+    LaunchAppByDbHeader(buffer: VoidPtr, len: number): boolean;
 }
 
 export interface DbBackup {
