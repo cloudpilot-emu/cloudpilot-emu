@@ -18,6 +18,7 @@ SOURCE_CXX = 						\
 	ZipfileWalker.cpp 				\
 	FileUtil.cpp 					\
 	Logging.cpp						\
+	encoding.cpp					\
 	md5.cpp							\
 	rom_info5.cpp					\
 	session/rle.cpp					\
@@ -46,6 +47,7 @@ SOURCE_CXX_TEST = 					\
 	test/SavestateChunkProbe.cpp	\
 	test/SavestateLoader.cpp		\
 	test/SavestateProbe.cpp			\
+	test/Encoding.cpp				\
 	test/main.cpp
 
 LIBRARY_NATIVE = libcommon.a

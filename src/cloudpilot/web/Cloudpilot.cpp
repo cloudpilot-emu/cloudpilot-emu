@@ -19,6 +19,7 @@
 #include "MemoryStick.h"
 #include "NetworkProxy.h"
 #include "SuspendManager.h"
+#include "encoding.h"
 
 namespace {
     EmTransportSerialBuffer serialTransportIR;

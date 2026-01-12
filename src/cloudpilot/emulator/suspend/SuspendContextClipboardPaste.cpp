@@ -2,6 +2,7 @@
 
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
+#include "encoding.h"
 
 SuspendContext::Kind SuspendContextClipboardPaste::GetKind() const { return Kind::clipboardPaste; }
 

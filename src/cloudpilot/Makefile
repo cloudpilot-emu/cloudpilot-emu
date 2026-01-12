@@ -213,8 +213,7 @@ SOURCE_CXX_TEST = \
 	$(SOURCE_CXX) \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp \
-	test/Fifo.cpp \
-	test/Miscellaneous.cpp
+	test/Fifo.cpp
 
 OBJECTS_EXTRA_NATIVE = ../common/libcommon.a
 OBJECTS_EXTRA_TEST = ../common/libcommon.a

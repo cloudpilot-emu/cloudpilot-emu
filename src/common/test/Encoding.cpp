@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 
 // clang-format off
-#include "Miscellaneous.h"
+#include "encoding.h"
 // clang-format on
 
 namespace {

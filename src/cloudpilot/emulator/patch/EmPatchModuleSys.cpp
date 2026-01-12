@@ -19,6 +19,7 @@
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
+#include "encoding.h"
 
 // #define LOGGING
 #ifdef LOGGING

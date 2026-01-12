@@ -33,9 +33,6 @@ bool GetDatabases(DatabaseInfoList& appList, uint32 flags);
 
 bool IsExecutable(const DatabaseInfo& dbInfo);
 
-string Utf8ToIsolatin1(const string& input, size_t maxLen = 0xffff);
-string Isolatin1ToUtf8(const string& input);
-
 void TransformPenCoordinates(int16& x, int16& y);
 
 void InstallCalibrationInfo(void);
