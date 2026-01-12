@@ -14,12 +14,12 @@ function getGitRev() {
 
 // That damnable bundler adds an UMD preamble to the generated worker bundles. This fails
 // in the worklet environment, so we hack around this by replacing `self` with `{}`. Yuck.
-class PostProcessWorkletPlugin {
+class FixupWorkletPlugin {
     apply(compiler) {
-        compiler.hooks.thisCompilation.tap('ModifyAfterEmitPlugin', (compilation) => {
+        compiler.hooks.thisCompilation.tap('FixupWorkletPlugin', (compilation) => {
             compilation.hooks.processAssets.tap(
                 {
-                    name: 'ModifyAfterEmitPlugin',
+                    name: 'FixupWorkletPlugin',
                     stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE,
                 },
                 (assets) => {
@@ -35,10 +35,6 @@ class PostProcessWorkletPlugin {
         });
     }
 }
-
-module.exports = {
-    plugins: [new PostProcessWorkletPlugin()],
-};
 
 module.exports = (env, argv) => ({
     entry: './embedded/src/index.ts',
@@ -97,7 +93,7 @@ module.exports = (env, argv) => ({
         new webpack.optimize.LimitChunkCountPlugin({
             maxChunks: 1,
         }),
-        new PostProcessWorkletPlugin(),
+        new FixupWorkletPlugin(),
     ],
     performance: {
         maxAssetSize: 3 * 1024 * 1024,
