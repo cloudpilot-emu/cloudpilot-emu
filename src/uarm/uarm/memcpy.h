@@ -20,7 +20,7 @@ struct MemcpyResult {
 void memcpy_armToHost(uint8_t* dest, uint32_t src, uint32_t size, bool privileged,
                       struct ArmMem* mem, struct ArmMmu* mmu, struct MemcpyResult* result);
 
-void memcpy_hostToArm(uint32_t dest, uint8_t* src, uint32_t size, bool privileged,
+void memcpy_hostToArm(uint32_t dest, const uint8_t* src, uint32_t size, bool privileged,
                       struct ArmMem* mem, struct ArmMmu* mmu, struct MemcpyResult* result);
 
 void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged,

@@ -13,6 +13,7 @@
 #include "Cli.h"
 #include "FileUtil.h"
 #include "SoC.h"
+#include "app_launcher.h"
 #include "db_backup.h"
 #include "db_installer.h"
 #include "db_list.h"
@@ -341,7 +342,7 @@ namespace {
         }
     }
 
-    void DbExport(vector<string> args, cli::CommandEnvironment& env, void* context, int type) {
+    void CmdDbExport(vector<string> args, cli::CommandEnvironment& env, void* context, int type) {
         if (args.size() != 1) return env.PrintUsage();
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
@@ -379,16 +380,25 @@ namespace {
         }
     }
 
-    void DbExportAll(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        DbExport(args, env, context, DbBackup::BACKUP_TYPE_EVERYTHING);
+    void CmdDbExportAll(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        CmdDbExport(args, env, context, DbBackup::BACKUP_TYPE_EVERYTHING);
     }
 
-    void DbExportRamRom(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        DbExport(args, env, context, DbBackup::BACKUP_TYPE_RAM_ROM);
+    void CmdDbExportRamRom(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        CmdDbExport(args, env, context, DbBackup::BACKUP_TYPE_RAM_ROM);
     }
 
-    void DbExportRam(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        DbExport(args, env, context, DbBackup::BACKUP_TYPE_RAM);
+    void CmdDbExportRam(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        CmdDbExport(args, env, context, DbBackup::BACKUP_TYPE_RAM);
+    }
+
+    void CmdLaunch(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+
+        launchAppByName(sd, args[0].c_str());
     }
 
     const vector<cli::Command> commandList(
@@ -431,15 +441,19 @@ namespace {
          {.name = "db-export-all",
           .usage = "db-export-all <file>",
           .description = "Export all databases.",
-          .cmd = DbExportAll},
+          .cmd = CmdDbExportAll},
          {.name = "db-export-rom",
           .usage = "db-export-rom <file>",
           .description = "Export RAM and ROM databases (excluding PACE cache).",
-          .cmd = DbExportRamRom},
+          .cmd = CmdDbExportRamRom},
          {.name = "db-export",
           .usage = "db-export <file>",
           .description = "Export all RAM databases (excluding PACE cache).",
-          .cmd = DbExportRam}});
+          .cmd = CmdDbExportRam},
+         {.name = "launch",
+          .usage = "launch <name>",
+          .description = "Launch app",
+          .cmd = CmdLaunch}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

@@ -131,11 +131,11 @@ bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint
     return true;
 }
 
-bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, void* src,
+bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, const void* src,
                                      size_t size) {
     struct ArmCpu* cpu = socGetCpu(sd->soc);
     MemcpyResult memcpyResult;
-    memcpy_hostToArm(dest, reinterpret_cast<uint8_t*>(src), size, true, cpuGetMem(cpu),
+    memcpy_hostToArm(dest, reinterpret_cast<const uint8_t*>(src), size, true, cpuGetMem(cpu),
                      cpuGetMMU(cpu), &memcpyResult);
 
     return memcpyResult.ok;
@@ -410,6 +410,24 @@ uint16_t syscall68k_DmDatabaseProtect(struct SyscallDispatch* sd, uint32_t flags
 uint16_t syscall68k_DmDeleteDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
                                      uint32_t dbID) {
     return syscall68k(sd, flags, SYSCALL_68K_DM_DELETE_DATABASE, false, [=]() {
+        pacePush32(dbID);
+        pacePush16(cardNo);
+    });
+}
+
+uint32_t syscall68k_DmFindDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                   uint32_t nameP) {
+    return syscall68k(sd, flags, SYSCALL_68K_DM_FIND_DATABASE, false, [=]() {
+        pacePush32(nameP);
+        pacePush16(cardNo);
+    });
+}
+
+uint16_t syscall68k_SysUIAppSwitch(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                   uint32_t dbID, uint16_t cmd, uint32_t cmdPBP) {
+    return syscall68k(sd, flags, SYSCALL_68K_SYS_UI_APP_SWITCH, false, [=]() {
+        pacePush32(cmdPBP);
+        pacePush16(cmd);
         pacePush32(dbID);
         pacePush16(cardNo);
     });

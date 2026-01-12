@@ -48,6 +48,7 @@ SOURCE_C = 								\
 	uarm/gdbstub.c						\
 	uarm/keys.c 						\
 	uarm/timeutil.c						\
+	uarm/app_launcher.c 				\
 	uarm/pxa270_UDC.c 					\
 	uarm/pxa270_IMC.c 					\
 	uarm/pxa270_KPC.c 					\

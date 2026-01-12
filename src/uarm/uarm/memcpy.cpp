@@ -109,9 +109,9 @@ void memcpy_armToHost(uint8_t* dest, uint32_t src, uint32_t size, bool privilege
     transfer(dest, src, size, false, privileged, mem, mmu, result);
 }
 
-void memcpy_hostToArm(uint32_t dest, uint8_t* src, uint32_t size, bool privileged,
+void memcpy_hostToArm(uint32_t dest, const uint8_t* src, uint32_t size, bool privileged,
                       struct ArmMem* mem, struct ArmMmu* mmu, MemcpyResult* result) {
-    transfer(src, dest, size, true, privileged, mem, mmu, result);
+    transfer(const_cast<uint8_t*>(src), dest, size, true, privileged, mem, mmu, result);
 }
 
 void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
