@@ -1,6 +1,8 @@
 #include "uarm.h"
 
+#include <cstring>
 #include <iostream>
+#include <memory>
 
 #include "Defer.h"
 #include "SoC.h"
@@ -20,8 +22,8 @@ using namespace std;
 
 namespace {
     constexpr size_t AUDIO_QUEUE_SIZE = 44100 / MAIN_LOOP_FPS * 10;
-
-}
+    constexpr size_t NAND_SIZE = 34603008;
+}  // namespace
 
 Uarm& Uarm::SetRamSize(unsigned int size) {
     ramSize = size;
@@ -88,7 +90,15 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
     cout << "using " << ramSize << " bytes of RAM" << endl;
 
     deviceType = romInfo.GetDeviceType();
-    soc = socInit(deviceType, ramSize, romData, romSize, nandData, nandSize, 0, deviceGetSocRev());
+
+    unique_ptr<uint8_t[]> nandStub;
+    if (!nandData) {
+        nandStub = make_unique<uint8_t[]>(NAND_SIZE);
+        memset(nandStub.get(), 0xff, NAND_SIZE);
+    }
+
+    soc = socInit(deviceType, ramSize, romData, romSize, nandData ? nandData : nandStub.get(),
+                  nandData ? nandSize : NAND_SIZE, 0, deviceGetSocRev());
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     socSetAudioQueue(soc, audioQueue);
