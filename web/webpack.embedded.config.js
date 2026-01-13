@@ -90,11 +90,14 @@ module.exports = (env, argv) => ({
                       ? pkg.version
                       : `${pkg.version}-${getGitRev()} (preview)`,
         }),
-        new webpack.optimize.LimitChunkCountPlugin({
-            maxChunks: 1,
-        }),
         new FixupWorkletPlugin(),
     ],
+    optimization: {
+        splitChunks: {
+            // 1GB min chunk size should keep webpack from splitting
+            minSize: 1024 * 1024 * 1024,
+        },
+    },
     performance: {
         maxAssetSize: 3 * 1024 * 1024,
         maxEntrypointSize: 1 * 1024 * 1024,

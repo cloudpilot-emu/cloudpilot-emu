@@ -9,7 +9,10 @@ import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
 
 export class EmbeddedEmulationService extends AbstractEmulationService {
-    constructor(cloudpilot: Cloudpilot) {
+    constructor(
+        cloudpilot: Cloudpilot,
+        private uarmModuleFactory: () => Promise<WebAssembly.Module>,
+    ) {
         super(Promise.resolve(cloudpilot));
 
         this.syncSettings();
@@ -19,14 +22,19 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
 
     resume = (): Promise<void> => this.mutex.runExclusive(() => this.doResume());
 
-    initWithRom = (rom: Uint8Array, device: DeviceId, session: Session): Promise<boolean> =>
+    initWithRom = (
+        rom: Uint8Array,
+        nand: Uint8Array | undefined,
+        device: DeviceId,
+        session: Session,
+    ): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
             if (this.isRunning()) {
                 await this.doStop();
                 this.session = undefined;
             }
 
-            if (await this.openSession(rom, device)) {
+            if (await this.openSession(rom, device, nand)) {
                 this.setSession(session);
                 return true;
             }
@@ -92,7 +100,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
     }
 
     protected override getUarmModule(): Promise<WebAssembly.Module> {
-        throw new Error('Method not implemented.');
+        return this.uarmModuleFactory();
     }
 
     protected override handleFatalInNativeCode(error: Error): void {

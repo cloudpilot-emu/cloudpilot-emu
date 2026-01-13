@@ -1,5 +1,5 @@
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
-import { cachedInstantiate } from '@common/helper/wasm';
+import { cachedInstantiate, loadAndCompileModule } from '@common/helper/wasm';
 
 import { Emulator, EmulatorImpl } from './Emulator';
 
@@ -14,16 +14,24 @@ export { SerialPort, ReceivePayload } from './SerialPort';
 
 export const VERSION = process.env.VERSION;
 
-/**
- * Create a new instance of the emulator.
- *
- * @param wasmModuleUrl Optional: URL for loading the web assembly module
- *
- * @returns Emulator instance
- */
-export async function createEmulator(wasmModuleUrl?: string): Promise<Emulator> {
-    return new EmulatorImpl(await Cloudpilot.create(wasmModuleUrl));
+export interface Options {
+    cloudpilotModuleUrl?: string;
+    uarmModuleUrl?: string;
+    preloadUarm?: boolean;
 }
+
+const creaeteUarmModuleFactory = (preload: boolean, url: string): (() => Promise<WebAssembly.Module>) => {
+    let module: Promise<WebAssembly.Module> | undefined;
+
+    const factory = () => {
+        if (!module) module = loadAndCompileModule(url);
+        return module;
+    };
+
+    if (preload) void factory();
+
+    return factory;
+};
 
 /**
  * Create a factory function that creates new Emulator instances without redownloading
@@ -32,8 +40,20 @@ export async function createEmulator(wasmModuleUrl?: string): Promise<Emulator> 
  * @param wasmModuleUrl Optional: URL for loading the web assembly module
  * @returns
  */
-export function createEmulatorFactory(wasmModuleUrl?: string): () => Promise<Emulator> {
-    const instantiate = cachedInstantiate(wasmModuleUrl ?? 'cloudpilot_web.wasm');
+export function createEmulatorFactory(options: Options = {}): () => Promise<Emulator> {
+    const instantiate = cachedInstantiate(options.cloudpilotModuleUrl ?? 'cloudpilot_web.wasm');
+    const factory = creaeteUarmModuleFactory(options.preloadUarm ?? false, options.uarmModuleUrl ?? 'uarm_web.wasm');
 
-    return () => Cloudpilot.create(instantiate).then((cloudpilot) => new EmulatorImpl(cloudpilot));
+    return () => Cloudpilot.create(instantiate).then((cloudpilot) => new EmulatorImpl(cloudpilot, factory));
+}
+
+/**
+ * Create a new instance of the emulator.
+ *
+ * @param wasmModuleUrl Optional: URL for loading the web assembly module
+ *
+ * @returns Emulator instance
+ */
+export async function createEmulator(options: Options = {}): Promise<Emulator> {
+    return createEmulatorFactory(options)();
 }

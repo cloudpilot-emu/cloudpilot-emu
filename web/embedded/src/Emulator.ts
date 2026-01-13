@@ -47,7 +47,7 @@ export interface Emulator {
      * @param rom Device ROM
      * @param deviceId Optional: device ID, autodetected if not specified
      */
-    loadRom(rom: Uint8Array, deviceId?: DeviceId): Promise<void>;
+    loadRom(rom: Uint8Array, nand?: Uint8Array, deviceId?: DeviceId): Promise<void>;
 
     /**
      * Load a Cloudpilot session and put the emulator in paused state.
@@ -358,8 +358,11 @@ export interface Emulator {
 }
 
 export class EmulatorImpl implements Emulator {
-    constructor(private cloudpilot: Cloudpilot) {
-        this.emulationService = new EmbeddedEmulationService(cloudpilot);
+    constructor(
+        private cloudpilot: Cloudpilot,
+        uarmModuleFactory: () => Promise<WebAssembly.Module>,
+    ) {
+        this.emulationService = new EmbeddedEmulationService(cloudpilot, uarmModuleFactory);
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(new SkinLoader(Promise.resolve(cloudpilot)));
         this.eventHandlingService = new EmbeddedEventHandlingServie(this.emulationService, this.canvasDisplayService);
         this.audioService = new EmbeddedAudioService(this.emulationService);
@@ -379,7 +382,7 @@ export class EmulatorImpl implements Emulator {
         return this.emulationService.getStatistics();
     }
 
-    async loadRom(rom: Uint8Array, deviceId?: DeviceId): Promise<void> {
+    async loadRom(rom: Uint8Array, nand?: Uint8Array, deviceId?: DeviceId): Promise<void> {
         await this.mutex.runExclusive(async () => {
             if (deviceId === undefined) {
                 const rominfo = this.cloudpilot.getRomInfo(rom);
@@ -391,7 +394,7 @@ export class EmulatorImpl implements Emulator {
             }
             this.session = { ...DEFAULT_SESSION, deviceId };
 
-            if (!(await this.emulationService.initWithRom(rom, deviceId, this.session))) {
+            if (!(await this.emulationService.initWithRom(rom, nand, deviceId, this.session))) {
                 throw new Error('failed to initialize session');
             }
 
