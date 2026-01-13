@@ -17,10 +17,6 @@ struct SystemState {
     void DoSaveLoad(T& chunkHelper);
 };
 
-static void dump(SystemState* state) {
-    std::cout << "system state " << state->osVersion << " " << state->uiInitialized << std::endl;
-}
-
 SystemState* createSystemState() {
     SystemState* systemState = static_cast<SystemState*>(malloc(sizeof(SystemState)));
     memset(systemState, 0, sizeof(SystemState));
@@ -34,14 +30,12 @@ bool systemStateIsUiInitialized(struct SystemState* state) { return state->uiIni
 
 void systemStateSetUiInitialized(struct SystemState* state, bool uiInitialized) {
     state->uiInitialized = uiInitialized;
-    dump(state);
 }
 
 uint32_t systemStateGetOsVersion(struct SystemState* state) { return state->osVersion; }
 
 void systemStateSetOsVersion(struct SystemState* state, uint32_t osVersion) {
     state->osVersion = osVersion;
-    dump(state);
 }
 
 template <typename T>
@@ -63,8 +57,6 @@ void systemStateLoad(SystemState* state, T& loader) {
         LoadChunkHelper helper(*chunk);
         state->DoSaveLoad(helper);
     }
-
-    dump(state);
 }
 
 template <typename T>
