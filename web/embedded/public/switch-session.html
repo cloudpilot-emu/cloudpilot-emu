@@ -101,8 +101,8 @@
                 launchRomButton.disabled = false;
                 loadSessionButton.disabled = false;
 
-                launchRomButton.addEventListener('click', () => {
-                    emulator
+                launchRomButton.addEventListener('click', async () => {
+                    await emulator
                         .loadRom(new Uint8Array(rom))
                         .then(() => emulator.resume())
                         .catch(e => console.error(e));
@@ -110,8 +110,8 @@
                     canvas.style.visibility = 'visible';
                 });
 
-                loadSessionButton.addEventListener('click', () => {
-                    emulator
+                loadSessionButton.addEventListener('click', async () => {
+                    await emulator
                         .loadSession(new Uint8Array(image))
                         .then(() => emulator.resume())
                         .catch(e => console.error(e));
