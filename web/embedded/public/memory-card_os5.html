@@ -1,0 +1,146 @@
+<html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
+
+        <style>
+            body {
+                background-color: #eee;
+            }
+
+            .container {
+                width: 100vw;
+                overflow: hidden;
+                height: calc(100vh - 8em);
+                margin-bottom: 1em;
+
+                display: flex;
+                flex-direction: row;
+            }
+
+            #canvas-wrapper {
+                flex-grow: 1;
+                max-width: 60em;
+            }
+
+            canvas {
+                width: 100%;
+                height: 100%;
+            }
+
+            canvas:focus {
+                border: none;
+                outline: none;
+            }
+
+            #control-container {
+                flex-grow: 0;
+                flex-shrink: 0;
+                flex-basis: 30em;
+                text-align: left;
+                margin-left: 0.5em;
+            }
+
+            body {
+                text-align: center;
+            }
+
+            button {
+                min-width: 10em;
+                margin: 0.5em;
+                margin-left: 0;
+            }
+
+            a {
+                margin: 0 0.5em;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Memory cards</h1>
+        <div class="container">
+            <div id="canvas-wrapper"><canvas tabindex="1"></canvas></div>
+            <div id="control-container" class="hidden">
+                <div>
+                    <button type="button" id="insert-card-button" disabled>Insert card</button>
+                    <div><button type="button" id="eject-card-button" disabled>Eject card</button></div>
+                </div>
+            </div>
+        </div>
+
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/memory-card_os5.html">
+            source on github
+        </a>
+
+        <script>
+            function launchAudioOnStart(emulator) {
+                const events = ['touchstart', 'click', 'keydown'];
+                const handler = () => {
+                    events.forEach(event => document.removeEventListener(event, handler));
+                    void emulator.initializeAudio();
+                }
+
+                events.forEach(event => document.addEventListener(event, handler));
+            }
+
+            (async function () {
+                const emulator = await cloudpilot.createEmulator({preloadUarm: true});
+
+                const sessionResponse = await fetch('session_os5.img');
+                if (!sessionResponse.ok) {
+                    throw new Error('could not download session image');
+                }
+
+                const memoryCardImageResponse = await fetch('sdcard.img.gz');
+                if (!memoryCardImageResponse.ok) {
+                    throw new Error('could not download memory card image');
+                }
+
+                const session = await sessionResponse.arrayBuffer();
+                const memoryCardImage = await memoryCardImageResponse.arrayBuffer();
+                const canvas = document.getElementsByTagName('canvas')[0];
+
+                const insertCardButton = document.getElementById('insert-card-button');
+                const ejectCardButton = document.getElementById('eject-card-button');
+
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
+                    
+                await emulator.loadSession(new Uint8Array(session));
+                await emulator.insertCompressedCardImage(new Uint8Array(memoryCardImage));
+                
+                launchAudioOnStart(emulator);
+
+                await emulator.resume();
+
+                const updateButtons = async () => {
+                    if (await emulator.isCardMounted()) {
+                        insertCardButton.disabled = true;
+                        ejectCardButton.disabled = false;
+                    } else {
+                        insertCardButton.disabled = false;
+                        ejectCardButton.disabled = true;
+                    }
+                };
+
+                insertCardButton.addEventListener('click', () => {
+                    emulator
+                        .insertCompressedCardImage(new Uint8Array(memoryCardImage))
+                        .then(() => updateButtons())
+                        .catch(e => console.error(e));
+                });
+
+                ejectCardButton.addEventListener('click', () => {
+                    emulator
+                        .ejectCard()
+                        .then(() => updateButtons())
+                        .catch(e => console.error(e));
+                });
+
+                updateButtons();
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
+</html>

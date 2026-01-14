@@ -394,7 +394,7 @@ export class EmulatorImpl implements Emulator {
             }
             this.session = { ...DEFAULT_SESSION, deviceId };
 
-            if (!(await this.emulationService.initWithRom(rom, nand, deviceId, this.session))) {
+            if (!(await this.emulationService.initWithRom(rom.slice(), nand?.slice(), deviceId, this.session))) {
                 throw new Error('failed to initialize session');
             }
 

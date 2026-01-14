@@ -1,0 +1,122 @@
+<html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
+        <meta
+            name="viewport"
+            content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+
+        <style>
+            body {
+                text-align: center;
+                background-color: #eee;
+            }
+
+            #container {
+                display: flex;
+                flex-direction: row;
+                gap: 0.5em;
+                align-items: stretch;
+                height: calc(100vh - 8em);
+                width: 90%;
+                margin: 0 auto 1em auto;
+            }
+
+            @media screen and (max-width: 500px) {
+                #container {
+                    display: block;
+                    width: 90%;
+                    margin: auto;
+                    height: auto;
+                }
+
+                .canvas-wrapper {
+                    width: 100%;
+                    height: 100vh;
+                    margin-bottom: 0.5em;
+                }
+            }
+
+            .canvas-wrapper {
+                flex-grow: 1;
+            }
+
+            canvas {
+                width: 100%;
+                height: 100%;
+            }
+
+            canvas:focus {
+                border: none;
+                outline: none;
+            }
+
+            a {
+                margin: 0 0.5em;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Multiple instances</h1>
+        <div id="container">
+            <div class="canvas-wrapper"><canvas id="canvas-1" tabindex="1"></canvas></div>
+            <div class="canvas-wrapper"><canvas id="canvas-2" tabindex="1"></canvas></div>
+        </div>
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/two-instances_os5.html">
+            source on github
+        </a>
+
+        <script>
+            function launchAudioOnStart(emulator) {
+                const events = ['touchstart', 'click', 'keydown'];
+                const handler = () => {
+                    events.forEach(event => document.removeEventListener(event, handler));
+                    void emulator.initializeAudio();
+                }
+
+                events.forEach(event => document.addEventListener(event, handler));
+            }
+
+            (async function () {
+                const factory = cloudpilot.createEmulatorFactory({preloadUarm: true});
+
+                const imageResponse = await fetch('session_os5.img');
+                if (!imageResponse.ok) {
+                    throw new Error('could not download session image');
+                }
+
+                const [norResponse, nandResponse] = await Promise.all([fetch('e2-nor.bin'), fetch('e2-nand.bin')]);
+                if (!(norResponse.ok && nandResponse)) {
+                    throw new Error('could not download rom');
+                }
+
+                const nor = await norResponse.arrayBuffer();
+                const nand = await nandResponse.arrayBuffer();
+                const image = await imageResponse.arrayBuffer();
+
+                const emulator1 = await factory();
+                const emulator2 = await factory();
+                const canvas1 = document.getElementById('canvas-1');
+                const canvas2 = document.getElementById('canvas-2');
+
+                // The emulators need to be initialized before the serial port is accessible
+                await emulator1.loadRom(new Uint8Array(nor), new Uint8Array(nand));
+                await emulator2.loadSession(new Uint8Array(image));
+
+                emulator1.setCanvas(canvas1);
+                emulator1.bindInput(canvas1);
+                emulator2.setCanvas(canvas2);
+                emulator2.bindInput(canvas2);
+
+                launchAudioOnStart(emulator1);
+                launchAudioOnStart(emulator2);
+
+                await emulator1.resume();
+                await emulator2.resume();
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
+</html>

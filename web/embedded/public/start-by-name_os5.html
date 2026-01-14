@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
+        <link rel="stylesheet" href="sample.css" />
+    </head>
+
+    <body>
+        <h1>Start app by name</h1>
+        <canvas tabindex="1"></canvas>
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/start-by-name_os5.html">
+            source on github
+        </a>
+
+        <script>
+            (async function () {
+                const emulator = await cloudpilot.createEmulator({preloadUarm: true});
+
+                const romResponse = await fetch('session_os5.img');
+                if (!romResponse.ok) {
+                    throw new Error('could not download session file');
+                }
+
+                const rom = await romResponse.arrayBuffer();
+                const canvas = document.getElementsByTagName('canvas')[0];
+
+                await emulator.loadSession(new Uint8Array(rom));
+                await emulator.launchByName('Calculator');
+
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
+
+                await emulator.resume();
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
+</html>

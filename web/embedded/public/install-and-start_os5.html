@@ -5,13 +5,16 @@
     </head>
 
     <body>
-        <h1>Load ROM</h1>
+        <h1>Install and start a .prc</h1>
         <canvas tabindex="1"></canvas>
-        <a href="index.html">back to index</a>
+        <a href="index.html">...back to index</a>
         |
-        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/rom_os5.html">
+        <a
+            href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/install-and-start_os5.html"
+        >
             source on github
         </a>
+
         <script>
             function launchAudioOnStart(emulator) {
                 const events = ['touchstart', 'click', 'keydown'];
@@ -26,22 +29,30 @@
             (async function () {
                 const emulator = await cloudpilot.createEmulator({preloadUarm: true});
 
-                const [norResponse, nandResponse] = await Promise.all([fetch('e2-nor.bin'), fetch('e2-nand.bin')]);
-                if (!(norResponse.ok && nandResponse)) {
-                    throw new Error('could not download rom');
+                const sessionResponse = await fetch('session_os5.img');
+                if (!sessionResponse.ok) {
+                    throw new Error('could not download session file');
                 }
 
-                const nor = await norResponse.arrayBuffer();
-                const nand = await nandResponse.arrayBuffer();
+                const session = await sessionResponse.arrayBuffer();
+
+                const prcResponse = await fetch('bod2.prc');
+                if (!prcResponse.ok) {
+                    throw new Error('could not download prc file');
+                }
+
+                const prc = await prcResponse.arrayBuffer();
+
                 const canvas = document.getElementsByTagName('canvas')[0];
 
-                await emulator.loadRom(new Uint8Array(nor), new Uint8Array(nand));
-
+                await emulator.loadSession(new Uint8Array(session));
+                await emulator.installAndLaunchDatabase(new Uint8Array(prc));
+                    
                 emulator.setCanvas(canvas);
                 emulator.bindInput(canvas);
 
                 launchAudioOnStart(emulator);
-
+                
                 await emulator.resume();
             })().catch((e) => console.error(e));
         </script>
