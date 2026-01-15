@@ -1,6 +1,6 @@
 # Version 2.0.6
 
--   Fix encoding of non-ASCII characters in hotsync name
+-   Fix encoding of non-ASCII characters in hotsync name.
 
 # Version 2.0.5
 
