@@ -1,0 +1,316 @@
+<html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
+
+        <style>
+            body {
+                background-color: #eee;
+            }
+
+            .container {
+                width: 100vw;
+                overflow: hidden;
+                height: calc(100vh - 8em);
+                margin-bottom: 1em;
+
+                display: flex;
+                flex-direction: row;
+            }
+
+            #canvas-wrapper {
+                flex-grow: 1;
+                max-width: 60em;
+            }
+
+            canvas {
+                width: 100%;
+                height: 100%;
+            }
+
+            canvas:focus {
+                border: none;
+                outline: none;
+            }
+
+            #control-container {
+                flex-grow: 0;
+                flex-shrink: 0;
+                flex-basis: 30em;
+                text-align: left;
+                margin-left: 0.5em;
+            }
+
+            .hidden {
+                visibility: hidden;
+            }
+
+            body {
+                text-align: center;
+            }
+
+            button {
+                min-width: 10em;
+                margin: 0.5em;
+                margin-left: 0;
+            }
+
+            input {
+                width: 15em;
+                margin-right: 0.5em;
+            }
+
+            label {
+                display: block;
+            }
+
+            #ui-status {
+                display: inline-block;
+                margin-left: 1em;
+            }
+
+            #statistics {
+                margin-top: 0.5em;
+            }
+
+            a {
+                margin: 0 0.5em;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Emulator controls</h1>
+        <div class="container">
+            <div id="canvas-wrapper"><canvas tabindex="1"></canvas></div>
+            <div id="control-container" class="hidden">
+                <div><span id="ui-status"></span></div>
+                <div><button type="button" id="pause-resume-button"></button></div>
+                <div>
+                    <button type="button" id="reset-button">Reset</button>
+                    <button type="button" id="reset-noext-button">Reset noext</button>
+                    <button type="button" id="reset-hard-button">Reset hard</button>
+                </div>
+                <div>
+                    <button type="button" id="orientation-button"></button>
+                </div>
+                <div>
+                    <button type="button" id="run-hidden-button"></button>
+                </div>
+                <div id="speed-controls">
+                    <label for="speed-input" id="speed-label">Speed:</label>
+                    <input type="range" min="10" max="300" step="5" id="speed-input" />
+                </div>
+                <div id="audio-controls">
+                    <button type="button" id="enable-audio-button">Enable audio</button>
+                    <div id="volume-input-container" style="display: none">
+                        <label for="volume-input" id="volume-label">Volume:</label>
+                        <input type="range" min="0" max="100" step="5" id="volume-input" />
+                    </div>
+                </div>
+                <div id="statistics" style="display: none">
+                    <div id="current-speed"></div>
+                    <div id="max-speed"></div>
+                    <div id="fps"></div>
+                </div>
+            </div>
+        </div>
+
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/controls_os5.html">
+            source on github
+        </a>
+
+        <script>
+            (async function () {
+                // Convert orientation into a human readable string
+                function orientationToString(orientation) {
+                    switch (orientation) {
+                        case cloudpilot.DeviceOrientation.portrait:
+                            return '0°';
+
+                        case cloudpilot.DeviceOrientation.landscape90:
+                            return '90°';
+
+                        case cloudpilot.DeviceOrientation.landscape270:
+                            return '270°';
+
+                        case cloudpilot.DeviceOrientation.portrait180:
+                            return '180°';
+                    }
+                }
+
+                // Switch to the next orientation: 0° -> 90° -> 180° -> 270° -> 0°
+                function nextOrientation(orientation) {
+                    switch (orientation) {
+                        case cloudpilot.DeviceOrientation.portrait:
+                            return cloudpilot.DeviceOrientation.landscape90;
+
+                        case cloudpilot.DeviceOrientation.landscape90:
+                            return cloudpilot.DeviceOrientation.portrait180;
+
+                        case cloudpilot.DeviceOrientation.portrait180:
+                            return cloudpilot.DeviceOrientation.landscape270;
+
+                        case cloudpilot.DeviceOrientation.landscape270:
+                            return cloudpilot.DeviceOrientation.portrait;
+                    }
+                }
+
+                const emulator = await cloudpilot.createEmulator({preloadUarm: true});
+
+                // Fetch session image
+                const imageResponse = await fetch('session_os5.img');
+                if (!imageResponse.ok) {
+                    throw new Error('could not download session image');
+                }
+
+                const prcResponse = await fetch('bod2.prc');
+                if (!prcResponse.ok) {
+                    throw new Error('could not download prc file');
+                }
+
+                const image = await imageResponse.arrayBuffer();
+                const prc = await prcResponse.arrayBuffer();
+
+                // Get handle to canvas and initialize emulator
+                const canvas = document.getElementsByTagName('canvas')[0];
+
+                // Load session and start emulator
+                await emulator.loadSession(new Uint8Array(image))
+                await emulator.installAndLaunchDatabase(new Uint8Array(prc));
+                
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
+
+                await emulator.resume();
+
+                // Get handles to the UI elements
+                const pauseResumeButton = document.getElementById('pause-resume-button');
+                const resetButton = document.getElementById('reset-button');
+                const resetNoextButton = document.getElementById('reset-noext-button');
+                const resetHardButton = document.getElementById('reset-hard-button');
+                const controlContainer = document.getElementById('control-container');
+                const orientationButton = document.getElementById('orientation-button');
+                const uiStatusContainer = document.getElementById('ui-status');
+                const enableAudioButton = document.getElementById('enable-audio-button');
+                const volumeLabel = document.getElementById('volume-label');
+                const volumeInput = document.getElementById('volume-input');
+                const volumeInputContainer = document.getElementById('volume-input-container');
+                const statisticsContainer = document.getElementById('statistics');
+                const currentSpeedContainer = document.getElementById('current-speed');
+                const maxSpeedContainer = document.getElementById('max-speed');
+                const speedLabel = document.getElementById('speed-label');
+                const speedInput = document.getElementById('speed-input');
+                const runHiddenButton = document.getElementById('run-hidden-button');
+
+                // Update UI to reflect emulator state
+                let uiUpdateComplete = Promise.resolve();
+
+                async function updateUi() {
+                    await uiUpdateComplete;
+                    
+                    uiUpdateComplete = (async () => {
+                        try {
+                            const isRunning = await emulator.isRunning();
+                            const isPowerOff = await emulator.isPowerOff();
+                            const isUiInitialized = await emulator.isUiInitialized()
+
+                            pauseResumeButton.innerText = isRunning ? 'Pause' : 'Resume';
+
+                            uiStatusContainer.innerText = isUiInitialized ? 'UI initialized' : 'UI not initialized';
+                            orientationButton.innerText =
+                                'Rotate to ' + orientationToString(nextOrientation(emulator.getOrientation()));
+
+                            enableAudioButton.style.display = emulator.isAudioInitialized() ? 'none' : undefined;
+
+                            volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
+                            volumeInput.value = emulator.getVolume() * 100 + '';
+                            volumeLabel.innerText = `Volume: ${Math.floor(emulator.getVolume() * 100)}`;
+
+                            speedInput.value = emulator.getSpeed() * 100 + '';
+                            speedLabel.innerText = `Speed: ${Math.round(emulator.getSpeed() * 100)} MIPS`;
+
+                            runHiddenButton.innerText = emulator.getRunHidden() ? `pause if hidden` : `run while hidden`;
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    })();
+                }
+
+                // Update statistics
+                function updateStatistics() {
+                    const statistics = emulator.getStatistics();
+                    if (!statistics) return;
+
+                    statisticsContainer.style.display = 'block';
+                    currentSpeedContainer.innerText = `current speed: ${statistics.currentSpeedMips.toFixed(2)} MIPS`;
+                    maxSpeedContainer.innerText = `max. speed: ${statistics.currentMaxSpeedMips.toFixed(2)} MIPS`;
+                }
+
+                // Update UI on changes that we didn't trigger directly
+                emulator.powerOffChangeEvent.addHandler(updateUi);
+                emulator.isUiInitializedChangeEvent.addHandler(updateUi);
+
+                // Perform initial UI update
+                updateUi();
+                // Unhide controls
+                controlContainer.className = '';
+
+                // Pause / resume button
+                pauseResumeButton.addEventListener('click', async () => {
+                    if (await emulator.isRunning()) await emulator.pause();
+                    else await emulator.resume();
+
+                    updateUi();
+                });
+
+                // Reset buttons
+                resetButton.addEventListener('click', () => emulator.reset());
+                resetNoextButton.addEventListener('click', () => emulator.resetNoExtensions());
+                resetHardButton.addEventListener('click', () => emulator.resetHard());
+
+                // Orientation button
+                orientationButton.addEventListener('click', () => {
+                    emulator.setOrientation(nextOrientation(emulator.getOrientation()));
+                    updateUi();
+                });
+
+                // Enable audio. This has to happen on a user interaction, so we do it here.
+                enableAudioButton.addEventListener('click', async () => {
+                    // Make sure to await the result before checking whether audio is enabled (as is done
+                    // by updateUi)
+                    await emulator.initializeAudio();
+                    updateUi();
+                });
+
+                // Volume slider.
+                volumeInput.addEventListener('input', () => {
+                    const volume = parseInt(volumeInput.value);
+                    if (!isNaN(volume)) {
+                        emulator.setVolume(volume / 100);
+                        updateUi();
+                    }
+                });
+
+                // Speed slider
+                speedInput.addEventListener('input', () => {
+                    const speed = parseInt(speedInput.value) / 100;
+                    if (!isNaN(speed)) {
+                        emulator.setSpeed(speed);
+                        updateUi();
+                    }
+                });
+
+                // Run-in-background button
+                runHiddenButton.addEventListener('click', () => {
+                    emulator.setRunHidden(!emulator.getRunHidden());
+                    updateUi();
+                });
+
+                // Update statistics every second
+                setInterval(updateStatistics, 1000);
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
+</html>

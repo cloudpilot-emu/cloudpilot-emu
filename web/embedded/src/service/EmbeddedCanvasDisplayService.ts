@@ -1,8 +1,10 @@
+import { engineType } from '@common/helper/deviceProperties';
 import { loadImage, prerender } from '@common/helper/image';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { AbstractCanvasDisplayService } from '@common/service/AbstractCanvasDisplayService';
 import { PalmButton } from '@native/cloudpilot_web';
+import { Mutex } from 'async-mutex';
 
 import { svgToUrl } from './../../../common/helper/image';
 
@@ -16,20 +18,8 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
         this.dpadEnabled = dpad;
     }
 
-    async initialize(canvas?: HTMLCanvasElement, deviceId = this.deviceId, orientation = this.orientation) {
-        this.deviceId = deviceId;
-        this.orientation = orientation;
-
-        const theCanvas = canvas || this.ctx?.canvas;
-        if (theCanvas) {
-            theCanvas.width = this.width;
-            theCanvas.height = this.height;
-
-            theCanvas.style.objectFit = 'contain';
-        }
-
-        await this.initWithCanvas(this.dpadEnabled, canvas);
-    }
+    initialize = (canvas?: HTMLCanvasElement, deviceId?: DeviceId, orientation?: DeviceOrientation) =>
+        this.mutex.runExclusive(() => this.initializeUnguarded(canvas, deviceId, orientation));
 
     updateOrientation(orientation: DeviceOrientation) {
         this.orientation = orientation;
@@ -61,7 +51,7 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
 
         await super.drawButtons(activeButtons);
 
-        if (this.gameModeActive && this.gameModeIndicatorEnabled) {
+        if (this.gameModeActive && this.gameModeIndicatorEnabled && engineType(this.deviceId) === 'cloudpilot') {
             await this.drawGameModeIndicator();
         }
     }
@@ -107,6 +97,25 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
         );
     }
 
+    private async initializeUnguarded(
+        canvas?: HTMLCanvasElement,
+        deviceId = this.deviceId,
+        orientation = this.orientation,
+    ) {
+        this.deviceId = deviceId;
+        this.orientation = orientation;
+
+        const theCanvas = canvas || this.ctx?.canvas;
+        if (theCanvas) {
+            theCanvas.width = this.width;
+            theCanvas.height = this.height;
+
+            theCanvas.style.objectFit = 'contain';
+        }
+
+        await this.initWithCanvas(this.dpadEnabled, canvas);
+    }
+
     private deviceId: DeviceId = DeviceId.m515;
     private orientation: DeviceOrientation = DeviceOrientation.portrait;
     private dpadEnabled = false;
@@ -114,4 +123,6 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
     private gameModeIndicatorEnabled = true;
     private gameModeActive = false;
     private lastActiveButtons: Array<PalmButton> | undefined = undefined;
+
+    private mutex = new Mutex();
 }

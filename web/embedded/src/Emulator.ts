@@ -1,6 +1,7 @@
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
 import { Engine } from '@common/engine/Engine';
+import { hasDPad } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
@@ -26,6 +27,9 @@ const DEFAULT_SESSION: Session = {
     runInBackground: false,
     speed: 1,
     deviceId: DeviceId.m515,
+    maxHostLoad: 1,
+    disablePcmAudio: false,
+    disableDpad: false,
 };
 
 const CARD_KEY = 'MEMORY_CARD';
@@ -45,6 +49,7 @@ export interface Emulator {
      * Load a ROM and put the emulator in paused state.
      *
      * @param rom Device ROM
+     * @param nand Device NAND. OS5 devices only.
      * @param deviceId Optional: device ID, autodetected if not specified
      */
     loadRom(rom: Uint8Array, nand?: Uint8Array, deviceId?: DeviceId): Promise<void>;
@@ -227,6 +232,43 @@ export interface Emulator {
     getVolume(): number;
 
     /**
+     * Disable PCM audio on OS5. This will improve emulation speed but may lead to
+     * compatibility issues with some apps.
+     *
+     * @param disablePcmAudio Disable / enable PCM audio
+     */
+    setDisablePcmAudio(disablePcmAudio: boolean): void;
+
+    /**
+     * Query whether PCM audio is disabled.
+     */
+    getDisablePcmAudio(): boolean;
+
+    /**
+     * Set the maximum host load. This applies to OS5 emulation only.
+     *
+     * @param maxHostLoad Maximum host load (1 = full core)
+     */
+    setMaxHostLoad(maxHostLoad: number): void;
+
+    /**
+     * Get the maximum host load.
+     */
+    getMaxHostLoad(): number;
+
+    /**
+     * Disable the full d-pad on devices that support it.
+     *
+     * @param disableDpad  Disable / enable d-pad
+     */
+    setDisableDpad(disableDpad: boolean): void;
+
+    /**
+     * Query whether the d-pad has been disabled.
+     */
+    getDisableDpad(): boolean;
+
+    /**
      * Initialize audio. This must be called from an event handler that was triggered
      * by a user interaction, i.e. a click or a key press.
      */
@@ -365,7 +407,7 @@ export class EmulatorImpl implements Emulator {
         this.emulationService = new EmbeddedEmulationService(cloudpilot, uarmModuleFactory);
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(new SkinLoader(Promise.resolve(cloudpilot)));
         this.eventHandlingService = new EmbeddedEventHandlingServie(this.emulationService, this.canvasDisplayService);
-        this.audioService = new EmbeddedAudioService(this.emulationService);
+        this.audioService = new EmbeddedAudioService(this.session, this.emulationService);
 
         this.emulationService.newFrameEvent.addHandler((canvas) =>
             this.canvasDisplayService.updateEmulationCanvas(canvas),
@@ -393,11 +435,13 @@ export class EmulatorImpl implements Emulator {
                 deviceId = rominfo.supportedDevices[0];
             }
             this.session = { ...DEFAULT_SESSION, deviceId };
+            this.audioService.setSession(this.session);
 
             if (!(await this.emulationService.initWithRom(rom.slice(), nand?.slice(), deviceId, this.session))) {
                 throw new Error('failed to initialize session');
             }
 
+            this.canvasDisplayService.setDpadEnabled(this.enableDpad());
             await this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
         });
     }
@@ -413,12 +457,17 @@ export class EmulatorImpl implements Emulator {
                 orientation: sessionImage.metadata?.deviceOrientation ?? DeviceOrientation.portrait,
                 runInBackground: false,
                 deviceId: sessionImage.deviceId,
+                maxHostLoad: sessionImage.metadata?.maxHostLoad ?? 1,
+                disablePcmAudio: sessionImage.metadata?.disableAudio ?? false,
+                disableDpad: false,
             };
+            this.audioService.setSession(this.session);
 
             if (!(await this.emulationService.initWithSessionImage(sessionImage, this.session))) {
                 throw new Error('failed to initialize session');
             }
 
+            this.canvasDisplayService.setDpadEnabled(this.enableDpad());
             await this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
         });
     }
@@ -462,15 +511,15 @@ export class EmulatorImpl implements Emulator {
     }
 
     setCanvas(canvas: HTMLCanvasElement): void {
+        this.canvas = canvas;
         void this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
     }
 
     bindInput(keyEventTarget?: EventTarget): void {
-        const canvas = this.canvasDisplayService.getCanvas();
-        if (!canvas) {
+        if (!this.canvas) {
             throw new Error('you must set up the canvas setCanvas before calling bindInput');
         }
-        this.eventHandlingService.bind(canvas, false, keyEventTarget);
+        this.eventHandlingService.bind(this.canvas, false, keyEventTarget);
     }
 
     releaseInput(): void {
@@ -587,6 +636,35 @@ export class EmulatorImpl implements Emulator {
 
     getVolume(): number {
         return this.audioService.getVolume();
+    }
+
+    setDisablePcmAudio(disablePcmAudio: boolean): void {
+        this.session.disablePcmAudio = disablePcmAudio;
+        this.emulationService.syncSettings();
+    }
+
+    getDisablePcmAudio(): boolean {
+        return this.session.disablePcmAudio;
+    }
+
+    setMaxHostLoad(maxHostLoad: number): void {
+        this.session.maxHostLoad = maxHostLoad;
+        this.emulationService.syncSettings();
+    }
+
+    getMaxHostLoad(): number {
+        return this.session.maxHostLoad;
+    }
+
+    setDisableDpad(disableDpad: boolean): void {
+        this.session.disableDpad = disableDpad;
+
+        this.canvasDisplayService.setDpadEnabled(this.enableDpad());
+        void this.canvasDisplayService.initialize();
+    }
+
+    getDisableDpad(): boolean {
+        return this.session.disableDpad;
     }
 
     async initializeAudio(): Promise<boolean> {
@@ -711,6 +789,10 @@ export class EmulatorImpl implements Emulator {
         return engine;
     }
 
+    private enableDpad(): boolean {
+        return !this.session.disableDpad && hasDPad(this.session.deviceId);
+    }
+
     readonly audioInitializedEvent = new EventImpl<void>();
 
     private mutex = new Mutex();
@@ -725,4 +807,6 @@ export class EmulatorImpl implements Emulator {
     private hotsyncNameWatcher: Watcher<string>;
 
     private session: Session = { ...DEFAULT_SESSION };
+
+    private canvas: HTMLCanvasElement | undefined;
 }

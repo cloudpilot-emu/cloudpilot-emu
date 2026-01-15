@@ -6,5 +6,9 @@ export interface Session {
     speed: number;
     orientation: DeviceOrientation;
     runInBackground: boolean;
+    disableDpad: boolean;
     deviceId: DeviceId;
+
+    maxHostLoad: number;
+    disablePcmAudio: boolean;
 }
