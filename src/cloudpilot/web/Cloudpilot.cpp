@@ -234,12 +234,14 @@ bool Cloudpilot::LoadState(void* buffer, int len) {
 
 const char* Cloudpilot::GetHotsyncName() {
     static string name;
-    name = gSystemState.GetHotsyncUserName();
+    name = Isolatin1ToUtf8(gSystemState.GetHotsyncUserName());
 
     return name.c_str();
 }
 
-void Cloudpilot::SetHotsyncName(const char* name) { gSession->SetHotsyncUserName(name); }
+void Cloudpilot::SetHotsyncName(const char* name) {
+    gSession->SetHotsyncUserName(Utf8ToIsolatin1(name));
+}
 
 void Cloudpilot::RegisterPwmHandler(uint32 handlerPtr) {
     typedef void (*handler_ptr)(double, double);
