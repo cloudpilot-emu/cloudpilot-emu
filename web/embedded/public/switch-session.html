@@ -101,23 +101,21 @@
                 launchRomButton.disabled = false;
                 loadSessionButton.disabled = false;
 
-                launchRomButton.addEventListener('click', async () => {
-                    await emulator
+                launchRomButton.addEventListener('click', () =>
+                    emulator
                         .loadRom(new Uint8Array(rom))
                         .then(() => emulator.resume())
-                        .catch(e => console.error(e));
+                        .then(() => canvas.style.visibility = 'visible')
+                        .catch(e => console.error(e))
+                );
 
-                    canvas.style.visibility = 'visible';
-                });
-
-                loadSessionButton.addEventListener('click', async () => {
-                    await emulator
+                loadSessionButton.addEventListener('click', () =>
+                    emulator
                         .loadSession(new Uint8Array(image))
                         .then(() => emulator.resume())
-                        .catch(e => console.error(e));
-
-                    canvas.style.visibility = 'visible';
-                });
+                        .then(() => canvas.style.visibility = 'visible')
+                        .catch(e => console.error(e))
+                );
             })().catch((e) => console.error(e));
         </script>
     </body>

@@ -77,6 +77,8 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
             targetMips: 100 * (this.session?.speed ?? 1),
             schedulerKind: this.session?.runInBackground ? SchedulerKind.timeout : SchedulerKind.animationFrame,
             runInBackground: this.session?.runInBackground ?? false,
+            disableAudio: this.session?.disablePcmAudio ?? false,
+            maxHostLoad: this.session?.maxHostLoad ?? 1,
         });
     }
 

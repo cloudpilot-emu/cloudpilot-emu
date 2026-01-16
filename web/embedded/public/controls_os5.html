@@ -92,13 +92,21 @@
                 </div>
                 <div>
                     <button type="button" id="orientation-button"></button>
+                    <button type="button" id="dpad-button"></button>
                 </div>
                 <div>
                     <button type="button" id="run-hidden-button"></button>
                 </div>
+                <div>
+                    <button type="button" id="disable-pcm-button"></button>
+                </div>
                 <div id="speed-controls">
                     <label for="speed-input" id="speed-label">Speed:</label>
                     <input type="range" min="10" max="300" step="5" id="speed-input" />
+                </div>
+                <div id="host-load-controls">
+                    <label for="host-load-input" id="host-load-label">Max. host load:</label>
+                    <input type="range" min="30" max="100" step="5" id="host-load-input" />
                 </div>
                 <div id="audio-controls">
                     <button type="button" id="enable-audio-button">Enable audio</button>
@@ -203,6 +211,10 @@
                 const speedLabel = document.getElementById('speed-label');
                 const speedInput = document.getElementById('speed-input');
                 const runHiddenButton = document.getElementById('run-hidden-button');
+                const dpadButton = document.getElementById('dpad-button');
+                const disablePcmButton = document.getElementById('disable-pcm-button');
+                const hostLoadLabel = document.getElementById('host-load-label');
+                const hostLoadInput = document.getElementById('host-load-input');
 
                 // Update UI to reflect emulator state
                 let uiUpdateComplete = Promise.resolve();
@@ -231,7 +243,14 @@
                             speedInput.value = emulator.getSpeed() * 100 + '';
                             speedLabel.innerText = `Speed: ${Math.round(emulator.getSpeed() * 100)} MIPS`;
 
+                            hostLoadInput.value = emulator.getMaxHostLoad() * 100 + '';
+                            hostLoadLabel.innerText = `Max. host load: ${Math.round(emulator.getMaxHostLoad() * 100)}%`;
+
                             runHiddenButton.innerText = emulator.getRunHidden() ? `pause if hidden` : `run while hidden`;
+
+                            dpadButton.innerText = emulator.getDisableDpad() ? 'enable d-pad' : 'disable d-pad';
+
+                            disablePcmButton.innerText = emulator.getDisablePcmAudio() ? 'enable PCM' : 'disable PCM';
                         } catch (e) {
                             console.error(e);
                         }
@@ -302,9 +321,30 @@
                     }
                 });
 
+                // Max. host load slider
+                hostLoadInput.addEventListener('input', () => {
+                    const maxHostLoad = parseInt(hostLoadInput.value) / 100;
+                    if (!isNaN(maxHostLoad)) {
+                        emulator.setMaxHostLoad(maxHostLoad);
+                        updateUi();
+                    }
+                });
+
                 // Run-in-background button
                 runHiddenButton.addEventListener('click', () => {
                     emulator.setRunHidden(!emulator.getRunHidden());
+                    updateUi();
+                });
+
+                // Disable / Enable d-pad
+                dpadButton.addEventListener('click', () => {
+                    emulator.setDisableDpad(!emulator.getDisableDpad());
+                    updateUi();
+                });
+
+                // Disable / Enable PCM
+                disablePcmButton.addEventListener('click', () => {
+                    emulator.setDisablePcmAudio(!emulator.getDisablePcmAudio());
                     updateUi();
                 });
 

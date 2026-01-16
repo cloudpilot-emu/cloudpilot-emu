@@ -232,8 +232,9 @@ export interface Emulator {
     getVolume(): number;
 
     /**
-     * Disable PCM audio on OS5. This will improve emulation speed but may lead to
-     * compatibility issues with some apps.
+     * Disable PCM audio on OS5. This will improve emulation speed (by freeing cycles
+     * that would be used to generate audio) but may lead to * compatibility issues with
+     * some apps.
      *
      * @param disablePcmAudio Disable / enable PCM audio
      */
