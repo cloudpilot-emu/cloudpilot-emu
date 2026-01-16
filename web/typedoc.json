@@ -1,13 +1,10 @@
 {
     "$schema": "https://typedoc.org/schema.json",
     "entryPoints": ["embedded/src/index.ts"],
-    "tsconfig": "tsconfig.embedded.json",
+    "tsconfig": "tsconfig.embedded.typedoc.json",
     "name": "cloudpilot",
     "readme": "./embedded/doc/README.typedoc.md",
     "out": "docs-embedded",
-    "sort": [
-        "kind",
-        "instance-first"
-    ],
-    "githubPages": true
+    "sort": ["kind", "instance-first"],
+    "githubPages": true,
 }

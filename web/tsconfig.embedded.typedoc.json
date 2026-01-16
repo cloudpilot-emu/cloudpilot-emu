@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.embedded.json",
+    "exclude": [
+        "node_modules",
+        "common/test/*.ts",
+        "common/engine/uarm/worker/**/*.ts",
+        "common/service/audioworklet/**/*.ts",
+    ],
+}

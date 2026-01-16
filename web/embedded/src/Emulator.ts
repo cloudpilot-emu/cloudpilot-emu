@@ -19,7 +19,7 @@ import { Session } from './model/Session';
 import { EmbeddedAudioService } from './service/EmbeddedAudioService';
 import { EmbeddedCanvasDisplayService } from './service/EmbeddedCanvasDisplayService';
 import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
-import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingService';
+import { EmbeddedEventHandlingService } from './service/EmbeddedEventHandlingService';
 
 const DEFAULT_SESSION: Session = {
     hotsyncName: undefined,
@@ -42,7 +42,8 @@ function assertEngineInitialized(engine: Engine | undefined): asserts engine is 
 // TODO: uARM
 
 /**
- *
+ * The main emulator interface. Most methods that interact with the emulator are async and
+ * should be awaited.
  */
 export interface Emulator {
     /**
@@ -127,7 +128,7 @@ export interface Emulator {
     installFromZipfile(file: Uint8Array): Promise<void>;
 
     /**
-     * Extract all databases from a zip archive and install them, then attampt to
+     * Extract all databases from a zip archive and install them, then attempt to
      * launch the specified file.
      *
      * @param file The zip archive data.
@@ -136,7 +137,7 @@ export interface Emulator {
     installFromZipfileAndLaunch(file: Uint8Array, launchFile: string): Promise<void>;
 
     /**
-     * Attemot to launch the database with the specified name.
+     * Attempt to launch the database with the specified name.
      *
      * @param name Database name
      */
@@ -384,7 +385,7 @@ export interface Emulator {
     readonly audioInitializedEvent: CloudpilotEvent<void>;
 
     /**
-     * Fires after each emulated timeslice (typicall 60 times per second)
+     * Fires after each emulated timeslice (typically 60 times per second)
      */
     readonly timesliceEvent: CloudpilotEvent<void>;
 
@@ -407,7 +408,7 @@ export class EmulatorImpl implements Emulator {
     ) {
         this.emulationService = new EmbeddedEmulationService(cloudpilot, uarmModuleFactory);
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(new SkinLoader(Promise.resolve(cloudpilot)));
-        this.eventHandlingService = new EmbeddedEventHandlingServie(this.emulationService, this.canvasDisplayService);
+        this.eventHandlingService = new EmbeddedEventHandlingService(this.emulationService, this.canvasDisplayService);
         this.audioService = new EmbeddedAudioService(this.session, this.emulationService);
 
         this.emulationService.newFrameEvent.addHandler((canvas) =>
@@ -800,7 +801,7 @@ export class EmulatorImpl implements Emulator {
 
     private emulationService: EmbeddedEmulationService;
     private canvasDisplayService: EmbeddedCanvasDisplayService;
-    private eventHandlingService: EmbeddedEventHandlingServie;
+    private eventHandlingService: EmbeddedEventHandlingService;
     private audioService: EmbeddedAudioService;
 
     private powerOffWatcher: Watcher<boolean>;

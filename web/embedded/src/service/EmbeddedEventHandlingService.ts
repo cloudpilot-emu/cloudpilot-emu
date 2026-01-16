@@ -4,7 +4,7 @@ import { Event } from 'microevent.ts';
 
 import { EmbeddedCanvasDisplayService } from './EmbeddedCanvasDisplayService';
 
-export class EmbeddedEventHandlingServie extends GenericEventHandlingService {
+export class EmbeddedEventHandlingService extends GenericEventHandlingService {
     constructor(emulationService: AbstractEmulationService, canvasDisplayService: EmbeddedCanvasDisplayService) {
         super(emulationService, canvasDisplayService);
 
