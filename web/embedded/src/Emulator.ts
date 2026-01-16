@@ -6,12 +6,12 @@ import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { SessionMetadata } from '@common/model/SessionMetadata';
-import { EventTarget } from '@common/service/GenericEventHandlingService';
+import { EmulatorEventTarget } from '@common/service/GenericEventHandlingService';
 import { SkinLoader } from '@common/service/SkinLoader';
 import { Mutex } from 'async-mutex';
 import { Event as EventImpl } from 'microevent.ts';
 
-import { Event } from './Event';
+import { CloudpilotEvent } from './Event';
 import { SerialPort } from './SerialPort';
 import { Watcher } from './Watcher';
 import { Button } from './index';
@@ -98,7 +98,7 @@ export interface Emulator {
      *
      * @param keyboardTarget Optional: target for keyboard events, default: `window`
      */
-    bindInput(keyboardTarget?: EventTarget): void;
+    bindInput(keyboardTarget?: EmulatorEventTarget): void;
 
     /**
      * Unbind the handlers previous bound with `bindInput`.
@@ -371,33 +371,33 @@ export interface Emulator {
     /**
      * Fires when the device turns on or off.
      */
-    readonly powerOffChangeEvent: Event<boolean>;
+    readonly powerOffChangeEvent: CloudpilotEvent<boolean>;
 
     /**
      * Fires when PalmOS resets or passed UI initialization during boot.
      */
-    readonly isUiInitializedChangeEvent: Event<boolean>;
+    readonly isUiInitializedChangeEvent: CloudpilotEvent<boolean>;
 
     /**
      * Fires when audio is initializd successfully.
      */
-    readonly audioInitializedEvent: Event<void>;
+    readonly audioInitializedEvent: CloudpilotEvent<void>;
 
     /**
      * Fires after each emulated timeslice (typicall 60 times per second)
      */
-    readonly timesliceEvent: Event<void>;
+    readonly timesliceEvent: CloudpilotEvent<void>;
 
     /**
      * Fires when the hotsync name changes. This does not happen immediatelly when
      * `setHotsyncName` is called, but only when the OS is notified of the new name.
      */
-    readonly hotsyncNameChangeEvent: Event<string>;
+    readonly hotsyncNameChangeEvent: CloudpilotEvent<string>;
 
     /**
      * Fires if game mode is enabled or disabled.
      */
-    readonly gameModeChangeEvent: Event<boolean>;
+    readonly gameModeChangeEvent: CloudpilotEvent<boolean>;
 }
 
 export class EmulatorImpl implements Emulator {
@@ -516,7 +516,7 @@ export class EmulatorImpl implements Emulator {
         void this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
     }
 
-    bindInput(keyEventTarget?: EventTarget): void {
+    bindInput(keyEventTarget?: EmulatorEventTarget): void {
         if (!this.canvas) {
             throw new Error('you must set up the canvas setCanvas before calling bindInput');
         }
@@ -738,23 +738,23 @@ export class EmulatorImpl implements Emulator {
         return this.emulationService.getSerialPortSerial();
     }
 
-    get powerOffChangeEvent(): Event<boolean> {
+    get powerOffChangeEvent(): CloudpilotEvent<boolean> {
         return this.powerOffWatcher.changeEvent;
     }
 
-    get isUiInitializedChangeEvent(): Event<boolean> {
+    get isUiInitializedChangeEvent(): CloudpilotEvent<boolean> {
         return this.uiInitializedWatcher.changeEvent;
     }
 
-    get hotsyncNameChangeEvent(): Event<string> {
+    get hotsyncNameChangeEvent(): CloudpilotEvent<string> {
         return this.hotsyncNameWatcher.changeEvent;
     }
 
-    get gameModeChangeEvent(): Event<boolean> {
+    get gameModeChangeEvent(): CloudpilotEvent<boolean> {
         return this.eventHandlingService.gameModeChangeEvent;
     }
 
-    get timesliceEvent(): Event<void> {
+    get timesliceEvent(): CloudpilotEvent<void> {
         return this.emulationService.timesliceEvent;
     }
 

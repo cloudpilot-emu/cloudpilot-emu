@@ -1,4 +1,4 @@
-import { Event } from './Event';
+import { CloudpilotEvent } from './Event';
 
 /**
  * Emitted by the emulator.
@@ -47,5 +47,5 @@ export interface SerialPort {
      * This is fired by the emulator for data or synchronization events. In 'sync' mode,
      * **every** such event needs to be sent to the remote instance.
      */
-    receiveEvent: Event<ReceivePayload>;
+    receiveEvent: CloudpilotEvent<ReceivePayload>;
 }

@@ -1,7 +1,7 @@
 /**
  * A CloudpilotEmu event.
  */
-export interface Event<Payload> {
+export interface CloudpilotEvent<Payload> {
     /**
      * Bind an handler callback to the event.
      *
@@ -10,7 +10,7 @@ export interface Event<Payload> {
      * @param handler Handler callback.
      * @param context Optional context that is passed to the callback.
      */
-    addHandler<Context>(handler: Handler<Payload, Context>, context?: Context): Event<Payload>;
+    addHandler<Context>(handler: Handler<Payload, Context>, context?: Context): CloudpilotEvent<Payload>;
 
     /**
      * Remove a previously bound handler. Both callback and context must be identical for
@@ -22,7 +22,7 @@ export interface Event<Payload> {
      * @param handler Handler callback.
      * @param context Optional callback context.
      */
-    removeHandler<Context>(handler: Handler<Payload, Context>, context?: Context): Event<Payload>;
+    removeHandler<Context>(handler: Handler<Payload, Context>, context?: Context): CloudpilotEvent<Payload>;
 }
 
 /**

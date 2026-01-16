@@ -28,7 +28,7 @@ export type EventHandler<K extends keyof HTMLElementEventMap> = (ev: HTMLElement
 /**
  * A DOM event target.
  */
-export interface EventTarget {
+export interface EmulatorEventTarget {
     addEventListener<K extends keyof HTMLElementEventMap>(
         type: K,
         handler: EventHandler<K>,
@@ -47,7 +47,7 @@ export class GenericEventHandlingService {
         protected canvasDisplayService: AbstractCanvasDisplayService,
     ) {}
 
-    bind(pointerEventTarget: EventTarget, dpad: boolean, keyEventTarget: EventTarget = window): void {
+    bind(pointerEventTarget: EmulatorEventTarget, dpad: boolean, keyEventTarget: EmulatorEventTarget = window): void {
         this.dpad = dpad;
 
         if (this.pointerEventTarget) {
@@ -120,7 +120,7 @@ export class GenericEventHandlingService {
 
     protected onToggleGameMode(): void {}
 
-    protected addEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
+    protected addEventListener<K extends keyof HTMLElementEventMap, E extends EmulatorEventTarget>(
         elt: E,
         type: K,
         handler: EventHandler<K>,
@@ -129,7 +129,7 @@ export class GenericEventHandlingService {
         elt.addEventListener(type, handler, caputure);
     }
 
-    protected removeEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
+    protected removeEventListener<K extends keyof HTMLElementEventMap, E extends EmulatorEventTarget>(
         elt: E,
         type: K,
         handler: EventHandler<K>,
@@ -486,8 +486,8 @@ export class GenericEventHandlingService {
         }
     }
 
-    private pointerEventTarget: EventTarget | undefined;
-    private keyEventTarget: EventTarget = window;
+    private pointerEventTarget: EmulatorEventTarget | undefined;
+    private keyEventTarget: EmulatorEventTarget = window;
 
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();

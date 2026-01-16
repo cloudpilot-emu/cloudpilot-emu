@@ -1,5 +1,5 @@
 import { Injectable, NgZone } from '@angular/core';
-import { EventTarget, GenericEventHandlingService } from '@common/service/GenericEventHandlingService';
+import { EmulatorEventTarget, GenericEventHandlingService } from '@common/service/GenericEventHandlingService';
 import { EventHandler } from '@common/service/GenericEventHandlingService';
 
 import { CanvasDisplayService } from './canvas-display.service';
@@ -25,7 +25,7 @@ export class EventHandlingService extends GenericEventHandlingService {
         this.ngZone.run(() => undefined);
     }
 
-    protected override addEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
+    protected override addEventListener<K extends keyof HTMLElementEventMap, E extends EmulatorEventTarget>(
         elt: E,
         type: K,
         handler: EventHandler<K>,
