@@ -41,9 +41,9 @@ jobs:
       - name: Test
         working-directory: web
         run: yarn test
-      #            - name: Build CloudpilotEmu embedded
-      #              working-directory: web
-      #              run: yarn dist-embedded
+      - name: Build CloudpilotEmu embedded
+        working-directory: web
+        run: yarn dist-embedded
       - name: Build PWA
         working-directory: web
         run: |
@@ -60,9 +60,9 @@ jobs:
         working-directory: cloudpilot-emu.github.io
         run: |
           test -x app-preview && rm -fr app-preview
-          # test -x embedded-preview && rm -fr embedded-preview
+          test -x embedded-preview && rm -fr embedded-preview
           cp -r ../web/build-pwa ./app-preview
-          # cp -r ../web/dist-embedded ./embedded-preview
+          cp -r ../web/dist-embedded ./embedded-preview
           git add .
           git config --global user.email "golem@nowhere.org"
           git config --global user.name "The Golem"
