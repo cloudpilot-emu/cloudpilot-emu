@@ -1,5 +1,5 @@
 /**
- * This set of performance statistics can be queries at runtime from the emulator.
+ * Runtime statistics for Cloudpilot.
  */
 export interface EmulationStatisticsCloudpilot {
     type: 'cloudpilot';
@@ -26,6 +26,9 @@ export interface EmulationStatisticsCloudpilot {
     averageFps: number;
 }
 
+/**
+ * Runtime statistics for uARM.
+ */
 export interface EmulationStatisticsUarm {
     type: 'uarm';
 
@@ -41,4 +44,7 @@ export interface EmulationStatisticsUarm {
     currentMaxSpeedMips: number;
 }
 
+/**
+ * This set of performance statistics can be queried at runtime from the emulator.
+ */
 export type EmulationStatistics = EmulationStatisticsCloudpilot | EmulationStatisticsUarm;

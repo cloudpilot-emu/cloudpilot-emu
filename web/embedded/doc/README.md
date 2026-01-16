@@ -10,13 +10,18 @@ this is for you. Download `cloudpilot-embedded.zip` from [github
 releases](https://github.com/cloudpilot-emu/cloudpilot-emu/releases). Inside the
 archive you will find the following files:
 
-* `cloudpilot-emu.js`: The JavaScript bundle
+* `cloudpilot-emu.js`: The main JavaScript bundle
 * `cloudpilot-emu.js.map`: Source map for debugging
 * `cloudpilot-emu.d.ts`: Type declarations (in case you are using TypeScript)
-* `cloudpilot_web.wasm`: The compiled web assembly bytecode
+* `cloudpilot_web.wasm`: The compiled web assembly bytecode for cloudpilot
+* `uarm_web.wasm`: The compiled web assembly bytecode for uARM (for OS5 support)
+* `uarm-worker.js`: The web worker for OS5 support.
+* `uarm-worker.d.js`: Type declarations (in case you are using TypeScript)
+* `pcm-worklet.js`: The PCM worklet for OS5 PCM audio support. 
+* `pcm-worklet.d.js`: Type declarations (in case you are using TypeScript)
 
-Drop `cloudpilot-emu.js` and `cloudpilot-web.wasm` next to your web page and
-include the JavaScript bundle with a script tag in your HTML code
+Drop the Javascript and web assembly files next to your web page and
+include the main JavaScript bundle with a script tag in your HTML code
 
 ```html
     <script src="cloudpilot-emu.js"></script>
@@ -36,10 +41,10 @@ package comes with TypeScript typings.
 Instead of referring the global `cloudpilot` namespace used in the example code
 below you can now import all symbols from this module.
 
-Please note that you still need to serve `cloudpilot-web.wasm` next to your
-application in order to actually run the emulator. You can either download it
-separately (see above) or find it in the `dist` folder of said package and copy
-it from there.
+Please note that you still need to serve the web assembly binaries and worker
+files next to your application in order to actually run the emulator and get OS5
+support. You can either download it separately (see above) or find it in the
+`dist` folder of said package and copy it from there.
 
 # Usage
 
@@ -109,6 +114,14 @@ instance](./reference/interfaces/Emulator.html). Most of those methods return
 the same instance of the emulator, so calls can be chained. Errors are
 communicated via exceptions.
 
+### Asynchronous methods
+
+Since CloudpilotEmu 2.0, most methods that interact with the emulator are
+async and return promises. The library serialized all these methods, so there
+is not danger of race conditions if the promise is not awaited, but you should
+always await it in order to be sure about the state the emulator is in (and for
+proper error handling).
+
 ### `loadSession`, `loadRom`
 
 Session and rom files need to be provided as `Uint8Array` typed arrays.
@@ -120,7 +133,7 @@ rom file. On success, the emulator is initialized but stopped.
 force a specific choice, you can do so with a second argument.
 
 ```
-emulator.loadRom(romFile, cloudpilot.DeviceId.m515)
+await emulator.loadRom(romFile, cloudpilot.DeviceId.m515)
 ```
 
 Please see the [reference on DeviceId](./reference/enums/DeviceId.html) for
@@ -200,7 +213,7 @@ while the launcher is running should be fine. In order to be 100% safe from bad
 surprises, always call those methods before the emulator is resumed --- this way
 the call always finds the emulator in the same state.
 
-## Modifying the hotsync user name
+## Modifying the hotsync user name (OS4 and earlier only)
 
 The hotsync user name was commonly used by software for its registration
 process. On real devices the hotsync name is set during the first hotsync.
@@ -224,7 +237,10 @@ Browser policies require this method to be called from an event handler
 triggered by a user interaction (i.e. a keyboard or a click event), otherwise
 the initialization will fail.
 
-## Game input mode
+Note that PCM audio on OS5 requires that the emulator is served via HTTPS due to
+DOM API restrictions.
+
+## Game input mode (OS4 and earlier only)
 
 Just like with the CloudpilotEmu web app, keyboard input is usually converted
 into keyboard events for PalmOS. By pressing shift-ctrl the user can enter "game
@@ -240,6 +256,9 @@ While game mode is active, a small overlay is shown in the bottom right corner
 of the emulator. Game mode and the overlay can be controlled (and permanently
 disabled) by various methods on the emulator object; check the [reference
 documentation](./reference/interfaces/Emulator.html#setGameMode) for more details.
+
+Keyboard input is not supported for keyboard OS5 devices, and for those game
+mappings are always active.
 
 ## Creating a session file
 
@@ -268,7 +287,7 @@ API is:
 *  [isCardMounted](./reference/interfaces/Emulator.html#isCardMounted)
    check whether a card is currently mounted
 
-## Serial port and IrDA
+## Serial port and IrDA (OS4 and earlier only)
 
 CloudpilotEmu embedded exposes the serial port of the emulated device. This
 can be used to communicate with an application running on the device via the

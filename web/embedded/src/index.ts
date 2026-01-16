@@ -7,7 +7,11 @@ export { DeviceId } from '@common/model/DeviceId';
 export { Button } from './button';
 export { DeviceOrientation } from '@common/model/DeviceOrientation';
 export { Emulator } from './Emulator';
-export { EmulationStatistics } from '@common/model/EmulationStatistics';
+export {
+    EmulationStatistics,
+    EmulationStatisticsCloudpilot,
+    EmulationStatisticsUarm,
+} from '@common/model/EmulationStatistics';
 export { EmulatorEventTarget as EventTarget, EventHandler } from '@common/service/GenericEventHandlingService';
 export { CloudpilotEvent as Event, Handler } from './Event';
 export { SerialPort, ReceivePayload } from './SerialPort';
