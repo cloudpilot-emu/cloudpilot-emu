@@ -70,22 +70,16 @@
         </div>
 
         <a href="index.html">...back to index</a>
+        <span id="enable-audio">
+            |
+            <a href="javascript://" id="enable-audio-link">enable audio</a>
+        </span>
         |
         <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/switch-session_os5.html">
             source on github
         </a>
 
         <script>
-            function launchAudioOnStart(emulator) {
-                const events = ['touchstart', 'click', 'keydown'];
-                const handler = () => {
-                    events.forEach(event => window.removeEventListener(event, handler, true));
-                    void emulator.initializeAudio();
-                }
-
-                events.forEach(event => window.addEventListener(event, handler, true));
-            }
-
             (async function () {
                 const emulator = await cloudpilot.createEmulator({preloadUarm: true});
 
@@ -114,7 +108,15 @@
                 launchRomButton.disabled = false;
                 loadSessionButton.disabled = false;
 
-                launchAudioOnStart(emulator);
+                const enableAudio = document.getElementById('enable-audio');
+                const enableAudioLink = document.getElementById('enable-audio-link');
+
+                const handler = () => emulator.initializeAudio().then(() => {
+                    enableAudioLink.removeEventListener('click', handler);
+                    enableAudio.style.display = 'none';
+                })
+
+                enableAudioLink.addEventListener('click', handler);
 
                 launchRomButton.addEventListener('click', () =>
                     emulator

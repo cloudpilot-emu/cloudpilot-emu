@@ -64,22 +64,16 @@
             <div class="canvas-wrapper"><canvas id="canvas-2" tabindex="1"></canvas></div>
         </div>
         <a href="index.html">...back to index</a>
+        <span id="enable-audio">
+            |
+            <a href="javascript://" id="enable-audio-link">enable audio</a>
+        </span>
         |
         <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/two-instances_os5.html">
             source on github
         </a>
 
         <script>
-            function launchAudioOnStart(emulator) {
-                const events = ['touchstart', 'click', 'keydown'];
-                const handler = () => {
-                    events.forEach(event => window.removeEventListener(event, handler, true));
-                    void emulator.initializeAudio();
-                }
-
-                events.forEach(event => window.addEventListener(event, handler, true));
-            }
-
             (async function () {
                 const factory = cloudpilot.createEmulatorFactory({preloadUarm: true});
 
@@ -111,8 +105,18 @@
                 emulator2.setCanvas(canvas2);
                 emulator2.bindInput(canvas2);
 
-                launchAudioOnStart(emulator1);
-                launchAudioOnStart(emulator2);
+                const enableAudio = document.getElementById('enable-audio');
+                const enableAudioLink = document.getElementById('enable-audio-link');
+
+                const handler = () => Promise.all([
+                    emulator1.initializeAudio(),
+                    emulator2.initializeAudio()
+                ]).then(() => {
+                    enableAudioLink.removeEventListener('click', handler);
+                    enableAudio.style.display = 'none';
+                });
+
+                enableAudioLink.addEventListener('click', handler);
 
                 await emulator1.resume();
                 await emulator2.resume();
