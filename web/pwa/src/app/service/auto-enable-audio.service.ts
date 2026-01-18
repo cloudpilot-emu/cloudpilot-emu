@@ -26,6 +26,7 @@ export class AutoEnableAudioService {
 
         if (isIOS && isIOSNative) {
             void this.audioService.initialize();
+            return;
         }
 
         const handler = () => {
