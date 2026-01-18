@@ -14,6 +14,16 @@
         </a>
 
         <script>
+            function launchAudioOnStart(emulator) {
+                const events = ['touchstart', 'click', 'keydown'];
+                const handler = () => {
+                    events.forEach(event => window.removeEventListener(event, handler, true));
+                    void emulator.initializeAudio();
+                }
+
+                events.forEach(event => window.addEventListener(event, handler, true));
+            }
+
             (async function () {
                 const emulator = await cloudpilot.createEmulator({preloadUarm: true});
 
@@ -29,6 +39,8 @@
 
                 emulator.setCanvas(canvas);
                 emulator.bindInput(canvas);
+
+                launchAudioOnStart(emulator);
                 
                 await emulator.resume();
             })().catch((e) => console.error(e));

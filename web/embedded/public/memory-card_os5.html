@@ -78,11 +78,11 @@
             function launchAudioOnStart(emulator) {
                 const events = ['touchstart', 'click', 'keydown'];
                 const handler = () => {
-                    events.forEach(event => document.removeEventListener(event, handler));
+                    events.forEach(event => window.removeEventListener(event, handler, true));
                     void emulator.initializeAudio();
                 }
 
-                events.forEach(event => document.addEventListener(event, handler));
+                events.forEach(event => window.addEventListener(event, handler, true));
             }
 
             (async function () {
