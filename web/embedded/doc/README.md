@@ -11,17 +11,14 @@ releases](https://github.com/cloudpilot-emu/cloudpilot-emu/releases). Inside the
 archive you will find the following files:
 
 * `cloudpilot-emu.js`: The main JavaScript bundle
-* `cloudpilot-emu.js.map`: Source map for debugging
 * `cloudpilot-emu.d.ts`: Type declarations (in case you are using TypeScript)
 * `cloudpilot_web.wasm`: The compiled web assembly bytecode for cloudpilot
 * `uarm_web.wasm`: The compiled web assembly bytecode for uARM (for OS5 support)
 * `uarm-worker.js`: The web worker for OS5 support.
-* `uarm-worker.d.js`: Type declarations (in case you are using TypeScript)
 * `pcm-worklet.js`: The PCM worklet for OS5 PCM audio support. 
-* `pcm-worklet.d.js`: Type declarations (in case you are using TypeScript)
 
 Drop the Javascript and web assembly files next to your web page and
-include the main JavaScript bundle with a script tag in your HTML code
+include the main JavaScript bundle with a script tag in your HTML code.
 
 ```html
     <script src="cloudpilot-emu.js"></script>
@@ -43,8 +40,8 @@ below you can now import all symbols from this module.
 
 Please note that you still need to serve the web assembly binaries and worker
 files next to your application in order to actually run the emulator and get OS5
-support. You can either download it separately (see above) or find it in the
-`dist` folder of said package and copy it from there.
+support. You can either download these separately (see above) or copy them from
+the `dist` folder of the NPM package.
 
 # Usage
 
@@ -75,23 +72,23 @@ async function main() {
     const canvas = document.getElementById('canvas');
     const emulator = await cloudpilot.createEmulator();
 
-    emulator.
-        loadSession(sessionFile)
-        .setCanvas(canvas)
-        .bindInput(canvas, canvas)
-        .resume();
+    await emulator.loadSession(sessionFile);
+    
+    emulator.setCanvas(canvas);
+    emulator.bindInput(canvas, canvas);
+        
+    await emulator.resume();
 };
 
-main();
+main().catch(e => console.error(e));
 ```
 
 ### `createEmulator`
 
-[cloudpilot.createEmulator](./reference/functions/createEmulator.html) loads
-the web assembly module, compiles it and returns a promise for an instance of the
-emulator. This process is async, hence the need to return a promise. On modern
-browsers you can use `async/await` to handle the promise. As an alternative (or
-to support legacy browsers) you can use the usual promise API
+[cloudpilot.createEmulator](./reference/functions/createEmulator.html) loads the
+web assembly module, compiles it and returns a promise for an instance of the
+emulator. On modern browsers you can use `async/await` to handle the promise. As
+an alternative (or to support legacy browsers) you can use the promise API
 
 ```javascript
 cloudpilot.createEmulator().then(emulator => {
@@ -100,14 +97,20 @@ cloudpilot.createEmulator().then(emulator => {
 
 ```
 
-Without any arguments, `createEmulator` assumes that the web assembly binary is
-hosted next to your HTML file. You can supply a different URL as an argument.
+Without any arguments, `createEmulator` assumes that the web assembly binaries are
+hosted next to your HTML file. Please check the docs if you need to specify a
+separate URL. For OS5 support, the compiled worker and worklet binaries (see
+above) **have** to be hosted next to the HTML or script that loads the emulator.
 
 If you want to create multiple instances of the emulator, you can use
-`createEmulatorFactory` (again with an optional URL) to create a factory function.
-Each time you call the factory function you'll get a promise for a new emulator
-instance. but the web assembly binary will only be downloaded and compiled
-once.
+`createEmulatorFactory` to create a factory function. Each time you call the
+factory function you'll get a promise for a new emulator instance. But the web
+assembly binary will only be downloaded and compiled once.
+
+Support for PalmOS 5 emulator requires the uARM WebAssembly binary. By default,
+this is loaded lazily when the emulator is launched, but you can force
+CloudpilotEmu to load it in advance by specifying the `{preloadUarm: true}`
+option.
 
 All interactions with the emulator go through methods on the [emulator
 instance](./reference/interfaces/Emulator.html). Most of those methods return
@@ -116,11 +119,11 @@ communicated via exceptions.
 
 ### Asynchronous methods
 
-Since CloudpilotEmu 2.0, most methods that interact with the emulator are
-async and return promises. The library serialized all these methods, so there
-is not danger of race conditions if the promise is not awaited, but you should
-always await it in order to be sure about the state the emulator is in (and for
-proper error handling).
+Since CloudpilotEmu 2.0, most methods that interact with the emulator are async
+and return promises. The library serializes all calls to those methods, so there
+is no danger of race conditions if the promise is not awaited. However, you
+should always await the result for proper error handling and to be sure that the
+operation has completed before continuing.
 
 ### `loadSession`, `loadRom`
 
@@ -132,7 +135,7 @@ rom file. On success, the emulator is initialized but stopped.
 `loadRom` will try to autodetect the device type from the ROM. If you want to
 force a specific choice, you can do so with a second argument.
 
-```
+```javascript
 await emulator.loadRom(romFile, cloudpilot.DeviceId.m515)
 ```
 
@@ -152,7 +155,7 @@ as an argument; the default is `window`. You'll usually want to use the canvas
 element here, but:
 
 **WARNING:** You **must** set the `tabindex` attribute on the canvas node if you
-want to process keyboard events from it.
+want to process keyboard events on it.
 
 You can stop listening for events by calling
 [releaseInput](./reference/interfaces/Emulator.html#releaseInput).
@@ -161,11 +164,10 @@ You can stop listening for events by calling
 
 Calling [resume](./reference/interfaces/Emulator.html#resume) will resume
 emulation. You can call [pause](./reference/interfaces/Emulator.html#resume)
-in order to pause it again.
+in order to pause it again. The result of those calls should be awaited.
 
-The default for CloudpilotEmu is to use `requestAnimationFrame` for running the
-emulator, which will automatically stop it if the window with the emulator is
-not visible. You can call
+The default for CloudpilotEmu is to stop the emulator when the tab or window is
+backgrounded. You can call
 [setRunHidden](./reference/interfaces/Emulator.html#setRunHidden) in order to
 run the emulator even if the window is not currently visible.
 
@@ -174,11 +176,11 @@ run the emulator even if the window is not currently visible.
 Starting CloudpilotEmu with a ROM file will boot the device and go through the
 initial setup process (digitizer calibration, locale, etc.).
 
-If your goal in embedding the emulator is running a particular application, then
+If you are embedding the emulator to run a particular application, then
 you are better off preparing a pre-booted session in CloudpilotEmu and using
 that with the embedded emulator. Note that you don't have to include all
 possible application that you might want to run in the session --- you can
-install the relevant applications after initializing the emulator (see below.)
+install the relevant applications after initializing the emulator (see below).
 
 ## Installing and launching applications
 
@@ -195,13 +197,13 @@ passed to the emulator as `Uint8Array` typed arrays.
 * [installFromZipfileAndLaunch](./reference/interfaces/Emulator.html#installFromZipfileAndLaunch)
   installs databases from a `.zip` archive and then attempts to launch a
   particular database
-* [installDatabase](./reference/interfaces/Emulator.html#installDatabase)
-  installs a database
 * [launchDatabase](./reference/interfaces/Emulator.html#launchDatabase)
   extracts the name from a database and attempts to locate it on the device and
   launch it.
 * [launchByName](./reference/interfaces/Emulator.html#launchByName) searches
   for a database with a particular name on the device and attempts to launch it.
+
+Again, all those methods return promises that should be awaited.
 
 Installing and launching applications is only possible if the device is powered
 on and has finished booting. You can ensure that this is the case by using a
@@ -219,6 +221,7 @@ The hotsync user name was commonly used by software for its registration
 process. On real devices the hotsync name is set during the first hotsync.
 CloudpilotEmu allows you to change the user name by calling
 [setHotsyncName](./reference/interfaces/Emulator.html#setHotsyncName).
+This method returns a promise that should be awaited.
 
 **WARNING:** CloudpilotEmu calls into PalmOS in order to change the hotsync
 name. This has the potential of crashing the device under rare circumstances.
@@ -257,20 +260,20 @@ of the emulator. Game mode and the overlay can be controlled (and permanently
 disabled) by various methods on the emulator object; check the [reference
 documentation](./reference/interfaces/Emulator.html#setGameMode) for more details.
 
-Keyboard input is not supported for keyboard OS5 devices, and for those game
-mappings are always active.
+Keyboard input is not supported for OS5 devices, and for those game mappings are
+always active.
 
 ## Creating a session file
 
 Session files can be created in CloudpilotEmu on the sessions tab. Either right
 click on a session and select "save" or swipe the session to the right and
-select the second icon. A dialog will open that allows you save a session
-snapshot.
+select the icon with the box and the arrow. A dialog will open that allows you
+save a session snapshot.
 
 ## Using SD cards and memory sticks
 
 The emulator supports attaching SD card and memory stick images into devices
-that support them. Both plain ang gzipped images are supported. SD card images
+that support them. Both plain and gzipped images are supported. SD card images
 can be of pretty much any size (as long as it is a multiple of 512 bytes),
 but memory stick images can only come in very specific sizes.
 
@@ -286,6 +289,8 @@ API is:
    eject a previously mounted card
 *  [isCardMounted](./reference/interfaces/Emulator.html#isCardMounted)
    check whether a card is currently mounted
+
+All of these return promises that should be awaited.
 
 ## Serial port and IrDA (OS4 and earlier only)
 
@@ -303,20 +308,22 @@ communication over network connections.
 The [serial port example](./examples/serial.html) shows how to connect the
 serial port to [xterm.js](http://xtermjs.org) in order to communicate with
 uClinux running on the virtual device.
-The [two instance example](./examples/two-instanes.html) shows how to connect
+The [two instance example](./examples/two-instances.html) shows how to connect
 two instances of the emulator via IrDA. Please refer to the API documentation
 for more details.
+
+Serial communication is not supported for OS5.
 
 ## Sizing and styling the canvas
 
 When applying CSS to the canvas element you must make sure not to touch
-`border`, `padding`, `box-size` and `object-fit`. Messing with those breaks
+`border`, `padding`, `box-sizing` and `object-fit`. Messing with those breaks
 CloudpilotEmu's handling of pointer events. If you need border or padding, wrap the
 canvas in a containing element and apply those properties on the container
 instead.
 
 Apart from this restriction you are free to style CloudpilotEmu as you like.
-Regardless of the layout dimensions and aspect of the canvas, the virtual pilot
+Regardless of the layout dimensions and aspect of the canvas, the virtual Palm
 will always be rendered at the maximum size possible and centered, and the
 surrounding area will be transparent and invisible for pointer events.
 
