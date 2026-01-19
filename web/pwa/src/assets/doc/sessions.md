@@ -114,5 +114,5 @@ any adjustments afterwards.
 
 # Mass deleting sessions
 
-Open the menu by tapping the three vertical dots and select "Export" in order to
+Open the menu by tapping the three vertical dots and select "Delete" in order to
 select multiple sessions to delete.
