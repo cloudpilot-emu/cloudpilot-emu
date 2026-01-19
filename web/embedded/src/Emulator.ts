@@ -94,6 +94,11 @@ export interface Emulator {
     setCanvas(canvas: HTMLCanvasElement): void;
 
     /**
+     * Release the canvas element.
+     */
+    releaseCanvas(): void;
+
+    /**
      * Receive input events from the specified sources. If this method is called
      * multiple times the previous sources will be unbound.
      *
@@ -405,11 +410,13 @@ export class EmulatorImpl implements Emulator {
     constructor(
         private cloudpilot: Cloudpilot,
         uarmModuleFactory: () => Promise<WebAssembly.Module>,
+        uarmWorkerUrl?: string,
+        pcmWorkletUrl?: string,
     ) {
-        this.emulationService = new EmbeddedEmulationService(cloudpilot, uarmModuleFactory);
+        this.emulationService = new EmbeddedEmulationService(cloudpilot, uarmModuleFactory, uarmWorkerUrl);
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(new SkinLoader(Promise.resolve(cloudpilot)));
         this.eventHandlingService = new EmbeddedEventHandlingService(this.emulationService, this.canvasDisplayService);
-        this.audioService = new EmbeddedAudioService(this.session, this.emulationService);
+        this.audioService = new EmbeddedAudioService(this.session, this.emulationService, pcmWorkletUrl);
 
         this.emulationService.newFrameEvent.addHandler((canvas) =>
             this.canvasDisplayService.updateEmulationCanvas(canvas),
@@ -515,6 +522,11 @@ export class EmulatorImpl implements Emulator {
     setCanvas(canvas: HTMLCanvasElement): void {
         this.canvas = canvas;
         void this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
+    }
+
+    releaseCanvas(): void {
+        this.canvas = undefined;
+        void this.canvasDisplayService.initialize(undefined, this.session.deviceId, this.session.orientation);
     }
 
     bindInput(keyEventTarget?: EmulatorEventTarget): void {

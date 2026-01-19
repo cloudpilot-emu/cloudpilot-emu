@@ -55,10 +55,12 @@ export class EngineUarmImpl implements EngineUarm {
         uarmModule: WebAssembly.Module,
         settings: EngineSettings,
         clandestineExecute: Executor,
+        workerUrl?: string,
     ): Promise<EngineUarmImpl> {
-        const worker = new Worker(
-            /* webpackChunkName: "uarm-worker" */ new URL('./worker/main.worker', import.meta.url),
-        );
+        const worker =
+            workerUrl === undefined
+                ? new Worker(/* webpackChunkName: "uarm-worker" */ new URL('./worker/main.worker', import.meta.url))
+                : new Worker(workerUrl);
 
         const engine = await new Promise<EngineUarmImpl>((resolve, reject) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

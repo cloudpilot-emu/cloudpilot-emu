@@ -97,10 +97,10 @@ cloudpilot.createEmulator().then(emulator => {
 
 ```
 
-Without any arguments, `createEmulator` assumes that the web assembly binaries are
-hosted next to your HTML file. Please check the docs if you need to specify a
-separate URL. For OS5 support, the compiled worker and worklet binaries (see
-above) **have** to be hosted next to the HTML or script that loads the emulator.
+Without any arguments, `createEmulator` assumes that the web assembly binaries
+are hosted next to your HTML file and that the workers are hosted next to the
+script or HTML that launches the emulator. Please check the reference on how to
+customize this if your layout differs.
 
 If you want to create multiple instances of the emulator, you can use
 `createEmulatorFactory` to create a factory function. Each time you call the

@@ -32,7 +32,10 @@ function withTimeout<T>(v: Promise<T>, timeout = 500): Promise<T> {
 }
 
 export abstract class AbstractAudioService {
-    constructor(private emulationService: AbstractEmulationService) {
+    constructor(
+        private emulationService: AbstractEmulationService,
+        private pcmWorkletUrl?: string,
+    ) {
         this.bind();
 
         this.emulationService.openSessionEvent.addHandler(() => this.bind());
@@ -164,9 +167,15 @@ export abstract class AbstractAudioService {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any;
 
-        const loader = new Worker(
-            /* webpackChunkName: "pcm-worklet" */ new URL('./audioworklet/pcm-worklet.worker.ts', import.meta.url),
-        );
+        const loader =
+            this.pcmWorkletUrl === undefined
+                ? new Worker(
+                      /* webpackChunkName: "pcm-worklet" */ new URL(
+                          './audioworklet/pcm-worklet.worker.ts',
+                          import.meta.url,
+                      ),
+                  )
+                : new Worker(this.pcmWorkletUrl);
         window.Worker = savedWorker;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

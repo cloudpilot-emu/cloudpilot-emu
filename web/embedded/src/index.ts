@@ -28,9 +28,19 @@ export interface LoadOptions {
     cloudpilotModuleUrl?: string;
 
     /**
-     * URL for loading the uARM WASM binary (for OS5 emulator).
+     * URL for loading the uARM WASM binary (for OS5 emulation).
      */
     uarmModuleUrl?: string;
+
+    /**
+     * URL for loading the uARM worker (for OS5 emulator).
+     */
+    uarmWorkerUrl?: string;
+
+    /**
+     * URL for loading the PCM worklet (for OS5 PCM audio).
+     */
+    pcmWorkletUrl?: string;
 
     /**
      * By default, the uARM WASM binary is loaded on demand when an OS5 session is
@@ -74,5 +84,8 @@ export function createEmulatorFactory(options: LoadOptions = {}): () => Promise<
     const instantiate = cachedInstantiate(options.cloudpilotModuleUrl ?? 'cloudpilot_web.wasm');
     const factory = creaeteUarmModuleFactory(options.preloadUarm ?? false, options.uarmModuleUrl ?? 'uarm_web.wasm');
 
-    return () => Cloudpilot.create(instantiate).then((cloudpilot) => new EmulatorImpl(cloudpilot, factory));
+    return () =>
+        Cloudpilot.create(instantiate).then(
+            (cloudpilot) => new EmulatorImpl(cloudpilot, factory, options.uarmWorkerUrl, options.pcmWorkletUrl),
+        );
 }

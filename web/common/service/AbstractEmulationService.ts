@@ -283,6 +283,10 @@ export abstract class AbstractEmulationService {
         return this.engine?.getOSVersion() ?? 0;
     }
 
+    protected getUarmWorkerUrl(): string | undefined {
+        return undefined;
+    }
+
     private async enforceRunState(): Promise<void> {
         if (!this.engine) return;
 
@@ -305,7 +309,12 @@ export abstract class AbstractEmulationService {
                 );
 
             case 'uarm':
-                return EngineUarmImpl.create(await this.getUarmModule(), this.engineSettings, this.clandestineExecute);
+                return EngineUarmImpl.create(
+                    await this.getUarmModule(),
+                    this.engineSettings,
+                    this.clandestineExecute,
+                    this.getUarmWorkerUrl(),
+                );
 
             default:
                 throw new Error('unreachable');

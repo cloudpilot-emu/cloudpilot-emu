@@ -6,8 +6,9 @@ export class EmbeddedAudioService extends AbstractAudioService {
     constructor(
         private session: Session,
         emulationService: AbstractEmulationService,
+        pcmWorkletUrl?: string,
     ) {
-        super(emulationService);
+        super(emulationService, pcmWorkletUrl);
     }
 
     public setVolume(volume: number): void {

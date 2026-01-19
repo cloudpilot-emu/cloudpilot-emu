@@ -12,6 +12,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
     constructor(
         cloudpilot: Cloudpilot,
         private uarmModuleFactory: () => Promise<WebAssembly.Module>,
+        private uarmWorkerUrl?: string,
     ) {
         super(Promise.resolve(cloudpilot));
 
@@ -114,6 +115,10 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
     protected override handlePalmosStateChange(): void {}
 
     protected override clandestineExecute: Executor = (fn) => fn();
+
+    protected override getUarmWorkerUrl(): string | undefined {
+        return this.uarmWorkerUrl;
+    }
 
     private setSession(session: Session) {
         this.session = session;
