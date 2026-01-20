@@ -1,3 +1,7 @@
+# Version 2.1.1
+
+-   Minor release pipeline fix.
+
 # Version 2.1.0
 
 -   Update cloudpilotemu-embedded with uARM support.
