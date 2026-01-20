@@ -18,7 +18,7 @@ env:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   wait-for-release:
@@ -116,7 +116,6 @@ jobs:
         run: |
           zip -j ${{ env.CP_EMBEDDED_ZIP_NAME }} ${{ env.CP_EMBEDDED_ZIP_CONTENT }}
           gh release upload ${{ env.TAG }} ${{ env.CP_EMBEDDED_ZIP_NAME }}
-
       - name: Publish CP embedded to NPM
         working-directory: web/npm-embedded
         run: npm publish
