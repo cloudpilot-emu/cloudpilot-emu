@@ -1,8 +1,10 @@
 name: Build and deploy release (PWA + CP embedded)
+
 on:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
+
 env:
   EM_VERSION: 4.0.10
   NODE_VERSION: 24
@@ -13,6 +15,11 @@ env:
   CP_EMBEDDED_ZIP_CONTENT: npm-embedded/dist/*
   CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded-${GITHUB_REF##*/}.zip
   CP_WEB_ZIP_NAME: cloudpilot-emu-page-${GITHUB_REF##*/}.zip
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   wait-for-release:
     runs-on: ubuntu-22.04
@@ -65,9 +72,9 @@ jobs:
       - name: Test
         working-directory: web
         run: yarn test
-      #      - name: Build CloudpilotEmu embedded
-      #        working-directory: web
-      #        run: CP_RELEASE=1 yarn dist-embedded
+      - name: Build CloudpilotEmu embedded
+        working-directory: web
+        run: CP_RELEASE=1 yarn dist-embedded
       - name: Build PWA
         working-directory: web
         run: |
@@ -84,9 +91,9 @@ jobs:
         working-directory: cloudpilot-emu.github.io
         run: |
           test -x app && rm -fr app
-          # test -x embedded && rm -fr embedded
+          test -x embedded && rm -fr embedded
           cp -r ../web/build-pwa ./app
-          # cp -r ../web/dist-embedded ./embedded
+          cp -r ../web/dist-embedded ./embedded
           git add .
           git config --global user.email "golem@nowhere.org"
           git config --global user.name "The Golem"
@@ -104,14 +111,12 @@ jobs:
         run: |
           zip -r ${{ env.CP_WEB_ZIP_NAME }} cloudpilot-emu
           gh release upload ${{ env.TAG }} ${{ env.CP_WEB_ZIP_NAME }}
-      #      - name: Upload CP embedded release files
-      #        working-directory: web
-      #        run: |
-      #          zip -j ${{ env.CP_EMBEDDED_ZIP_NAME }} ${{ env.CP_EMBEDDED_ZIP_CONTENT }}
-      #          gh release upload ${{ env.TAG }} ${{ env.CP_EMBEDDED_ZIP_NAME }}
+      - name: Upload CP embedded release files
+        working-directory: web
+        run: |
+          zip -j ${{ env.CP_EMBEDDED_ZIP_NAME }} ${{ env.CP_EMBEDDED_ZIP_CONTENT }}
+          gh release upload ${{ env.TAG }} ${{ env.CP_EMBEDDED_ZIP_NAME }}
 
-      #      - name: Publish CP embedded to NPM
-      #        uses: JS-DevTools/npm-publish@v2
-      #        with:
-      #          token: ${{ secrets.NPM_ACCESS_TOKEN }}
-      #          package: web/npm-embedded
+      - name: Publish CP embedded to NPM
+        working-directory: web/npm-embedded
+        run: npm publish

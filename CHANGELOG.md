@@ -1,3 +1,7 @@
+# Version 2.1.0
+
+-   Update cloudpilotemu-embedded with uARM support.
+
 # Version 2.0.6
 
 -   Fix encoding of non-ASCII characters in hotsync name.
