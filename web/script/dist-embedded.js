@@ -9,6 +9,7 @@ const PACKAGE_JSON_TEMPLATE = {
     license: 'GPL-3.0-or-later',
     homepage: 'https://cloudpilot-emu.github.io/',
     description: 'Embedded version of the CloudpilotEmu PalmOS emulator',
+    repository: 'https://github.com/cloudpilot-emu/cloudpilot-emu',
     keywords: ['cloudpilot', 'cloudpilotemu', 'palmos', 'palm', 'emulator'],
     files: ['README.md', 'LICENSE', 'dist/**/*'],
     main: 'dist/cloudpilot-emu.js',
