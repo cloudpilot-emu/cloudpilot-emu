@@ -1,3 +1,7 @@
+# Version 2.1.2
+
+-   Fix loading sessions with NAND in CPE embedded.
+
 # Version 2.1.1
 
 -   Minor release pipeline fix.
