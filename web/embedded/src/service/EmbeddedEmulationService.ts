@@ -54,7 +54,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                 await this.openSession(
                     sessionImage.rom,
                     sessionImage.deviceId,
-                    undefined,
+                    sessionImage.nand,
                     sessionImage.memory,
                     sessionImage.savestate,
                 )
