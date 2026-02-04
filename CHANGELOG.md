@@ -1,3 +1,7 @@
+# Version 2.1.3
+
+-   Fix dpad key bindings in CPE embedded.
+
 # Version 2.1.2
 
 -   Fix loading sessions with NAND in CPE embedded.
