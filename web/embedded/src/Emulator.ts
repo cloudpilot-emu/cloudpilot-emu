@@ -450,6 +450,7 @@ export class EmulatorImpl implements Emulator {
                 throw new Error('failed to initialize session');
             }
 
+            this.eventHandlingService.setDpadEnabled(this.enableDpad());
             this.canvasDisplayService.setDpadEnabled(this.enableDpad());
             await this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
         });
@@ -476,6 +477,7 @@ export class EmulatorImpl implements Emulator {
                 throw new Error('failed to initialize session');
             }
 
+            this.eventHandlingService.setDpadEnabled(this.enableDpad());
             this.canvasDisplayService.setDpadEnabled(this.enableDpad());
             await this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
         });
@@ -533,7 +535,7 @@ export class EmulatorImpl implements Emulator {
         if (!this.canvas) {
             throw new Error('you must set up the canvas setCanvas before calling bindInput');
         }
-        this.eventHandlingService.bind(this.canvas, false, keyEventTarget);
+        this.eventHandlingService.bind(this.canvas, this.enableDpad(), keyEventTarget);
     }
 
     releaseInput(): void {
@@ -673,6 +675,7 @@ export class EmulatorImpl implements Emulator {
     setDisableDpad(disableDpad: boolean): void {
         this.session.disableDpad = disableDpad;
 
+        this.eventHandlingService.setDpadEnabled(this.enableDpad());
         this.canvasDisplayService.setDpadEnabled(this.enableDpad());
         void this.canvasDisplayService.initialize();
     }

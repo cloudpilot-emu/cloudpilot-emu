@@ -486,6 +486,8 @@ export class GenericEventHandlingService {
         }
     }
 
+    protected dpad = false;
+
     private pointerEventTarget: EmulatorEventTarget | undefined;
     private keyEventTarget: EmulatorEventTarget = window;
 
@@ -494,6 +496,4 @@ export class GenericEventHandlingService {
     private activeButtons = new Set<PalmButton>();
     private gameMode = false;
     private enableGamemodeHotkey = true;
-
-    private dpad = false;
 }

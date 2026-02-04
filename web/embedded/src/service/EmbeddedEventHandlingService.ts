@@ -11,6 +11,10 @@ export class EmbeddedEventHandlingService extends GenericEventHandlingService {
         this.canvasDisplayService = canvasDisplayService;
     }
 
+    setDpadEnabled(dpad: boolean) {
+        this.dpad = dpad;
+    }
+
     protected override onToggleGameMode(): void {
         this.canvasDisplayService.toggleGameModeIndicator(this.isGameMode());
         this.gameModeChangeEvent.dispatch(this.isGameMode());
