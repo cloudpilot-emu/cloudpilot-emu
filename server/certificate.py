@@ -163,7 +163,7 @@ def generateCertificate(options):
 
     print("""...done! You can now launch the server with
 
-> {script} --cert {filePem}
+> {script} serve --cert {filePem}
 
 in order to use the generated certificate. Please check the documentation on
 how to install and trust "{fileCaCer}" on your devices running CloudpilotEmu.
