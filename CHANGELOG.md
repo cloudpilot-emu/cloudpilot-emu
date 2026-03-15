@@ -1,4 +1,4 @@
-# Next version
+# Version 2.1.4
 
 -   Work around bogus update notifications on iOS.
 
