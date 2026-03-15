@@ -29,3 +29,4 @@ npm-debug.log*
 /www/*
 
 revision.gen.ts
+revision.json

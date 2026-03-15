@@ -1,3 +1,7 @@
+# Next version
+
+-   Work around bogus update notifications on iOS.
+
 # Version 2.1.3
 
 -   Fix dpad key bindings in CPE embedded.

@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
 
+import { checkUpdateStatus } from '@pwa/helper/update';
+
 import { environment } from '../../environments/environment';
 import { AlertService } from './alert.service';
 import { LoaderService } from './loader.service';
@@ -105,7 +107,7 @@ export class ServiceWorkerService {
     private setupRegistration(registration: ServiceWorkerRegistration): void {
         this.registration = registration;
 
-        if (registration.waiting) this.dispatchUpdate();
+        if (registration.waiting) void this.dispatchUpdate();
         if (registration.installing) this.handleInstallingWorker(registration.installing);
 
         registration.addEventListener(
@@ -121,15 +123,30 @@ export class ServiceWorkerService {
             if (worker.state !== 'installed' || notified) return;
 
             notified = true;
-            this.dispatchUpdate();
+            void this.dispatchUpdate();
         });
     }
 
-    private dispatchUpdate(): void {
+    private async dispatchUpdate(): Promise<void> {
         if (!(navigator.serviceWorker.controller && this.registration?.waiting)) return;
 
-        this.reloadOnControllerChange = true;
+        const updateStatus = await checkUpdateStatus();
+        switch (updateStatus) {
+            case 'failed':
+            case 'no-update':
+                return;
 
+            case 'invalid':
+            case 'has-update':
+                break;
+
+            default:
+                updateStatus satisfies never;
+        }
+
+        if (!this.registration?.waiting) return;
+
+        this.reloadOnControllerChange = true;
         this.updateAvailableEvent.dispatch(undefined);
     }
 
