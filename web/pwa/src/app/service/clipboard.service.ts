@@ -21,7 +21,7 @@ export class ClipboardService {
     isSupported(): boolean {
         return (
             (!!navigator.clipboard?.readText && !!navigator.clipboard?.writeText) ||
-            NativeAppService.supportsNativeClipboard()
+            this.nativeAppService.supportsNativeClipboard()
         );
     }
 
@@ -41,7 +41,7 @@ export class ClipboardService {
         const ctx = cloudpilot.getSuspendContextClipboardCopy();
         const clipboardContent = ctx.GetClipboardContent();
 
-        if (NativeAppService.supportsNativeClipboard()) {
+        if (this.nativeAppService.supportsNativeClipboard()) {
             try {
                 await this.nativeAppService.clipboardWrite(clipboardContent);
 
@@ -135,7 +135,7 @@ export class ClipboardService {
     private async handlePaste(cloudpilot: Cloudpilot): Promise<void> {
         const ctx = cloudpilot.getSuspendContextClipboardPaste();
 
-        if (NativeAppService.supportsNativeClipboard()) {
+        if (this.nativeAppService.supportsNativeClipboard()) {
             try {
                 ctx.Resume(await this.nativeAppService.clipboardRead());
             } catch (e) {

@@ -13,6 +13,7 @@ import { PwaService } from './pwa.service';
 export class FeatureService {
     constructor(
         private pwaService: PwaService,
+        private nativeAppService: NativeAppService,
         private clipboardService: ClipboardService,
     ) {
         this.injectStyles();
@@ -23,11 +24,11 @@ export class FeatureService {
     }
 
     get nativeNetworkIntegration(): boolean {
-        return NativeAppService.supportsNativeNetworkIntegration();
+        return this.nativeAppService.supportsNativeNetworkIntegration();
     }
 
     get nativeClipboard(): boolean {
-        return NativeAppService.supportsNativeClipboard();
+        return this.nativeAppService.supportsNativeClipboard();
     }
 
     private featureStyle(feature: string, value: boolean) {

@@ -26,7 +26,7 @@ export class NetworkBackendFactory {
 
         if (
             this.kvsService.kvs.networkRedirectionMode === 'native' &&
-            NativeAppService.supportsNativeNetworkIntegration()
+            this.nativeAppService.supportsNativeNetworkIntegration()
         ) {
             return new NativeBackendNative(this.nativeAppService);
         }

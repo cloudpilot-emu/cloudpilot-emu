@@ -7,12 +7,12 @@ import { Kvs } from '@pwa/model/Kvs';
 import { NativeAppService } from './native-app.service';
 import { StorageService } from './storage.service';
 
-const DEFAULTS: Kvs = {
+const DEFAULTS = (supportsNativeNetworkIntegration: boolean): Kvs => ({
     volume: 0.5,
     showStatistics: false,
     clipboardIntegration: false,
     networkRedirection: false,
-    networkRedirectionMode: NativeAppService.supportsNativeNetworkIntegration() ? 'native' : 'proxy',
+    networkRedirectionMode: supportsNativeNetworkIntegration ? 'native' : 'proxy',
     proxyServer: '',
     credentials: {},
     runHidden: false,
@@ -20,13 +20,16 @@ const DEFAULTS: Kvs = {
     enableRemoteInstall: false,
     enableAudioOnFirstInteraction: false,
     snapshotIntegrityCheck: false,
-};
+});
 
 @Injectable({
     providedIn: 'root',
 })
 export class KvsService {
-    constructor(private storageService: StorageService) {
+    constructor(
+        private storageService: StorageService,
+        private nativeAppService: NativeAppService,
+    ) {
         this.initializationPromise = this.startInitialization().then(() => this.migrate());
     }
 
@@ -55,7 +58,10 @@ export class KvsService {
         const self = this;
 
         try {
-            const kvs: Kvs = { ...DEFAULTS, ...(await this.storageService.kvsLoad()) };
+            const kvs: Kvs = {
+                ...DEFAULTS(this.nativeAppService.supportsNativeNetworkIntegration()),
+                ...(await this.storageService.kvsLoad()),
+            };
             this.rawKvs = kvs;
 
             this.kvsProxy = new Proxy(kvs, {
@@ -82,14 +88,14 @@ export class KvsService {
             console.error('failed to load KVS');
             console.error(e);
 
-            this.kvsProxy = { ...DEFAULTS };
+            this.kvsProxy = DEFAULTS(this.nativeAppService.supportsNativeNetworkIntegration());
         }
     }
 
     private async migrate(): Promise<void> {
         switch (this.kvs.networkRedirectionMode) {
             case 'native':
-                if (!NativeAppService.supportsNativeNetworkIntegration()) {
+                if (!this.nativeAppService.supportsNativeNetworkIntegration()) {
                     await this.set({ networkRedirectionMode: 'proxy', networkRedirection: false });
                 }
 
