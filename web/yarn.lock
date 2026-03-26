@@ -2817,6 +2817,18 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
+"@tauri-apps/api@^2.8.0":
+  version "2.10.1"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-2.10.1.tgz#57c1bae6114ec33d977eb2b50dfefc25fa84fc93"
+  integrity sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==
+
+"@tauri-apps/plugin-clipboard-manager@^2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-clipboard-manager/-/plugin-clipboard-manager-2.3.2.tgz#41def8a008eca94fd5abe2915d26a9c4b6ce54ca"
+  integrity sha512-CUlb5Hqi2oZbcZf4VUyUH53XWPPdtpw43EUpCza5HWZJwxEoDowFzNUDt1tRUXA8Uq+XPn17Ysfptip33sG4eQ==
+  dependencies:
+    "@tauri-apps/api" "^2.8.0"
+
 "@tootallnate/quickjs-emscripten@^0.23.0":
   version "0.23.0"
   resolved "https://registry.yarnpkg.com/@tootallnate/quickjs-emscripten/-/quickjs-emscripten-0.23.0.tgz#db4ecfd499a9765ab24002c3b696d02e6d32a12c"

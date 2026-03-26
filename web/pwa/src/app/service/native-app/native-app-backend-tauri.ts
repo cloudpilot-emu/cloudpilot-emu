@@ -1,3 +1,4 @@
+import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { Event } from 'microevent.ts';
 
 import { NativeAppBackend, NetRpcResultPayload } from './native-app-backend';
@@ -28,11 +29,11 @@ export class NativeAppBackendTauri implements NativeAppBackend {
     }
 
     clipboardRead(): Promise<string> {
-        throw new Error('Native clipboard integration not supported.');
+        return clipboardReadText();
     }
 
-    clipboardWrite(): Promise<void> {
-        throw new Error('Native clipboard integration not supported.');
+    async clipboardWrite(text: string): Promise<void> {
+        await clipboardWriteText(text);
     }
 
     isResumeFromBackground(): boolean {
@@ -52,7 +53,7 @@ export class NativeAppBackendTauri implements NativeAppBackend {
     }
 
     supportsNativeClipboard(): boolean {
-        return false;
+        return true;
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();
