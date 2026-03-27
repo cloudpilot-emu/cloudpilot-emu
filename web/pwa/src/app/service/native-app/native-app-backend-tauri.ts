@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core';
+import { UnlistenFn, listen } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { Event } from 'microevent.ts';
 
@@ -9,23 +11,35 @@ declare global {
     }
 }
 
+interface NetRpcResultEvent {
+    session_id: number;
+    rpc_data: number[];
+}
+
 export class NativeAppBackendTauri implements NativeAppBackend {
     static isSupported(): boolean {
         return typeof window.__cpe_shim_tauri_api_version__ === 'number';
     }
 
-    teardown(): void {}
+    constructor() {
+        this.initializeRpc();
+    }
+
+    teardown(): void {
+        this.unlistenNetRpcResult?.();
+        this.isDestroyed = true;
+    }
 
     netOpenSession(): Promise<number> {
-        throw new Error('Native network integration not supported.');
+        return invoke<number>('net_open_session');
     }
 
-    netCloseSession(): Promise<void> {
-        throw new Error('Native network integration not supported.');
+    netCloseSession(sessionId: number): Promise<void> {
+        return invoke('net_close_session', { sessionId });
     }
 
-    netDispatchRpc(): Promise<boolean> {
-        throw new Error('Native network integration not supported.');
+    netDispatchRpc(sessionId: number, rpcData: ArrayLike<number>): Promise<boolean> {
+        return invoke<boolean>('net_dispatch_rpc', { sessionId, rpcData: Array.from(rpcData) });
     }
 
     clipboardRead(): Promise<string> {
@@ -49,7 +63,7 @@ export class NativeAppBackendTauri implements NativeAppBackend {
     clearWorkerFailed(): void {}
 
     supportsNativeNetworkIntegration(): boolean {
-        return false;
+        return true;
     }
 
     supportsNativeClipboard(): boolean {
@@ -57,4 +71,22 @@ export class NativeAppBackendTauri implements NativeAppBackend {
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();
+
+    private initializeRpc(): void {
+        void listen<NetRpcResultEvent>('net-rpc-result', (event) => {
+            this.netRpcResult.dispatch({
+                sessionId: event.payload.session_id,
+                rpcData: new Uint8Array(event.payload.rpc_data),
+            });
+        }).then((unlisten) => {
+            if (this.isDestroyed) {
+                unlisten();
+            } else {
+                this.unlistenNetRpcResult = unlisten;
+            }
+        });
+    }
+
+    private unlistenNetRpcResult: UnlistenFn | undefined;
+    private isDestroyed = false;
 }
