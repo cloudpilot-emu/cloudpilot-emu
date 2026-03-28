@@ -304,7 +304,7 @@ export class GenericEventHandlingService {
     };
 
     private handleKeyDown = (e: KeyboardEvent): void => {
-        if (this.emulationService.isSuspended() || !this.enableKeyboardEvents()) return;
+        if (this.emulationService.isSuspended() || !this.enableKeyboardEvents() || e.metaKey) return;
 
         if (this.isToggleGameMode(e)) {
             e.preventDefault();
@@ -324,13 +324,14 @@ export class GenericEventHandlingService {
         }
 
         const keyCode = this.keyCodeFromEvent(e);
-        if (keyCode !== undefined && !e.ctrlKey && !e.metaKey) {
+        if (keyCode !== undefined && !e.ctrlKey) {
             this.emulationService.handleKeyDown(keyCode);
             e.preventDefault();
         }
     };
 
     private handleKeyUp = (e: KeyboardEvent): void => {
+        console.log('up');
         if (this.emulationService.isSuspended() || !this.enableKeyboardEvents()) return;
 
         const button = this.buttonFromEvent(e);
