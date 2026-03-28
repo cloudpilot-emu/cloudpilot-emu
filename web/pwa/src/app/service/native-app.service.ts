@@ -1,11 +1,16 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { EventInterface } from 'microevent.ts';
 
+import { AlertService } from './alert.service';
 import { createNativeAppBackend } from './native-app/factory';
-import { NetRpcResultPayload } from './native-app/native-app-backend';
+import { NativeAppBackend, NetRpcResultPayload } from './native-app/native-app-backend';
 
 @Injectable({ providedIn: 'root' })
 export class NativeAppService implements OnDestroy {
+    constructor(alertService: AlertService) {
+        this.backend = createNativeAppBackend(alertService);
+    }
+
     ngOnDestroy(): void {
         this.backend.teardown();
     }
@@ -58,5 +63,5 @@ export class NativeAppService implements OnDestroy {
         return this.backend.supportsNativeClipboard();
     }
 
-    private backend = createNativeAppBackend();
+    private backend: NativeAppBackend;
 }
