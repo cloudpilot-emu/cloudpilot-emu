@@ -1,5 +1,5 @@
-import { invoke } from '@tauri-apps/api/core';
-import { UnlistenFn, listen } from '@tauri-apps/api/event';
+import { Channel, invoke } from '@tauri-apps/api/core';
+import { UnlistenFn } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { Event } from 'microevent.ts';
 
@@ -11,9 +11,9 @@ declare global {
     }
 }
 
-interface NetRpcResultEvent {
+interface RpcResultInternal {
     session_id: number;
-    rpc_data: number[];
+    rpc_data: ArrayLike<number>;
 }
 
 export class NativeAppBackendTauri implements NativeAppBackend {
@@ -22,11 +22,11 @@ export class NativeAppBackendTauri implements NativeAppBackend {
     }
 
     constructor() {
-        this.initializeRpc();
+        void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
     }
 
     teardown(): void {
-        this.unlistenNetRpcResult?.();
+        this.rpcResultChannel.onmessage = () => undefined;
         this.isDestroyed = true;
     }
 
@@ -72,21 +72,17 @@ export class NativeAppBackendTauri implements NativeAppBackend {
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();
 
-    private initializeRpc(): void {
-        void listen<NetRpcResultEvent>('net-rpc-result', (event) => {
-            this.netRpcResult.dispatch({
-                sessionId: event.payload.session_id,
-                rpcData: new Uint8Array(event.payload.rpc_data),
-            });
-        }).then((unlisten) => {
-            if (this.isDestroyed) {
-                unlisten();
-            } else {
-                this.unlistenNetRpcResult = unlisten;
-            }
-        });
+    private async initializeRpc(): Promise<void> {
+        await invoke<void>('net_set_rpc_result_channel', { channel: this.rpcResultChannel });
+        if (this.isDestroyed) return;
+
+        this.rpcResultChannel.onmessage = (payload) => {
+            console.log(payload);
+            this.netRpcResult.dispatch({ sessionId: payload.session_id, rpcData: Uint8Array.from(payload.rpc_data) });
+        };
     }
 
     private unlistenNetRpcResult: UnlistenFn | undefined;
     private isDestroyed = false;
+    private rpcResultChannel = new Channel<RpcResultInternal>();
 }
