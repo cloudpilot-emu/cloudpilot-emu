@@ -96,10 +96,8 @@ export class NativeAppBackendTauri implements NativeAppBackend {
         await invoke<void>('net_set_rpc_result_channel', { channel: this.rpcResultChannel });
         if (this.isDestroyed) return;
 
-        this.rpcResultChannel.onmessage = (payload) => {
-            console.log(payload);
+        this.rpcResultChannel.onmessage = (payload) =>
             this.netRpcResult.dispatch({ sessionId: payload.session_id, rpcData: Uint8Array.from(payload.rpc_data) });
-        };
     }
 
     private unlistenNetRpcResult: UnlistenFn | undefined;
