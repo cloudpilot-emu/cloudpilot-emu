@@ -378,7 +378,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         }
 
         if (this.cloudpilotInstance.getNetworkRedirection() !== settings.networkIntegration) {
-            this.cloudpilotInstance.setNetworkRedirection(this.settings.networkIntegration);
+            this.cloudpilotInstance.setNetworkRedirection(settings.networkIntegration);
         }
 
         this.cloudpilotInstance.setHotsyncNameManagement(settings.manageHotsyncName);
