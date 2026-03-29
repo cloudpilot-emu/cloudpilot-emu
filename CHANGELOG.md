@@ -1,3 +1,7 @@
+# Next version
+
+-   Prepare support for native shim apps on Android, Windows, MacOS and Linux
+
 # Version 2.1.4
 
 -   Work around bogus update notifications on iOS.
