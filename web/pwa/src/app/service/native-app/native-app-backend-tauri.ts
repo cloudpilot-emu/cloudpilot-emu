@@ -3,18 +3,12 @@ import { UnlistenFn } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { Event } from 'microevent.ts';
 
-import { AlertService } from '../alert.service';
 import { NativeAppBackend, NetRpcResultPayload } from './native-app-backend';
 
 declare global {
     interface Window {
         __cpe_shim_tauri_api_version__?: number;
     }
-}
-
-const enum OpenSessionError {
-    notificationPermissionRequired = -1,
-    other = -2,
 }
 
 interface RpcResultInternal {
@@ -27,7 +21,7 @@ export class NativeAppBackendTauri implements NativeAppBackend {
         return typeof window.__cpe_shim_tauri_api_version__ === 'number';
     }
 
-    constructor(private alertService: AlertService) {
+    constructor() {
         void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
     }
 
@@ -41,17 +35,7 @@ export class NativeAppBackendTauri implements NativeAppBackend {
 
         if (id >= 0) return id;
 
-        switch (id) {
-            case OpenSessionError.notificationPermissionRequired:
-                await this.alertService.errorMessage(`
-                    Please allow CloudpilotEmu to send you notifications before using the network.
-                    A notification will be sent whenever PalmOS accesses the network.`);
-
-                throw new Error('notification permission denied');
-
-            default:
-                throw new Error('unable to open network session');
-        }
+        throw new Error('unable to open network session');
     }
 
     netCloseSession(sessionId: number): Promise<void> {
