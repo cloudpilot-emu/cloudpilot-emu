@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
-import { isAndroid, isIOS, isMacOSSafari } from '@common/helper/browser';
+import { isAndroid, isIOS, isIOSNative, isMacOSSafari } from '@common/helper/browser';
 
 import { InstallationMode } from '@pwa/model/InstallationMode';
 
 import { AlertService } from './alert.service';
 import { KvsService } from './kvs.service';
+import { NativeAppBackendTauri } from './native-app/native-app-backend-tauri';
 
 const SERVICE_WORKER_KEEPALIVE_INTERVAL = 15 * 60 * 1000;
 
@@ -110,6 +111,10 @@ export class PwaService {
     }
 
     private determineInstallationMode(): InstallationMode {
+        if (NativeAppBackendTauri.isSupported()) return InstallationMode.app;
+
+        if (isIOSNative) return InstallationMode.app;
+
         if (window.navigator.standalone) return InstallationMode.pwa;
 
         if (document.referrer.startsWith('android-app://')) return InstallationMode.twa;

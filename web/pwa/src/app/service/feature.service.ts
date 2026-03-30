@@ -1,18 +1,15 @@
 import { Injectable } from '@angular/core';
-import { isIOS, isIOSNative, isMacOSSafari } from '@common/helper/browser';
+import { isAndroid, isIOS, isIOSNative, isMacOSSafari } from '@common/helper/browser';
 
 import { dynamicFontsSupport } from '@pwa/helper/dynamicFonts';
 import { isIndicatorFixApplicable } from '@pwa/helper/homeIndicatorFix';
-import { InstallationMode } from '@pwa/model/InstallationMode';
 
 import { ClipboardService } from './clipboard.service';
 import { NativeAppService } from './native-app.service';
-import { PwaService } from './pwa.service';
 
 @Injectable({ providedIn: 'root' })
 export class FeatureService {
     constructor(
-        private pwaService: PwaService,
         private nativeAppService: NativeAppService,
         private clipboardService: ClipboardService,
     ) {
@@ -20,7 +17,7 @@ export class FeatureService {
     }
 
     get runHidden(): boolean {
-        return this.pwaService.getInstallationMode() !== InstallationMode.pwa;
+        return !(isIOS || isAndroid);
     }
 
     get nativeNetworkIntegration(): boolean {
