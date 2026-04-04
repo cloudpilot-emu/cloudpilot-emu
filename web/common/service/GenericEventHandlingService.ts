@@ -331,7 +331,6 @@ export class GenericEventHandlingService {
     };
 
     private handleKeyUp = (e: KeyboardEvent): void => {
-        console.log('up');
         if (this.emulationService.isSuspended() || !this.enableKeyboardEvents()) return;
 
         const button = this.buttonFromEvent(e);
