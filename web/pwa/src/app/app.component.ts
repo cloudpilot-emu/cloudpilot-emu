@@ -1,10 +1,11 @@
-import { AfterViewInit, Component } from '@angular/core';
+import { AfterViewInit, Component, afterNextRender } from '@angular/core';
 
 import { BootstrapService } from '@pwa/service/bootstrap-service';
 import { PwaService } from '@pwa/service/pwa.service';
 import { UpdateService } from '@pwa/service/update.service';
 
 import { InfoService } from './service/info.service';
+import { LifecylceService } from './service/lifecycle.service';
 
 @Component({
     selector: 'app-root',
@@ -18,7 +19,10 @@ export class AppComponent implements AfterViewInit {
         private updateService: UpdateService,
         private bootstrapService: BootstrapService,
         private infoService: InfoService,
-    ) {}
+        lifecycleService: LifecylceService,
+    ) {
+        afterNextRender(() => lifecycleService.notifyAppIsInitialized());
+    }
 
     async ngAfterViewInit(): Promise<void> {
         this.bootstrapService.notifyHasRendered();

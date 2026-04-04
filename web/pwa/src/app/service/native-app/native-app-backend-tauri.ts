@@ -1,13 +1,15 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { UnlistenFn } from '@tauri-apps/api/event';
+import { emit } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { Event } from 'microevent.ts';
 
+import { LifecylceService } from '../lifecycle.service';
 import { NativeAppBackend, NetRpcResultPayload } from './native-app-backend';
 
 declare global {
     interface Window {
-        __cpe_shim_tauri_api_version__?: number;
+        __cpe_shim_tauri_version?: number;
+        __cpe_shim_tauri_challenge?: string;
     }
 }
 
@@ -18,10 +20,10 @@ interface RpcResultInternal {
 
 export class NativeAppBackendTauri implements NativeAppBackend {
     static isSupported(): boolean {
-        return typeof window.__cpe_shim_tauri_api_version__ === 'number';
+        return typeof window.__cpe_shim_tauri_version === 'number';
     }
 
-    constructor() {
+    constructor(private lifecycleService: LifecylceService) {
         void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
     }
 
@@ -77,6 +79,12 @@ export class NativeAppBackendTauri implements NativeAppBackend {
     readonly netRpcResult = new Event<NetRpcResultPayload>();
 
     private async initializeRpc(): Promise<void> {
+        if (typeof window.__cpe_shim_tauri_challenge !== 'undefined') {
+            void this.lifecycleService
+                .appIsInitialized()
+                .then(() => emit('handshake', window.__cpe_shim_tauri_challenge));
+        }
+
         await invoke<void>('net_set_rpc_result_channel', { channel: this.rpcResultChannel });
         if (this.isDestroyed) return;
 
@@ -84,7 +92,6 @@ export class NativeAppBackendTauri implements NativeAppBackend {
             this.netRpcResult.dispatch({ sessionId: payload.session_id, rpcData: Uint8Array.from(payload.rpc_data) });
     }
 
-    private unlistenNetRpcResult: UnlistenFn | undefined;
     private isDestroyed = false;
     private rpcResultChannel = new Channel<RpcResultInternal>();
 }
