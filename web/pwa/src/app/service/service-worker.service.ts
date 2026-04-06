@@ -21,7 +21,11 @@ export class ServiceWorkerService {
     ) {
         void this.register();
 
-        if (this.isEnabled()) void this.updateNativeAppRegistrationStatus(this.isRegistered());
+        if (this.isEnabled()) {
+            void this.updateNativeAppRegistrationStatus(this.isRegistered());
+        } else {
+            void this.updateNativeAppRegistrationStatus(false);
+        }
     }
 
     isEnabled(): boolean {

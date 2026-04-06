@@ -60,7 +60,9 @@ export class NativeAppBackendTauri implements NativeAppBackend {
         return false;
     }
 
-    async setWorkerRegistered(): Promise<void> {}
+    async setWorkerRegistered(workerInstalled: boolean): Promise<void> {
+        void invoke('set_service_worker_installed', { workerInstalled });
+    }
 
     async getWorkerFailed(): Promise<boolean> {
         return false;
