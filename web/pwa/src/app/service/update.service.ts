@@ -9,6 +9,7 @@ import { VERSION } from '@pwa/helper/version';
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
 import { KvsService } from './kvs.service';
+import { PlatformService } from './platform-service.service';
 import { ServiceWorkerService } from './service-worker.service';
 
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;
@@ -23,8 +24,12 @@ export class UpdateService {
         private alertService: AlertService,
         private modalController: ModalController,
         private serviceWorkerService: ServiceWorkerService,
+        private platformService: PlatformService,
     ) {
         void this.mutex.runExclusive(this.checkForDowngrade.bind(this));
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).__csfoo = () => platformService.reload();
     }
 
     public start(): void {
@@ -86,7 +91,7 @@ export class UpdateService {
                 await this.kvsService.set({ previousVersion: undefined });
 
                 console.log('worker derigstered, reloading...');
-                window.location.reload();
+                this.platformService.reload();
             }
         }
     }

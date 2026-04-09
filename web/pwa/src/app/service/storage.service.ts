@@ -16,6 +16,7 @@ import { StorageCard } from '@pwa/model/StorageCard';
 
 import { environment } from '../../environments/environment';
 import { ErrorService } from './error.service';
+import { PlatformService } from './platform-service.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageError } from './storage/StorageError';
 import {
@@ -88,6 +89,7 @@ export class StorageService {
         private ngZone: NgZone,
         public errorService: ErrorService,
         private storageCardContext: StorageCardContext,
+        private platformService: PlatformService,
     ) {
         this.db = this.requestPersistentStorage().then(() => ngZone.runOutsideAngular(() => this.setupDb()));
     }
@@ -691,7 +693,7 @@ export class StorageService {
     private async setupDb(): Promise<IDBDatabase> {
         // This works on spurious hangs during indexedDB setup when starting up from the homescreen
         // on iOS 14.6
-        const watchdogHandle = setTimeout(() => isIOS && window.location.reload(), 500);
+        const watchdogHandle = setTimeout(() => isIOS && this.platformService.reload(), 500);
 
         try {
             if (indexedDB.databases) {

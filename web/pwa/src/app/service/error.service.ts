@@ -4,7 +4,7 @@ import { Event } from 'microevent.ts';
 import { clearStoredSession } from '@pwa/helper/storedSession';
 
 import { AlertService } from './alert.service';
-import { NativeAppService } from './native-app.service';
+import { PlatformService } from './platform-service.service';
 
 @Injectable({
     providedIn: 'root',
@@ -12,7 +12,7 @@ import { NativeAppService } from './native-app.service';
 export class ErrorService {
     constructor(
         private alertService: AlertService,
-        private nativeAppService: NativeAppService,
+        private platformService: PlatformService,
         private ngZone: NgZone,
     ) {}
 
@@ -23,8 +23,8 @@ export class ErrorService {
     fatalPageLockLost = () => this.fatalWithMessage('CloudpilotEmu was opened in another tab or window.', false);
 
     fatalIDBDead = () => {
-        if (this.nativeAppService.isResumeFromBackground()) {
-            window.location.reload();
+        if (this.platformService.isResumeFromBackground()) {
+            this.platformService.reload();
         } else {
             this.fatalWithMessage('IndexedDB access failed. This is most likely a browser bug.', false);
         }

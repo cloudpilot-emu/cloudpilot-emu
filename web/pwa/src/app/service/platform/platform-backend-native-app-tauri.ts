@@ -4,7 +4,7 @@ import { readText as clipboardReadText, writeText as clipboardWriteText } from '
 import { Event } from 'microevent.ts';
 
 import { LifecylceService } from '../lifecycle.service';
-import { NativeAppBackend, NetRpcResultPayload } from './native-app-backend';
+import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
 
 declare global {
     interface Window {
@@ -18,7 +18,7 @@ interface RpcResultInternal {
     rpc_data: ArrayLike<number>;
 }
 
-export class NativeAppBackendTauri implements NativeAppBackend {
+export class PlatformBackendNativeAppTauri implements PlatformBackend {
     static isSupported(): boolean {
         return typeof window.__cpe_shim_tauri_version === 'number';
     }
@@ -76,6 +76,10 @@ export class NativeAppBackendTauri implements NativeAppBackend {
 
     supportsNativeClipboard(): boolean {
         return true;
+    }
+
+    reload(): void {
+        void invoke('reload');
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();

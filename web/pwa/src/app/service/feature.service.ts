@@ -5,12 +5,12 @@ import { dynamicFontsSupport } from '@pwa/helper/dynamicFonts';
 import { isIndicatorFixApplicable } from '@pwa/helper/homeIndicatorFix';
 
 import { ClipboardService } from './clipboard.service';
-import { NativeAppService } from './native-app.service';
+import { PlatformService } from './platform-service.service';
 
 @Injectable({ providedIn: 'root' })
 export class FeatureService {
     constructor(
-        private nativeAppService: NativeAppService,
+        private platformService: PlatformService,
         private clipboardService: ClipboardService,
     ) {
         this.injectStyles();
@@ -21,11 +21,11 @@ export class FeatureService {
     }
 
     get nativeNetworkIntegration(): boolean {
-        return this.nativeAppService.supportsNativeNetworkIntegration();
+        return this.platformService.supportsNativeNetworkIntegration();
     }
 
     get nativeClipboard(): boolean {
-        return this.nativeAppService.supportsNativeClipboard();
+        return this.platformService.supportsNativeClipboard();
     }
 
     private featureStyle(feature: string, value: boolean) {

@@ -1,7 +1,7 @@
 import { isIOSNative } from '@common/helper/browser';
 import { Event } from 'microevent.ts';
 
-import { NativeAppBackend, NetRpcResultPayload } from './native-app-backend';
+import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
 
 interface NativeCallNetOpenSession {
     type: 'netOpenSession';
@@ -90,7 +90,7 @@ if (apiVersion > 0) {
     window.__cpeCallFromNative = (message) => nativeMessage.dispatch(message);
 }
 
-export class NativeAppBackendIos implements NativeAppBackend {
+export class PlatformBackendNativeAppIos implements PlatformBackend {
     static isSupported(): boolean {
         return isIOSNative;
     }
@@ -175,6 +175,10 @@ export class NativeAppBackendIos implements NativeAppBackend {
 
     supportsNativeClipboard(): boolean {
         return isIOSNative && apiVersion > 1;
+    }
+
+    reload(): void {
+        location.reload();
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();

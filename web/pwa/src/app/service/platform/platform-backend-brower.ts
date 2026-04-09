@@ -1,8 +1,8 @@
 import { Event } from 'microevent.ts';
 
-import { NativeAppBackend, NetRpcResultPayload } from './native-app-backend';
+import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
 
-export class NativeAppBackendStub implements NativeAppBackend {
+export class PlatformBrowser implements PlatformBackend {
     teardown(): void {}
 
     netOpenSession(): Promise<number> {
@@ -43,6 +43,10 @@ export class NativeAppBackendStub implements NativeAppBackend {
 
     supportsNativeClipboard(): boolean {
         return false;
+    }
+
+    reload(): void {
+        location.reload();
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();

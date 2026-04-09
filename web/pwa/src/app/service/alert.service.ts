@@ -5,6 +5,7 @@ import { Event } from 'microevent.ts';
 import { debounce } from '@pwa/helper/debounce';
 
 import { EmulationContextService } from './emulation-context.service';
+import { PlatformService } from './platform-service.service';
 
 class Verbatim {
     constructor(public markup: string) {}
@@ -17,6 +18,7 @@ export class AlertService {
     constructor(
         private alertController: AlertController,
         private emulationContext: EmulationContextService,
+        private platformService: PlatformService,
     ) {}
 
     verbatim(markup: string): Verbatim {
@@ -148,7 +150,7 @@ export class AlertService {
                           },
                       ]
                     : []),
-                { text: 'Reload', handler: () => window.location.reload() },
+                { text: 'Reload', handler: () => this.platformService.reload() },
             ],
             cssClass: 'cpe-alert-error',
         });
@@ -169,7 +171,7 @@ export class AlertService {
                 Please close or reload this window.
             `),
             backdropDismiss: false,
-            buttons: [{ text: 'Reload', handler: () => window.location.reload() }],
+            buttons: [{ text: 'Reload', handler: () => this.platformService.reload() }],
         });
 
         await alert.present();
@@ -181,7 +183,7 @@ export class AlertService {
         await this.message(
             'Timeout while saving state',
             `Your browser's IndexedDB is either slow to respond or has crashed. You can either retry or reload CloudpilotEmu.`,
-            { Reload: () => window.location.reload() },
+            { Reload: () => this.platformService.reload() },
             'Retry',
         );
     }

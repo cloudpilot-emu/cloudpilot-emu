@@ -5,7 +5,7 @@ export interface NetRpcResultPayload {
     rpcData: Uint8Array;
 }
 
-export interface NativeAppBackend {
+export interface PlatformBackend {
     teardown(): void;
 
     netOpenSession(): Promise<number>;
@@ -22,6 +22,8 @@ export interface NativeAppBackend {
 
     supportsNativeNetworkIntegration(): boolean;
     supportsNativeClipboard(): boolean;
+
+    reload(): void;
 
     readonly netRpcResult: EventInterface<NetRpcResultPayload>;
 }

@@ -4,7 +4,7 @@ import { Event } from 'microevent.ts';
 
 import { Kvs } from '@pwa/model/Kvs';
 
-import { NativeAppService } from './native-app.service';
+import { PlatformService } from './platform-service.service';
 import { StorageService } from './storage.service';
 
 const DEFAULTS = (supportsNativeNetworkIntegration: boolean): Kvs => ({
@@ -28,7 +28,7 @@ const DEFAULTS = (supportsNativeNetworkIntegration: boolean): Kvs => ({
 export class KvsService {
     constructor(
         private storageService: StorageService,
-        private nativeAppService: NativeAppService,
+        private platformService: PlatformService,
     ) {
         this.initializationPromise = this.startInitialization().then(() => this.migrate());
     }
@@ -59,7 +59,7 @@ export class KvsService {
 
         try {
             const kvs: Kvs = {
-                ...DEFAULTS(this.nativeAppService.supportsNativeNetworkIntegration()),
+                ...DEFAULTS(this.platformService.supportsNativeNetworkIntegration()),
                 ...(await this.storageService.kvsLoad()),
             };
             this.rawKvs = kvs;
@@ -88,14 +88,14 @@ export class KvsService {
             console.error('failed to load KVS');
             console.error(e);
 
-            this.kvsProxy = DEFAULTS(this.nativeAppService.supportsNativeNetworkIntegration());
+            this.kvsProxy = DEFAULTS(this.platformService.supportsNativeNetworkIntegration());
         }
     }
 
     private async migrate(): Promise<void> {
         switch (this.kvs.networkRedirectionMode) {
             case 'native':
-                if (!this.nativeAppService.supportsNativeNetworkIntegration()) {
+                if (!this.platformService.supportsNativeNetworkIntegration()) {
                     await this.set({ networkRedirectionMode: 'proxy', networkRedirection: false });
                 }
 

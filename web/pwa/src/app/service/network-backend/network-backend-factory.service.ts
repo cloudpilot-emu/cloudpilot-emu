@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { AlertService } from '../alert.service';
 import { FetchService } from '../fetch.service';
 import { KvsService } from '../kvs.service';
-import { NativeAppService } from '../native-app.service';
+import { PlatformService } from '../platform-service.service';
 import { NetworkBackend } from './network-backend';
 import { NativeBackendNative } from './network-backend-native';
 import { NetworkBackendProxy } from './network-backend-proxy';
@@ -14,7 +14,7 @@ export class NetworkBackendFactory {
         private kvsService: KvsService,
         private alertService: AlertService,
         private fetchService: FetchService,
-        private nativeAppService: NativeAppService,
+        private platformService: PlatformService,
     ) {}
 
     createBackendProxy(proxyServer: string = this.kvsService.kvs.proxyServer): NetworkBackendProxy {
@@ -26,9 +26,9 @@ export class NetworkBackendFactory {
 
         if (
             this.kvsService.kvs.networkRedirectionMode === 'native' &&
-            this.nativeAppService.supportsNativeNetworkIntegration()
+            this.platformService.supportsNativeNetworkIntegration()
         ) {
-            return new NativeBackendNative(this.nativeAppService);
+            return new NativeBackendNative(this.platformService);
         }
 
         return this.createBackendProxy();

@@ -7,7 +7,7 @@ import { checkUpdateStatus } from '@pwa/helper/update';
 import { environment } from '../../environments/environment';
 import { AlertService } from './alert.service';
 import { LoaderService } from './loader.service';
-import { NativeAppService } from './native-app.service';
+import { PlatformService } from './platform-service.service';
 
 const WORKER_URL = 'ngsw-worker.js';
 const REGISTRATION_DELAY_MILLISECONDS = 3000;
@@ -17,7 +17,7 @@ export class ServiceWorkerService {
     constructor(
         private loaderService: LoaderService,
         private alertService: AlertService,
-        private nativeAppService: NativeAppService,
+        private platformService: PlatformService,
     ) {
         void this.register();
 
@@ -61,7 +61,7 @@ export class ServiceWorkerService {
             'Reload',
         );
 
-        window.location.reload();
+        this.platformService.reload();
     }
 
     async update(): Promise<void> {
@@ -80,7 +80,7 @@ export class ServiceWorkerService {
 
     private updateNativeAppRegistrationStatus = (workerRegistered: boolean) =>
         this.updateNativeAppRegistrationStatusMutex.runExclusive(() =>
-            this.nativeAppService.setWorkerRegistered(workerRegistered),
+            this.platformService.setWorkerRegistered(workerRegistered),
         );
 
     private register = () =>
@@ -89,7 +89,7 @@ export class ServiceWorkerService {
 
             navigator.serviceWorker.addEventListener(
                 'controllerchange',
-                () => this.reloadOnControllerChange && window.location.reload(),
+                () => this.reloadOnControllerChange && this.platformService.reload(),
             );
 
             await new Promise((r) => setTimeout(r, REGISTRATION_DELAY_MILLISECONDS));

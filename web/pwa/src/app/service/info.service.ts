@@ -6,7 +6,7 @@ import { InstallationMode } from '@pwa/model/InstallationMode';
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
 import { KvsService } from './kvs.service';
-import { NativeAppService } from './native-app.service';
+import { PlatformService } from './platform-service.service';
 import { PwaService } from './pwa.service';
 import { ServiceWorkerService } from './service-worker.service';
 
@@ -17,12 +17,12 @@ export class InfoService {
         private alertService: AlertService,
         private emulationService: EmulationService,
         private pwaService: PwaService,
-        private nativeAppService: NativeAppService,
+        private platformService: PlatformService,
         private serviceWorkerService: ServiceWorkerService,
     ) {}
 
     async start(): Promise<void> {
-        await this.handleiOSNativeAppServiceWorkerBug();
+        await this.handleiOSplatformServiceWorkerBug();
 
         const infoId = this.kvsService.kvs.infoId ?? 0;
         this.kvsService.kvs.infoId = await this.showInfo(infoId);
@@ -34,10 +34,10 @@ export class InfoService {
         }
     }
 
-    private async handleiOSNativeAppServiceWorkerBug(): Promise<void> {
+    private async handleiOSplatformServiceWorkerBug(): Promise<void> {
         if (!this.serviceWorkerService.isEnabled()) return;
 
-        const workerFailed = await this.nativeAppService.getWorkerFailed();
+        const workerFailed = await this.platformService.getWorkerFailed();
         if (!workerFailed) return;
 
         let resetWorker = false;
@@ -57,7 +57,7 @@ export class InfoService {
         if (resetWorker) {
             await this.serviceWorkerService.reset();
         } else {
-            this.nativeAppService.clearWorkerFailed();
+            this.platformService.clearWorkerFailed();
         }
     }
 

@@ -3,7 +3,7 @@ import { Cloudpilot, SuspendKind } from '@common/bridge/Cloudpilot';
 import { AlertController } from '@ionic/angular';
 
 import { AlertService } from './alert.service';
-import { NativeAppService } from './native-app.service';
+import { PlatformService } from './platform-service.service';
 
 const READ_CLIPBOARD_TTL = 3000;
 const E_PERMISSION_DENIED = new Error('permission denied');
@@ -15,13 +15,13 @@ export class ClipboardService {
     constructor(
         private alertController: AlertController,
         private alertService: AlertService,
-        private nativeAppService: NativeAppService,
+        private platformService: PlatformService,
     ) {}
 
     isSupported(): boolean {
         return (
             (!!navigator.clipboard?.readText && !!navigator.clipboard?.writeText) ||
-            this.nativeAppService.supportsNativeClipboard()
+            this.platformService.supportsNativeClipboard()
         );
     }
 
@@ -41,9 +41,9 @@ export class ClipboardService {
         const ctx = cloudpilot.getSuspendContextClipboardCopy();
         const clipboardContent = ctx.GetClipboardContent();
 
-        if (this.nativeAppService.supportsNativeClipboard()) {
+        if (this.platformService.supportsNativeClipboard()) {
             try {
-                await this.nativeAppService.clipboardWrite(clipboardContent);
+                await this.platformService.clipboardWrite(clipboardContent);
 
                 ctx.Resume();
             } catch (e) {
@@ -135,9 +135,9 @@ export class ClipboardService {
     private async handlePaste(cloudpilot: Cloudpilot): Promise<void> {
         const ctx = cloudpilot.getSuspendContextClipboardPaste();
 
-        if (this.nativeAppService.supportsNativeClipboard()) {
+        if (this.platformService.supportsNativeClipboard()) {
             try {
-                ctx.Resume(await this.nativeAppService.clipboardRead());
+                ctx.Resume(await this.platformService.clipboardRead());
             } catch (e) {
                 console.error(e);
                 ctx.Resume('');

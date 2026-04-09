@@ -5,7 +5,7 @@ import { InstallationMode } from '@pwa/model/InstallationMode';
 
 import { AlertService } from './alert.service';
 import { KvsService } from './kvs.service';
-import { NativeAppBackendTauri } from './native-app/native-app-backend-tauri';
+import { PlatformBackendNativeAppTauri } from './platform/platform-backend-native-app-tauri';
 
 const SERVICE_WORKER_KEEPALIVE_INTERVAL = 15 * 60 * 1000;
 
@@ -111,7 +111,7 @@ export class PwaService {
     }
 
     private determineInstallationMode(): InstallationMode {
-        if (NativeAppBackendTauri.isSupported()) return InstallationMode.app;
+        if (PlatformBackendNativeAppTauri.isSupported()) return InstallationMode.app;
 
         if (isIOSNative) return InstallationMode.app;
 

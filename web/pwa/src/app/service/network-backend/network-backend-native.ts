@@ -1,16 +1,16 @@
 import { Event } from 'microevent.ts';
 
-import { NativeAppService } from '../native-app.service';
+import { PlatformService } from '../platform-service.service';
 import { NetworkBackend } from './network-backend';
 
 export class NativeBackendNative implements NetworkBackend {
-    constructor(private nativeAppService: NativeAppService) {}
+    constructor(private platformService: PlatformService) {}
 
     async connect(): Promise<boolean> {
         if (this.sessionId !== undefined) throw new Error('session already open');
 
-        this.sessionId = await this.nativeAppService.netOpenSession();
-        this.nativeAppService.netRpcResult.addHandler(this.onNetRpcResult);
+        this.sessionId = await this.platformService.netOpenSession();
+        this.platformService.netRpcResult.addHandler(this.onNetRpcResult);
 
         return true;
     }
@@ -18,8 +18,8 @@ export class NativeBackendNative implements NetworkBackend {
     async disconnect(): Promise<void> {
         if (this.sessionId === undefined) return;
 
-        this.nativeAppService.netRpcResult.removeHandler(this.onNetRpcResult);
-        await this.nativeAppService.netCloseSession(this.sessionId);
+        this.platformService.netRpcResult.removeHandler(this.onNetRpcResult);
+        await this.platformService.netCloseSession(this.sessionId);
 
         this.sessionId = undefined;
     }
@@ -27,7 +27,7 @@ export class NativeBackendNative implements NetworkBackend {
     async handleRpc(rpcData: Uint8Array): Promise<boolean> {
         if (this.sessionId === undefined) throw new Error('no open session');
 
-        return this.nativeAppService.netDispatchRpc(this.sessionId, rpcData);
+        return this.platformService.netDispatchRpc(this.sessionId, rpcData);
     }
 
     private onNetRpcResult = ({ sessionId, rpcData }: { sessionId: number; rpcData: Uint8Array }) =>
