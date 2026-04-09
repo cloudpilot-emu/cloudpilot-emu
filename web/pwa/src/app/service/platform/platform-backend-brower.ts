@@ -1,5 +1,7 @@
 import { Event } from 'microevent.ts';
 
+import { AppChannel } from '@pwa/model/AppChannel';
+
 import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
 
 export class PlatformBrowser implements PlatformBackend {
@@ -37,6 +39,18 @@ export class PlatformBrowser implements PlatformBackend {
 
     clearWorkerFailed(): void {}
 
+    reload(): void {
+        location.reload();
+    }
+
+    async getAppChannel(): Promise<AppChannel> {
+        throw new Error('channel management not supported');
+    }
+
+    switchAppChannel(): void {
+        throw new Error('channel management not supported');
+    }
+
     supportsNativeNetworkIntegration(): boolean {
         return false;
     }
@@ -45,8 +59,8 @@ export class PlatformBrowser implements PlatformBackend {
         return false;
     }
 
-    reload(): void {
-        location.reload();
+    supportsChannelManagement(): boolean {
+        return false;
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();

@@ -1,6 +1,8 @@
 import { isIOSNative } from '@common/helper/browser';
 import { Event } from 'microevent.ts';
 
+import { AppChannel } from '@pwa/model/AppChannel';
+
 import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
 
 interface NativeCallNetOpenSession {
@@ -165,6 +167,18 @@ export class PlatformBackendNativeAppIos implements PlatformBackend {
         return !!(await window.webkit.messageHandlers.nativeCall.postMessage({ type: 'getWorkerFailed' }));
     }
 
+    async getAppChannel(): Promise<AppChannel> {
+        throw new Error('channel management not supported');
+    }
+
+    switchAppChannel(): void {
+        throw new Error('channel management not supported');
+    }
+
+    reload(): void {
+        location.reload();
+    }
+
     clearWorkerFailed(): void {
         if (apiVersion > 2) void window.webkit.messageHandlers.nativeCall.postMessage({ type: 'clearWorkerFailed' });
     }
@@ -177,8 +191,8 @@ export class PlatformBackendNativeAppIos implements PlatformBackend {
         return isIOSNative && apiVersion > 1;
     }
 
-    reload(): void {
-        location.reload();
+    supportsChannelManagement(): boolean {
+        return false;
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();

@@ -3,6 +3,8 @@ import { emit } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { Event } from 'microevent.ts';
 
+import { AppChannel } from '@pwa/model/AppChannel';
+
 import { LifecylceService } from '../lifecycle.service';
 import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
 
@@ -25,6 +27,10 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
 
     constructor(private lifecycleService: LifecylceService) {
         void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
+
+        this.appChannel = invoke('get_app_channel');
+
+        (window as any).__csfoo = this;
     }
 
     teardown(): void {
@@ -70,6 +76,18 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
 
     clearWorkerFailed(): void {}
 
+    reload(): void {
+        void invoke('reload');
+    }
+
+    getAppChannel(): Promise<AppChannel> {
+        return this.appChannel;
+    }
+
+    switchAppChannel(channel: AppChannel): void {
+        void invoke('switch_app_channel', { channel });
+    }
+
     supportsNativeNetworkIntegration(): boolean {
         return true;
     }
@@ -78,8 +96,8 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         return true;
     }
 
-    reload(): void {
-        void invoke('reload');
+    supportsChannelManagement(): boolean {
+        return true;
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();
@@ -100,4 +118,5 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
 
     private isDestroyed = false;
     private rpcResultChannel = new Channel<RpcResultInternal>();
+    private appChannel: Promise<AppChannel>;
 }

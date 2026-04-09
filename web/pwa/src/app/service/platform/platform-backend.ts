@@ -1,5 +1,7 @@
 import { EventInterface } from 'microevent.ts';
 
+import { AppChannel } from '@pwa/model/AppChannel';
+
 export interface NetRpcResultPayload {
     sessionId: number;
     rpcData: Uint8Array;
@@ -20,10 +22,14 @@ export interface PlatformBackend {
     getWorkerFailed(): Promise<boolean>;
     clearWorkerFailed(): void;
 
+    reload(): void;
+
+    getAppChannel(): Promise<AppChannel>;
+    switchAppChannel(channel: AppChannel): void;
+
     supportsNativeNetworkIntegration(): boolean;
     supportsNativeClipboard(): boolean;
-
-    reload(): void;
+    supportsChannelManagement(): boolean;
 
     readonly netRpcResult: EventInterface<NetRpcResultPayload>;
 }

@@ -55,16 +55,16 @@ export class PlatformService implements OnDestroy {
         return this.backend.netRpcResult;
     }
 
+    reload(): void {
+        this.backend.reload();
+    }
+
     supportsNativeNetworkIntegration(): boolean {
         return this.backend.supportsNativeNetworkIntegration();
     }
 
     supportsNativeClipboard(): boolean {
         return this.backend.supportsNativeClipboard();
-    }
-
-    reload(): void {
-        this.backend.reload();
     }
 
     private backend: PlatformBackend;
