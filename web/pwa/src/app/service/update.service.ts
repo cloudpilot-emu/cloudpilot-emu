@@ -27,9 +27,6 @@ export class UpdateService {
         private platformService: PlatformService,
     ) {
         void this.mutex.runExclusive(this.checkForDowngrade.bind(this));
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).__csfoo = () => platformService.reload();
     }
 
     public start(): void {
