@@ -4,7 +4,7 @@ import { Event } from 'microevent.ts';
 
 import { Kvs } from '@pwa/model/Kvs';
 
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 import { StorageService } from './storage.service';
 
 const DEFAULTS = (supportsNativeNetworkIntegration: boolean): Kvs => ({

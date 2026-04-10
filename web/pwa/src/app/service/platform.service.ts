@@ -1,6 +1,8 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { EventInterface } from 'microevent.ts';
 
+import { AppChannel } from '@pwa/model/AppChannel';
+
 import { LifecylceService } from './lifecycle.service';
 import { createNativeAppBackend } from './platform/factory';
 import { NetRpcResultPayload, PlatformBackend } from './platform/platform-backend';
@@ -9,6 +11,10 @@ import { NetRpcResultPayload, PlatformBackend } from './platform/platform-backen
 export class PlatformService implements OnDestroy {
     constructor(lifecycleService: LifecylceService) {
         this.backend = createNativeAppBackend(lifecycleService);
+
+        if (this.backend.supportsChannelManagement()) {
+            void this.backend.getAppChannel().then((channel) => (this.appChannel = channel));
+        }
     }
 
     ngOnDestroy(): void {
@@ -59,6 +65,18 @@ export class PlatformService implements OnDestroy {
         this.backend.reload();
     }
 
+    getAppChannelSync(): AppChannel | undefined {
+        return this.appChannel;
+    }
+
+    getAppChannel(): Promise<AppChannel> {
+        return this.backend.getAppChannel();
+    }
+
+    switchAppChannel(channel: AppChannel): void {
+        this.backend.switchAppChannel(channel);
+    }
+
     supportsNativeNetworkIntegration(): boolean {
         return this.backend.supportsNativeNetworkIntegration();
     }
@@ -67,5 +85,10 @@ export class PlatformService implements OnDestroy {
         return this.backend.supportsNativeClipboard();
     }
 
+    supportsChannelManagement(): boolean {
+        return this.backend.supportsChannelManagement();
+    }
+
     private backend: PlatformBackend;
+    private appChannel: AppChannel | undefined;
 }

@@ -7,7 +7,7 @@ import { checkUpdateStatus } from '@pwa/helper/update';
 import { environment } from '../../environments/environment';
 import { AlertService } from './alert.service';
 import { LoaderService } from './loader.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 
 const WORKER_URL = 'ngsw-worker.js';
 const REGISTRATION_DELAY_MILLISECONDS = 3000;

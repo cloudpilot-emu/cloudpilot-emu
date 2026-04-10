@@ -109,6 +109,10 @@
                 >
             </ion-item>
 
+            <ion-item lines="none" *ngIf="featureChannelManagement">
+                <ion-toggle labelPlacement="fixed" formControlName="runPreviewChannel">Run preview version</ion-toggle>
+            </ion-item>
+
             <h1 *ngIf="isIOS">Interface quirks</h1>
 
             <ion-item lines="none" *ngIf="isIOS">

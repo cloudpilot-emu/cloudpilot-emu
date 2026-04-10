@@ -15,12 +15,14 @@ import {
     isIndicatorFixApplicable,
 } from '@pwa/helper/homeIndicatorFix';
 import { validateProxyAddress } from '@pwa/helper/proxyAddress';
+import { AppChannel } from '@pwa/model/AppChannel';
 import { NetworkRedirectionMode } from '@pwa/model/Kvs';
 import { AlertService } from '@pwa/service/alert.service';
 import { ClipboardService } from '@pwa/service/clipboard.service';
 import { FeatureService } from '@pwa/service/feature.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { NetworkBackendFactory } from '@pwa/service/network-backend/network-backend-factory.service';
+import { PlatformService } from '@pwa/service/platform.service';
 
 const enum fields {
     volume = 'volume',
@@ -38,6 +40,7 @@ const enum fields {
     fixedFontSize = 'fixedFontSize',
     emulateDPad = 'emulateDPad',
     dontRestrictFilePicker = 'dontRestrictFilePicker',
+    runPreviewChannel = 'runPreviewChannel',
 }
 @Component({
     selector: 'app-settings',
@@ -53,6 +56,7 @@ export class SettingsPage implements OnInit {
         private alertService: AlertService,
         private networkBackendFactory: NetworkBackendFactory,
         private featureService: FeatureService,
+        private platformService: PlatformService,
     ) {}
 
     ngOnInit(): void {
@@ -74,44 +78,7 @@ export class SettingsPage implements OnInit {
     }
 
     async ionViewWillLeave(): Promise<void> {
-        if (
-            this.formGroup.get(fields.networkRedirection)?.value &&
-            this.formGroup.get(fields.networkRedirectionMode)?.value === 'proxy' &&
-            !this.formGroup.get(fields.proxyServer)?.valid
-        ) {
-            void this.alertService.message(
-                'Invalid proxy server',
-                'The proxy server you specified is invalid. Network redirection will be disabled.',
-            );
-
-            this.formGroup.get(fields.networkRedirection)!.setValue(false);
-        }
-
-        if (!this.formGroup.get('networkRedirection')?.value) {
-            this.formGroup.get('proxyServer')?.setValue(this.kvsService.kvs.proxyServer);
-        }
-
-        await this.kvsService.set({
-            volume: this.formGroup.get(fields.volume)!.value,
-            showStatistics: this.formGroup.get(fields.showStatistics)!.value,
-            clipboardIntegration: this.formGroup.get(fields.clipboardIntegration)?.value,
-            networkRedirection: this.formGroup.get(fields.networkRedirection)?.value,
-            networkRedirectionMode: this.featureService.nativeNetworkIntegration
-                ? (this.formGroup.get(fields.networkRedirectionMode)?.value ?? 'proxy')
-                : 'proxy',
-            proxyServer: this.formGroup.get(fields.proxyServer)?.value,
-            runHidden: this.formGroup.get(fields.runHidden)?.value,
-            autoLockUI: this.formGroup.get(fields.autoLockUI)?.value,
-            enableRemoteInstall: this.formGroup.get(fields.enableRemoteInstall)?.value,
-            enableAudioOnFirstInteraction: this.formGroup.get(fields.audioOnStart)?.value,
-            snapshotIntegrityCheck: this.formGroup.get(fields.snapshotIntegrityCheck)?.value,
-            dontEmulateDPad: !this.formGroup.get(fields.emulateDPad)?.value,
-            dontRestrictFilePicker: !!this.formGroup.get(fields.dontRestrictFilePicker)?.value,
-        });
-
-        if (this.mutexReleasePromise) {
-            (await this.mutexReleasePromise)();
-        }
+        await this.saveAndPrepareLeave();
     }
 
     async testProxyConnection(): Promise<void> {
@@ -178,6 +145,10 @@ export class SettingsPage implements OnInit {
         return this.featureService.runHidden;
     }
 
+    get featureChannelManagement(): boolean {
+        return this.featureService.channelManagement && this.platformService.getAppChannel() !== undefined;
+    }
+
     private createFormGroup() {
         this.formGroup = new UntypedFormGroup({
             [fields.volume]: new UntypedFormControl(this.kvsService.kvs.volume),
@@ -197,12 +168,60 @@ export class SettingsPage implements OnInit {
             [fields.fixedFontSize]: new UntypedFormControl(!dynamicFontsEnabled()),
             [fields.dontRestrictFilePicker]: new UntypedFormControl(!!this.kvsService.kvs.dontRestrictFilePicker),
             [fields.emulateDPad]: new UntypedFormControl(!this.kvsService.kvs.dontEmulateDPad),
+            [fields.runPreviewChannel]: new UntypedFormControl(
+                this.platformService.getAppChannelSync() === AppChannel.preview,
+            ),
         });
+
+        if (this.featureService.channelManagement && this.platformService.getAppChannelSync() === undefined) {
+            void this.platformService.getAppChannel().then((channel) => {
+                this.formGroup
+                    .get(fields.runPreviewChannel)
+                    ?.setValue(channel === AppChannel.preview, { emitEvent: false });
+            });
+        }
+
+        if (this.featureService.channelManagement) {
+            this.formGroup.get(fields.runPreviewChannel)?.valueChanges.subscribe(this.onRunPreviewChannelChange);
+        }
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);
         this.formGroup.get(fields.indicatorFixMode)?.valueChanges.subscribe(this.onIndicatorFixModeChange);
         this.formGroup.get(fields.fixedFontSize)?.valueChanges.subscribe(this.onFixedFontSizeChange);
     }
+
+    private onRunPreviewChannelChange = async (runPreviewChannel: boolean) => {
+        let apply = false;
+
+        if (runPreviewChannel) {
+            await this.alertService.message(
+                'Switch to preview version',
+                `
+                This will switch to the preview version of CloudpilotEmu which. Preview and
+                stable versions have their own, separate data stores. You can switch back at
+                any time.
+            `,
+                { Switch: () => (apply = true) },
+                'Cancel',
+            );
+        } else {
+            await this.alertService.message(
+                'Switch to stable version',
+                `
+                This will switch back to the stable version of CloudpilotEmu.
+            `,
+                { Switch: () => (apply = true) },
+                'Cancel',
+            );
+        }
+
+        if (apply) {
+            await this.saveAndPrepareLeave();
+            this.platformService.switchAppChannel(runPreviewChannel ? AppChannel.preview : AppChannel.stable);
+        } else {
+            this.formGroup.get(fields.runPreviewChannel)?.setValue(!runPreviewChannel, { emitEvent: false });
+        }
+    };
 
     private onAudioOnStartChange = (audioOnStart: boolean) => {
         this.kvsService.kvs.enableAudioOnFirstInteraction = audioOnStart;
@@ -230,6 +249,47 @@ export class SettingsPage implements OnInit {
             `,
         );
     };
+
+    private async saveAndPrepareLeave(): Promise<void> {
+        if (
+            this.formGroup.get(fields.networkRedirection)?.value &&
+            this.formGroup.get(fields.networkRedirectionMode)?.value === 'proxy' &&
+            !this.formGroup.get(fields.proxyServer)?.valid
+        ) {
+            void this.alertService.message(
+                'Invalid proxy server',
+                'The proxy server you specified is invalid. Network redirection will be disabled.',
+            );
+
+            this.formGroup.get(fields.networkRedirection)!.setValue(false);
+        }
+
+        if (!this.formGroup.get('networkRedirection')?.value) {
+            this.formGroup.get('proxyServer')?.setValue(this.kvsService.kvs.proxyServer);
+        }
+
+        await this.kvsService.set({
+            volume: this.formGroup.get(fields.volume)!.value,
+            showStatistics: this.formGroup.get(fields.showStatistics)!.value,
+            clipboardIntegration: this.formGroup.get(fields.clipboardIntegration)?.value,
+            networkRedirection: this.formGroup.get(fields.networkRedirection)?.value,
+            networkRedirectionMode: this.featureService.nativeNetworkIntegration
+                ? (this.formGroup.get(fields.networkRedirectionMode)?.value ?? 'proxy')
+                : 'proxy',
+            proxyServer: this.formGroup.get(fields.proxyServer)?.value,
+            runHidden: this.formGroup.get(fields.runHidden)?.value,
+            autoLockUI: this.formGroup.get(fields.autoLockUI)?.value,
+            enableRemoteInstall: this.formGroup.get(fields.enableRemoteInstall)?.value,
+            enableAudioOnFirstInteraction: this.formGroup.get(fields.audioOnStart)?.value,
+            snapshotIntegrityCheck: this.formGroup.get(fields.snapshotIntegrityCheck)?.value,
+            dontEmulateDPad: !this.formGroup.get(fields.emulateDPad)?.value,
+            dontRestrictFilePicker: !!this.formGroup.get(fields.dontRestrictFilePicker)?.value,
+        });
+
+        if (this.mutexReleasePromise) {
+            (await this.mutexReleasePromise)();
+        }
+    }
 
     readonly networkRedirectionModes: Array<[NetworkRedirectionMode, string]> = [
         ['native', 'Native'],

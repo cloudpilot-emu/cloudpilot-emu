@@ -4,7 +4,7 @@ import { Event } from 'microevent.ts';
 import { clearStoredSession } from '@pwa/helper/storedSession';
 
 import { AlertService } from './alert.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 
 @Injectable({
     providedIn: 'root',

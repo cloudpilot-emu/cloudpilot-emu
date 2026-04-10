@@ -16,7 +16,7 @@ import { StorageCard } from '@pwa/model/StorageCard';
 
 import { environment } from '../../environments/environment';
 import { ErrorService } from './error.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { StorageError } from './storage/StorageError';
 import {

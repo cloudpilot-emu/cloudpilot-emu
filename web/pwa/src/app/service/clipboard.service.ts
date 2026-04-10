@@ -3,7 +3,7 @@ import { Cloudpilot, SuspendKind } from '@common/bridge/Cloudpilot';
 import { AlertController } from '@ionic/angular';
 
 import { AlertService } from './alert.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 
 const READ_CLIPBOARD_TTL = 3000;
 const E_PERMISSION_DENIED = new Error('permission denied');

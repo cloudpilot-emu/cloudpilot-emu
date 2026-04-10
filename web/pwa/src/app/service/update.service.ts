@@ -9,7 +9,7 @@ import { VERSION } from '@pwa/helper/version';
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
 import { KvsService } from './kvs.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 import { ServiceWorkerService } from './service-worker.service';
 
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;

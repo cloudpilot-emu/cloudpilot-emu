@@ -82,6 +82,16 @@ from remote URLs. Please note that those will have to be served via HTTPS
 (unless you are hosting CloudpilotEmu yourself via HTTP), and the file server
 has to support CORS.
 
+:::div{.feature-channel-management}
+### Run preview version
+
+Run the preview version of CloudpilotEmu. The preview version receives more updates
+but should be considered less stable as it acts as a testbed for changes and fatures.
+
+The preview and stable version store data separately from each other, and you
+can switch between them at any time.
+:::
+
 :::div{.feature-ios}
 # Interface quirks
 

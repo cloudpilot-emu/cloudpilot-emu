@@ -6,7 +6,7 @@ import { InstallationMode } from '@pwa/model/InstallationMode';
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
 import { KvsService } from './kvs.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 import { PwaService } from './pwa.service';
 import { ServiceWorkerService } from './service-worker.service';
 

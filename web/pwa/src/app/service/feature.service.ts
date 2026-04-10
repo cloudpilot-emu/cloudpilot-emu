@@ -5,7 +5,7 @@ import { dynamicFontsSupport } from '@pwa/helper/dynamicFonts';
 import { isIndicatorFixApplicable } from '@pwa/helper/homeIndicatorFix';
 
 import { ClipboardService } from './clipboard.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 
 @Injectable({ providedIn: 'root' })
 export class FeatureService {
@@ -28,6 +28,10 @@ export class FeatureService {
         return this.platformService.supportsNativeClipboard();
     }
 
+    get channelManagement(): boolean {
+        return this.platformService.supportsChannelManagement();
+    }
+
     private featureStyle(feature: string, value: boolean) {
         return (
             (value ? '' : `.feature-${feature} { display: none }\n`) +
@@ -47,6 +51,7 @@ export class FeatureService {
             ${this.featureStyle('ios', isIOS)}
             ${this.featureStyle('native-network', this.nativeNetworkIntegration)}
             ${this.featureStyle('dynamic-font-size', dynamicFontsSupport())}
+            ${this.featureStyle('channel-management', this.channelManagement)}
         `;
 
         document.head.appendChild(styleTag);

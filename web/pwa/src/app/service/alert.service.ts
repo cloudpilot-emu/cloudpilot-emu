@@ -5,7 +5,7 @@ import { Event } from 'microevent.ts';
 import { debounce } from '@pwa/helper/debounce';
 
 import { EmulationContextService } from './emulation-context.service';
-import { PlatformService } from './platform-service.service';
+import { PlatformService } from './platform.service';
 
 class Verbatim {
     constructor(public markup: string) {}
