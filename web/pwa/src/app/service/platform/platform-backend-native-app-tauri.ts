@@ -29,8 +29,6 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
 
         this.appChannel = invoke('get_app_channel');
-
-        (window as any).__csfoo = this;
     }
 
     teardown(): void {
