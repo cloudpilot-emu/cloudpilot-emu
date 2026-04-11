@@ -1,6 +1,9 @@
 # Next version
 
--   Prepare support for native shim apps on Android, Windows, MacOS and Linux
+-   Support for native shim apps on Android, Windows, MacOS and Linux
+-   Work around a Safari rendering issue that could display content over the tab bar.
+-   Fix an issue that delayed application of changes to the network redirection setting.
+-   Consistently expose "Run hidden" on all platforms other than mobile.
 
 # Version 2.1.4
 
