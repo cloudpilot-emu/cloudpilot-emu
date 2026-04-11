@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
-export class LifecylceService {
+export class LifecycleService {
     constructor() {
         this.appInitialized = new Promise<void>((resolve) => (this.onInitialize = resolve));
     }

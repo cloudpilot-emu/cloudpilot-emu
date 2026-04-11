@@ -3,13 +3,13 @@ import { EventInterface } from 'microevent.ts';
 
 import { AppChannel } from '@pwa/model/AppChannel';
 
-import { LifecylceService } from './lifecycle.service';
+import { LifecycleService } from './lifecycle.service';
 import { createNativeAppBackend } from './platform/factory';
 import { NetRpcResultPayload, PlatformBackend } from './platform/platform-backend';
 
 @Injectable({ providedIn: 'root' })
 export class PlatformService implements OnDestroy {
-    constructor(lifecycleService: LifecylceService) {
+    constructor(lifecycleService: LifecycleService) {
         this.backend = createNativeAppBackend(lifecycleService);
 
         if (this.backend.supportsChannelManagement()) {

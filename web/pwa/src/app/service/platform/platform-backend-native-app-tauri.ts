@@ -5,7 +5,7 @@ import { Event } from 'microevent.ts';
 
 import { AppChannel } from '@pwa/model/AppChannel';
 
-import { LifecylceService } from '../lifecycle.service';
+import { LifecycleService } from '../lifecycle.service';
 import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
 
 declare global {
@@ -25,7 +25,7 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         return typeof window.__cpe_shim_tauri_version === 'number';
     }
 
-    constructor(private lifecycleService: LifecylceService) {
+    constructor(private lifecycleService: LifecycleService) {
         void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
 
         this.appChannel = invoke('get_app_channel');

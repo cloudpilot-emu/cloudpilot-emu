@@ -5,7 +5,7 @@ import { PwaService } from '@pwa/service/pwa.service';
 import { UpdateService } from '@pwa/service/update.service';
 
 import { InfoService } from './service/info.service';
-import { LifecylceService } from './service/lifecycle.service';
+import { LifecycleService } from './service/lifecycle.service';
 
 @Component({
     selector: 'app-root',
@@ -19,7 +19,7 @@ export class AppComponent implements AfterViewInit {
         private updateService: UpdateService,
         private bootstrapService: BootstrapService,
         private infoService: InfoService,
-        lifecycleService: LifecylceService,
+        lifecycleService: LifecycleService,
     ) {
         afterNextRender(() => lifecycleService.notifyAppIsInitialized());
     }

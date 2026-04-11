@@ -197,7 +197,7 @@ export class SettingsPage implements OnInit {
             await this.alertService.message(
                 'Switch to preview version',
                 `
-                This will switch to the preview version of CloudpilotEmu which. Preview and
+                This will switch to the preview version of CloudpilotEmu. Preview and
                 stable versions have their own, separate data stores. You can switch back at
                 any time.
             `,
