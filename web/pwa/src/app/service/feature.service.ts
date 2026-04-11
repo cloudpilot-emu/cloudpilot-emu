@@ -45,7 +45,7 @@ export class FeatureService {
             ${this.featureStyle('run-hidden', this.runHidden)}
             ${this.featureStyle('indicator-fix', isIndicatorFixApplicable())}
             ${this.featureStyle('clipboard-integration', this.clipboardService.isSupported())}
-            ${this.featureStyle('native-app', isIOSNative)}
+            ${this.featureStyle('ios-app', isIOSNative)}
             ${this.featureStyle('ios-not-native', isIOS && !isIOSNative)}
             ${this.featureStyle('ios-or-safari', (isIOS && !isIOSNative) || isMacOSSafari)}
             ${this.featureStyle('ios', isIOS)}

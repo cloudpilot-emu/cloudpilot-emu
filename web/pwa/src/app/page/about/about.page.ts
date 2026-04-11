@@ -6,6 +6,7 @@ import changelogUrl from '@root/CHANGELOG.md';
 import { HelpComponent } from '@pwa/component/help/help.component';
 import { debounce } from '@pwa/helper/debounce';
 import { VERSION } from '@pwa/helper/version';
+import { PlatformService } from '@pwa/service/platform.service';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 
 @Component({
@@ -18,6 +19,7 @@ export class AboutPage {
     constructor(
         private modalController: ModalController,
         private serviceWorkerService: ServiceWorkerService,
+        private platformService: PlatformService,
     ) {}
 
     get version(): string {
@@ -26,6 +28,10 @@ export class AboutPage {
 
     get url(): string {
         return aboutUrl;
+    }
+
+    get appVersion(): string | undefined {
+        return this.platformService.getAppVersion();
     }
 
     async showChangelog(): Promise<void> {

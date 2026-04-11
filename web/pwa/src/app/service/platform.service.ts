@@ -77,6 +77,10 @@ export class PlatformService implements OnDestroy {
         this.backend.switchAppChannel(channel);
     }
 
+    getAppVersion(): string | undefined {
+        return this.backend.getAppVersion();
+    }
+
     supportsNativeNetworkIntegration(): boolean {
         return this.backend.supportsNativeNetworkIntegration();
     }

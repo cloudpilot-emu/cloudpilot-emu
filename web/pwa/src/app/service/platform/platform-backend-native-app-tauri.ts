@@ -86,6 +86,17 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         void invoke('switch_app_channel', { channel });
     }
 
+    getAppVersion(): string | undefined {
+        const version = window.__cpe_shim_tauri_version;
+        if (version === undefined) return undefined;
+
+        const major = version >>> 16;
+        const minor = (version >>> 8) & 0xff;
+        const patch = version & 0xff;
+
+        return `${major}.${minor}.${patch}`;
+    }
+
     supportsNativeNetworkIntegration(): boolean {
         return true;
     }

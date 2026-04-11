@@ -9,7 +9,7 @@ This setting controls the overall volume of the emulated audio.
 ### Enable audio on start
 
 Enable audio when the app starts.
-:span[Audio will start playing on the first tap, click or key press.]{.no-feature-native-app}
+:span[Audio will start playing on the first tap, click or key press.]{.no-feature-ios-app}
 
 :::div{.feature-run-hidden}
 ### Run when hidden

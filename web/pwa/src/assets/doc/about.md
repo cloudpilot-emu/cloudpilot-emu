@@ -120,7 +120,7 @@ crashing the emulator you can reset the device directly on the
 sessions page (see the help page there). This will remove the
 hardware state but preserve the RAM, resulting in a clean reboot.
 
-:::div{.no-feature-native-app}
+:::div{.no-feature-ios-app}
 # Requirements and browser support
 
 CloudpilotEmu runs on all reasonable recent browsers and can be added to the homescreen
@@ -149,7 +149,7 @@ repeated update notifications without the "New version..." dialog on reload or
 the app not updating to the most recent version, go to the "About" tab, scroll
 to the bottom and select the "reset worker" link at the bottom of the page. 
 
-:::div{.feature-native-app}
+:::div{.feature-ios-app}
 # Stable and preview builds
 
 CloudpilotEmu is available both as a stable and as a preview version (which eventually
@@ -203,7 +203,7 @@ speed and host utilization in the session settings.
     by selecting "Don't restrict file picker" in the settings.
 :::
 
-:::div{.feature-native-app}
+:::div{.feature-ios-app}
 ### Issues on iOS
 
 -   Version 1.0 of the app may refuse to load without internet connectivity. This is fixed

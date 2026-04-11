@@ -26,6 +26,10 @@
     <div class="version">
         <span class="text-selectable">CloudpilotEmu version {{ version }}</span>
         <br />
+        @if (appVersion !== undefined) {
+            <span class="text-selectable">Native app version {{ appVersion }}</span>
+            <br />
+        }
         <a href="javascript:" (click)="showChangelog()">Changelog</a>
         @if (serviceWorkerAvailable) {
             <div>app cached for offline use</div>
