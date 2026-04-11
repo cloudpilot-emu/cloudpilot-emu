@@ -31,6 +31,10 @@ ion-tab-bar.disabled {
     overflow-x: auto;
 }
 
+.stacking-fix {
+    transform: translateX(0);
+}
+
 ion-icon {
     font-size: 25px;
 }
