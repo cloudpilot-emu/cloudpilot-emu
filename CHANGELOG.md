@@ -1,4 +1,4 @@
-# Next version
+# Version 2.1.5
 
 -   Support for native shim apps on Android, Windows, MacOS and Linux
 -   Work around a Safari rendering issue that could display content over the tab bar.
