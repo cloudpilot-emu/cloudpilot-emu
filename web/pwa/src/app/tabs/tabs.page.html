@@ -1,5 +1,5 @@
 <ion-tabs>
-    <div class="overflow-wrapper stacking-fix">
+    <div class="overflow-wrapper" [class.stacking-fix]="applyStackingFix">
         <ion-tab-bar [class.small-ui]="smallUI" slot="bottom" [class.disabled]="isLocked()">
             <ion-tab-button tab="emulation">
                 <ion-icon name="phone-portrait-outline"></ion-icon>

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { isMacOSSafari } from '@common/helper/browser';
 
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { EmulationContextService } from '@pwa/service/emulation-context.service';
@@ -48,6 +49,10 @@ export class TabsPage {
 
     isLocked(): boolean {
         return this.isLockedFlag;
+    }
+
+    get applyStackingFix(): boolean {
+        return isMacOSSafari;
     }
 
     private updateUseSmallUI = (): void => {
