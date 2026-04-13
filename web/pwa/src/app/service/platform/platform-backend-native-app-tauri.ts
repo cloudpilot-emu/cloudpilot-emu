@@ -12,6 +12,10 @@ declare global {
     interface Window {
         __cpe_shim_tauri_version?: number;
         __cpe_shim_tauri_challenge?: string;
+        __cpe_shim_tauri_bootstrap_cb?: () => void;
+        __cpe_shim_tauri_handshake_sent?: boolean;
+
+        __TAURI__: object;
     }
 }
 
@@ -20,15 +24,28 @@ interface RpcResultInternal {
     rpc_data: ArrayLike<number>;
 }
 
+export function bootstrapTauriApp(): void {
+    if (window.__TAURI__) return;
+
+    const match = location.hash.match(/^#f55df283-698e-4ed4-ad5f-6617984e1ca3-(\d+)$/);
+    if (!match) return;
+
+    window.__cpe_shim_tauri_version = parseInt(match[1], 10);
+}
+
 export class PlatformBackendNativeAppTauri implements PlatformBackend {
     static isSupported(): boolean {
-        return typeof window.__cpe_shim_tauri_version === 'number';
+        return window.__cpe_shim_tauri_version !== undefined;
     }
 
     constructor(private lifecycleService: LifecycleService) {
-        void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
+        this.appChannel = new Promise((r) => (this.resolveAppChannel = r));
 
-        this.appChannel = invoke('get_app_channel');
+        if (window.__TAURI__) {
+            this.initialize();
+        } else {
+            window.__cpe_shim_tauri_bootstrap_cb = this.initialize;
+        }
     }
 
     teardown(): void {
@@ -37,6 +54,10 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
     }
 
     async netOpenSession(): Promise<number> {
+        if (!this.isInitialized) {
+            throw new Error('tauri init pending');
+        }
+
         const id = await invoke<number>('net_open_session');
 
         if (id >= 0) return id;
@@ -44,19 +65,27 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         throw new Error('unable to open network session');
     }
 
-    netCloseSession(sessionId: number): Promise<void> {
-        return invoke('net_close_session', { sessionId });
+    async netCloseSession(sessionId: number): Promise<void> {
+        if (!this.isInitialized) return;
+
+        await invoke('net_close_session', { sessionId });
     }
 
-    netDispatchRpc(sessionId: number, rpcData: ArrayLike<number>): Promise<boolean> {
+    async netDispatchRpc(sessionId: number, rpcData: ArrayLike<number>): Promise<boolean> {
+        if (!this.isInitialized) return false;
+
         return invoke<boolean>('net_dispatch_rpc', { sessionId, rpcData: Array.from(rpcData) });
     }
 
-    clipboardRead(): Promise<string> {
+    async clipboardRead(): Promise<string> {
+        if (!this.isInitialized) return '';
+
         return clipboardReadText();
     }
 
     async clipboardWrite(text: string): Promise<void> {
+        if (!this.isInitialized) return;
+
         await clipboardWriteText(text);
     }
 
@@ -64,9 +93,7 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         return false;
     }
 
-    async setWorkerRegistered(workerInstalled: boolean): Promise<void> {
-        void invoke('set_service_worker_installed', { workerInstalled });
-    }
+    async setWorkerRegistered(): Promise<void> {}
 
     async getWorkerFailed(): Promise<boolean> {
         return false;
@@ -75,6 +102,8 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
     clearWorkerFailed(): void {}
 
     reload(): void {
+        if (!this.isInitialized) window.location.reload();
+
         void invoke('reload');
     }
 
@@ -111,12 +140,18 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();
 
+    private initialize = (): void => {
+        void this.initializeRpc().catch((e) => console.error('failed to initializate Tauri RPC', e));
+        void invoke<AppChannel>('get_app_channel').then(this.resolveAppChannel);
+
+        this.isInitialized = true;
+    };
+
     private async initializeRpc(): Promise<void> {
-        if (typeof window.__cpe_shim_tauri_challenge !== 'undefined') {
-            void this.lifecycleService
-                .appIsInitialized()
-                .then(() => emit('handshake', window.__cpe_shim_tauri_challenge));
-        }
+        void this.lifecycleService.appIsInitialized().then(() => {
+            void emit('handshake', window.__cpe_shim_tauri_challenge);
+            window.__cpe_shim_tauri_handshake_sent = true;
+        });
 
         await invoke<void>('net_set_rpc_result_channel', { channel: this.rpcResultChannel });
         if (this.isDestroyed) return;
@@ -127,5 +162,9 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
 
     private isDestroyed = false;
     private rpcResultChannel = new Channel<RpcResultInternal>();
+
+    private isInitialized = false;
+
     private appChannel: Promise<AppChannel>;
+    private resolveAppChannel: (channel: AppChannel | PromiseLike<AppChannel>) => void = () => undefined;
 }

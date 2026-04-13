@@ -7,6 +7,7 @@ import { initializeDynamicFOnts as initializeDynamicFonts } from '@pwa/helper/dy
 import { applyHomeIndicatorFix } from '@pwa/helper/homeIndicatorFix';
 import { hasStoredSession } from '@pwa/helper/storedSession';
 import { bootstrapLinkApi, hasInitialImportRequest, hasInitialInstallRequest } from '@pwa/service/link-api.service';
+import { bootstrapTauriApp } from '@pwa/service/platform/platform-backend-native-app-tauri';
 
 import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
@@ -19,13 +20,13 @@ import { environment } from './environments/environment';
 document.body.addEventListener('dblclick', (e) => e.preventDefault());
 
 initializeDynamicFonts();
-
+bootstrapTauriApp();
 bootstrapLinkApi();
 
 if ((hasStoredSession() && !hasInitialImportRequest()) || hasInitialInstallRequest()) {
-    location.replace(`${location.origin}${location.pathname}#/tab/emulation`);
+    location.replace(`${location.origin}${location.pathname}${location.search}#/tab/emulation`);
 } else {
-    location.replace(`${location.origin}${location.pathname}#/tab/sessions`);
+    location.replace(`${location.origin}${location.pathname}${location.search}#/tab/sessions`);
 }
 
 if (environment.production) {
