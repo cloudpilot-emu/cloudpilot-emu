@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { isMacOSSafari } from '@common/helper/browser';
+import { isWebkit } from '@common/helper/browser';
 
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { EmulationContextService } from '@pwa/service/emulation-context.service';
@@ -52,7 +52,7 @@ export class TabsPage {
     }
 
     get applyStackingFix(): boolean {
-        return isMacOSSafari;
+        return isWebkit;
     }
 
     private updateUseSmallUI = (): void => {
