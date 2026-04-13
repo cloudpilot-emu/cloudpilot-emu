@@ -1,3 +1,7 @@
+# Next version
+
+-   Various shim app fixes.
+
 # Version 2.1.5
 
 -   Support for native shim apps on Android, Windows, MacOS and Linux
