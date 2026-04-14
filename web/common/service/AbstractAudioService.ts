@@ -1,4 +1,5 @@
 import { PwmUpdate } from '@common/bridge/Cloudpilot';
+import { Throttle } from '@common/helper/Throttle';
 import { isIOS } from '@common/helper/browser';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Mutex } from 'async-mutex';
@@ -20,6 +21,8 @@ interface Audio {
     gainNode: GainNode;
     workletNode: AudioWorkletNode | undefined;
 }
+
+const STATE_UPDATE_THROTTLE_MSEC = 250;
 
 const audioContextCtor = window.AudioContext || window.webkitAudioContext;
 
@@ -43,8 +46,9 @@ export abstract class AbstractAudioService {
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
         this.emulationService.palmosStateChangeEvent.addHandler(() => this.updateState());
         document.addEventListener('visibilitychange', () => {
-            if (isIOS && document.visibilityState === 'visible') setTimeout(() => this.updateState(), 500);
-            else this.updateState();
+            if (isIOS && document.visibilityState === 'visible') {
+                setTimeout(() => this.updateState(), 500);
+            } else this.updateState();
         });
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,47 +96,15 @@ export abstract class AbstractAudioService {
         return !this.emulationService.isRunning() || this.emulationService.isPowerOff() || this.muted;
     }
 
-    protected updateState = () =>
-        void this.mutex.runExclusive(async () => {
-            if (!this.audio) return;
-
-            this.updateGain();
-
-            if (this.shouldRun()) this.emulationService.enablePcmStreaming();
-            else this.emulationService.disablePcmStreaming();
-
-            if (this.isRunning() === this.shouldRun()) return;
-
-            const oldState = this.audio.context.state;
-            switch (oldState) {
-                case 'interrupted' as AudioContextState:
-                    break;
-
-                case 'closed':
-                    console.warn('audio context closed unexpectedly, no more audio will be played');
-                    return;
-            }
-
-            if (this.shouldRun()) {
-                try {
-                    await withTimeout(this.audio.context.resume());
-                    console.log('resume audio context');
-                } catch (e) {
-                    console.error(`failed to resume audio from state ${oldState}`, e);
-                }
-            } else {
-                try {
-                    await withTimeout(this.audio.context.suspend());
-                    console.log('suspend audio context');
-                } catch (e) {
-                    console.error(`failed to suspend audio from state ${oldState}`, e);
-                }
-            }
-        });
+    protected updateState(): void {
+        this.stateUpdateThrottle.trigger();
+    }
 
     protected updateGain(): void {
         if (!this.audio) return;
-        this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
+
+        const gain = this.shouldMute() ? 0 : this.gain();
+        if (this.audio.gainNode.gain.value !== gain) this.audio.gainNode.gain.value = gain;
     }
 
     private bind(): void {
@@ -237,7 +209,10 @@ export abstract class AbstractAudioService {
 
     private createAudioContext(): AudioContext {
         try {
-            return new audioContextCtor({ sampleRate: 44100, latencyHint: 'interactive' });
+            return new audioContextCtor({
+                sampleRate: 44100,
+                latencyHint: 'interactive',
+            });
         } catch (e: unknown) {
             console.warn('failed to request context at 44100Hz , latency interactive', e);
         }
@@ -326,7 +301,13 @@ export abstract class AbstractAudioService {
         if (!pcmPort) return;
 
         this.audio.workletNode.connect(this.audio.gainNode);
-        this.dispatchPcmControlMessage({ type: ControlMessageHostType.setStreamMessagePort, port: pcmPort }, [pcmPort]);
+        this.dispatchPcmControlMessage(
+            {
+                type: ControlMessageHostType.setStreamMessagePort,
+                port: pcmPort,
+            },
+            [pcmPort],
+        );
 
         if (this.shouldRun()) this.emulationService.enablePcmStreaming();
         else this.emulationService.disablePcmStreaming();
@@ -368,6 +349,49 @@ export abstract class AbstractAudioService {
                 break;
         }
     };
+
+    private stateUpdateThrottle = new Throttle(
+        () =>
+            void this.mutex.runExclusive(async () => {
+                if (!this.audio) return;
+
+                if (this.isRunning()) this.updateGain();
+
+                if (this.shouldRun()) this.emulationService.enablePcmStreaming();
+                else this.emulationService.disablePcmStreaming();
+
+                if (this.isRunning() === this.shouldRun()) return;
+
+                const oldState = this.audio.context.state;
+                switch (oldState) {
+                    case 'interrupted' as AudioContextState:
+                        break;
+
+                    case 'closed':
+                        console.warn('audio context closed unexpectedly, no more audio will be played');
+                        return;
+                }
+
+                if (this.shouldRun()) {
+                    try {
+                        await withTimeout(this.audio.context.resume());
+                        console.log('resume audio context');
+
+                        this.updateGain();
+                    } catch (e) {
+                        console.error(`failed to resume audio from state ${oldState}`, e);
+                    }
+                } else {
+                    try {
+                        await withTimeout(this.audio.context.suspend());
+                        console.log('suspend audio context');
+                    } catch (e) {
+                        console.error(`failed to suspend audio from state ${oldState}`, e);
+                    }
+                }
+            }),
+        STATE_UPDATE_THROTTLE_MSEC,
+    );
 
     private mutex = new Mutex();
 
