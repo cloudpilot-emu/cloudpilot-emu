@@ -375,6 +375,7 @@ export abstract class AbstractAudioService {
                         await withTimeout(this.audio.context.resume());
                         console.log('resume audio context');
 
+                        await this.emulationService.enablePcmStreaming();
                         this.updateGain();
                     } catch (e) {
                         console.error(`failed to resume audio from state ${oldState}`, e);
