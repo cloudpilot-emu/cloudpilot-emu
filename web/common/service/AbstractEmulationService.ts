@@ -156,12 +156,12 @@ export abstract class AbstractEmulationService {
         return this.engine?.type === 'uarm' ? this.engine.getPcmPort() : undefined;
     }
 
-    enablePcmStreaming(): void {
-        if (this.engine?.type === 'uarm') this.engine.enablePcmStreaming();
+    async enablePcmStreaming(): Promise<void> {
+        if (this.engine?.type === 'uarm') await this.engine.enablePcmStreaming();
     }
 
-    disablePcmStreaming(): void {
-        if (this.engine?.type === 'uarm') this.engine.disablePcmStreaming();
+    async disablePcmStreaming(): Promise<void> {
+        if (this.engine?.type === 'uarm') await this.engine.disablePcmStreaming();
     }
 
     supportsKeyboardIO(): boolean {

@@ -15,7 +15,6 @@ export const enum HostMessageType {
     returnSnapshot = 'returnSnapshot',
     setBackgrounded = 'setBackgrounded',
     reset = 'reset',
-    setPcmStreaming = 'setPcmStreaming',
 }
 
 export type HostMessageRpcCall = RpcRequest & {
@@ -63,11 +62,6 @@ export interface HostMessageSetBackgrounded {
     backgrounded: boolean;
 }
 
-export interface HostMessageSetPcmStreaming {
-    type: HostMessageType.setPcmStreaming;
-    pcmStreaming: boolean;
-}
-
 export type HostMessage =
     | HostMessageRpcCall
     | HostMessageUpdateSettings
@@ -77,5 +71,4 @@ export type HostMessage =
     | HostMessagePenDown
     | HostMessageReturnFrame
     | HostMessageReturnSnapshot
-    | HostMessageSetBackgrounded
-    | HostMessageSetPcmStreaming;
+    | HostMessageSetBackgrounded;

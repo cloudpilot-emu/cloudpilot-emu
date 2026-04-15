@@ -107,6 +107,16 @@ interface RpcSchema {
         args: Uint8Array;
         result: boolean;
     };
+
+    enablePcmStreaming: {
+        args: void;
+        result: void;
+    };
+
+    disablePcmStreaming: {
+        args: void;
+        result: void;
+    };
 }
 
 export type RpcMethod = keyof RpcSchema;

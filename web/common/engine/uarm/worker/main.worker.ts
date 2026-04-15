@@ -104,7 +104,9 @@ rpcClient
     })
     .register('reset', (resetType) => unwrapEmulator().reset(resetType))
     .register('launchAppByName', (name) => unwrapEmulator().launchAppByName(name))
-    .register('launchAppByHeader', (header) => unwrapEmulator().launchAppByHeader(header));
+    .register('launchAppByHeader', (header) => unwrapEmulator().launchAppByHeader(header))
+    .register('enablePcmStreaming', () => unwrapEmulator().enablePcmStreaming())
+    .register('disablePcmStreaming', () => unwrapEmulator().disablePcmStreaming());
 
 async function onMessage(e: MessageEvent) {
     const message: HostMessage = e.data;
@@ -144,11 +146,6 @@ async function onMessage(e: MessageEvent) {
 
         case HostMessageType.setBackgrounded:
             emulator?.setBackgrounded(message.backgrounded);
-            break;
-
-        case HostMessageType.setPcmStreaming:
-            if (message.pcmStreaming) emulator?.enablePcmStreaming();
-            else emulator?.disablePcmStreaming();
             break;
 
         default:

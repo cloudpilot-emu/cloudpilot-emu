@@ -292,8 +292,10 @@ export abstract class AbstractCanvasDisplayService {
 
         this.onResize.dispatch();
 
-        canvas.width = this.width;
-        canvas.height = this.height;
+        if (canvas.width !== this.width || canvas.height !== this.height) {
+            canvas.width = this.width;
+            canvas.height = this.height;
+        }
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {

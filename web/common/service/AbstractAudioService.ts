@@ -309,8 +309,8 @@ export abstract class AbstractAudioService {
             [pcmPort],
         );
 
-        if (this.shouldRun()) this.emulationService.enablePcmStreaming();
-        else this.emulationService.disablePcmStreaming();
+        if (this.shouldRun()) void this.emulationService.enablePcmStreaming();
+        else void this.emulationService.disablePcmStreaming();
 
         this.workletBound = true;
         console.log('bound worklet');
@@ -321,7 +321,7 @@ export abstract class AbstractAudioService {
         this.audio?.workletNode?.disconnect();
 
         this.dispatchPcmControlMessage({ type: ControlMessageHostType.reset });
-        this.emulationService.disablePcmStreaming();
+        void this.emulationService.disablePcmStreaming();
 
         this.workletBound = false;
         console.log('unbound worklet');
@@ -331,23 +331,25 @@ export abstract class AbstractAudioService {
         if (!this.audio) return;
 
         console.log(`audio context state change ${this.oldAudioState} -> ${this.audio.context.state}`);
-        this.oldAudioState = this.audio.context.state;
 
         switch (this.audio.context.state) {
             case 'suspended':
                 if (this.oldAudioState === ('interrupted' as AudioContextState) && this.shouldRun()) {
                     this.updateState();
+                } else {
+                    void this.emulationService.disablePcmStreaming();
                 }
 
-                this.emulationService.disablePcmStreaming();
                 break;
 
             case 'running':
-                this.emulationService.enablePcmStreaming();
+                void this.emulationService.enablePcmStreaming();
                 this.audio.gainNode.gain.value = this.shouldMute() ? 0 : this.gain();
 
                 break;
         }
+
+        this.oldAudioState = this.audio.context.state;
     };
 
     private stateUpdateThrottle = new Throttle(
@@ -356,10 +358,6 @@ export abstract class AbstractAudioService {
                 if (!this.audio) return;
 
                 if (this.isRunning()) this.updateGain();
-
-                if (this.shouldRun()) this.emulationService.enablePcmStreaming();
-                else this.emulationService.disablePcmStreaming();
-
                 if (this.isRunning() === this.shouldRun()) return;
 
                 const oldState = this.audio.context.state;
@@ -383,6 +381,8 @@ export abstract class AbstractAudioService {
                     }
                 } else {
                     try {
+                        await this.emulationService.disablePcmStreaming();
+
                         await withTimeout(this.audio.context.suspend());
                         console.log('suspend audio context');
                     } catch (e) {

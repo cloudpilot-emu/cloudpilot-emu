@@ -118,8 +118,8 @@ export interface EngineUarm extends EngineCommon {
     getStatistics(): EmulationStatisticsUarm;
 
     getPcmPort(): MessagePort;
-    enablePcmStreaming(): void;
-    disablePcmStreaming(): void;
+    enablePcmStreaming(): Promise<void>;
+    disablePcmStreaming(): Promise<void>;
 }
 
 export type Engine = EngineCloudpilot | EngineUarm;

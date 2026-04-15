@@ -4,6 +4,7 @@ import { EmulationStatisticsUarm } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { Executor } from '@common/service/AbstractEmulationService';
 import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
+import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
 
 import { BackupResult, EngineUarm, FullState, StorageCardProvider } from '../Engine';
@@ -115,14 +116,14 @@ export class EngineUarmImpl implements EngineUarm {
         return this.pcmChannel.port1;
     }
 
-    enablePcmStreaming(): void {
+    enablePcmStreaming(): Promise<void> {
         console.log('streaming enabled');
-        this.dispatchMessage({ type: HostMessageType.setPcmStreaming, pcmStreaming: true });
+        return this.pcmStreamingMutex.runExclusive(() => this.rpcHost.call('enablePcmStreaming', undefined));
     }
 
-    disablePcmStreaming(): void {
+    disablePcmStreaming(): Promise<void> {
         console.log('streaming disabled');
-        this.dispatchMessage({ type: HostMessageType.setPcmStreaming, pcmStreaming: false });
+        return this.pcmStreamingMutex.runExclusive(() => this.rpcHost.call('disablePcmStreaming', undefined));
     }
 
     penDown(x: number, y: number): void {
@@ -475,4 +476,6 @@ export class EngineUarmImpl implements EngineUarm {
     private uiInitialized = false;
     private lcdEnabled: boolean | undefined;
     private osVersion: number | undefined;
+
+    private pcmStreamingMutex = new Mutex();
 }
