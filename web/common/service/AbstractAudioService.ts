@@ -358,7 +358,15 @@ export abstract class AbstractAudioService {
                 if (!this.audio) return;
 
                 if (this.isRunning()) this.updateGain();
-                if (this.isRunning() === this.shouldRun()) return;
+                if (this.isRunning() === this.shouldRun()) {
+                    if (this.isRunning()) {
+                        await this.emulationService.enablePcmStreaming();
+                    } else {
+                        await this.emulationService.disablePcmStreaming();
+                    }
+
+                    return;
+                }
 
                 const oldState = this.audio.context.state;
                 switch (oldState) {
