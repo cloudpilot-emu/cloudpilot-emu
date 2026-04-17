@@ -1,6 +1,7 @@
 import { Component, ElementRef, Signal, ViewChild, computed } from '@angular/core';
 import helpUrl from '@assets/doc/emulation.md';
 import { hasDPad } from '@common/helper/deviceProperties';
+import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { Config, ModalController, PopoverController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
@@ -326,20 +327,34 @@ export class EmulationPage implements DragDropClient {
 
     private onKvsUpdate = (): void => {
         if (this.kvsService.kvs.showStatistics) {
-            void this.canvasDisplayService.updateStatistics();
-        } else {
-            void this.canvasDisplayService.clearStatistics();
+            this.updateStatistics();
         }
-    };
-
-    private onNewFrame = (canvas: HTMLCanvasElement): void => {
-        this.canvasDisplayService.updateEmulationCanvas(canvas);
     };
 
     private onSnapshotDone = (statistics: SnapshotStatistics): void => {
         if (this.kvsService.kvs.showStatistics) {
-            void this.canvasDisplayService.updateStatistics(statistics, this.emulationService.getStatistics());
+            this.updateStatistics(statistics, this.emulationService.getStatistics());
         }
+    };
+
+    private updateStatistics(snapshotStatistics?: SnapshotStatistics, emulationStatistics?: EmulationStatistics): void {
+        if (this.statisticsAnimationFrameHandle !== undefined) {
+            cancelAnimationFrame(this.statisticsAnimationFrameHandle);
+        }
+
+        this.statisticsAnimationFrameHandle = requestAnimationFrame(() => {
+            void this.canvasDisplayService.updateStatistics(snapshotStatistics, emulationStatistics);
+            this.statisticsAnimationFrameHandle = undefined;
+        });
+    }
+
+    private onNewFrame = (canvas: HTMLCanvasElement): void => {
+        if (this.canvasAnimationFrameHandle) cancelAnimationFrame(this.canvasAnimationFrameHandle);
+
+        requestAnimationFrame(() => {
+            this.canvasDisplayService.updateEmulationCanvas(canvas);
+            this.canvasAnimationFrameHandle = undefined;
+        });
     };
 
     private handleLinkApiInstallationRequest = (): void => {
@@ -412,4 +427,7 @@ export class EmulationPage implements DragDropClient {
 
     private autoLockUI = true;
     private mutex = new Mutex();
+
+    private canvasAnimationFrameHandle: number | undefined;
+    private statisticsAnimationFrameHandle: number | undefined;
 }
