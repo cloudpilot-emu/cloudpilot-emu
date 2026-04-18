@@ -83,8 +83,6 @@ export class EmulationPage implements DragDropClient {
             await this.emulationService.bootstrapComplete();
             this.bootstrapComplete = true;
 
-            this.audioService.activate();
-
             const session = this.emulationContext.session();
 
             if (session && !session.wasResetForcefully) {
@@ -99,7 +97,6 @@ export class EmulationPage implements DragDropClient {
 
     ionViewWillLeave = () =>
         this.mutex.runExclusive(async () => {
-            this.audioService.suspend();
             this.dragDropService.unregisterClient(this);
 
             this.linkApi.installation.requestEvent.removeHandler(this.handleLinkApiInstallationRequest);

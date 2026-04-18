@@ -15,20 +15,6 @@ export class AudioService extends AbstractAudioService {
         super(emulationService);
     }
 
-    activate(): void {
-        this.activated = true;
-        this.updateState();
-    }
-
-    suspend(): void {
-        this.activated = false;
-        this.updateState();
-    }
-
-    protected override shouldRun(): boolean {
-        return super.shouldRun() && this.activated;
-    }
-
     protected getVolume(): number {
         return this.kvs.kvs.volume;
     }
@@ -36,6 +22,4 @@ export class AudioService extends AbstractAudioService {
     protected runHidden(): boolean {
         return this.kvs.kvs.runHidden && this.featureService.runHidden;
     }
-
-    private activated = false;
 }
