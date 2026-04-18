@@ -1,8 +1,8 @@
-# Next version
+# Next 2.1.6
 
 - Various shim app fixes.
-- Partially work around a WebKit that randomly causes persistent large audio
-  delays when tabs are switched or settings changed.
+- Work around a WebKit bug that randomly causes persistent large audio delays
+  when tabs are switched or settings changed.
 
 # Version 2.1.5
 
