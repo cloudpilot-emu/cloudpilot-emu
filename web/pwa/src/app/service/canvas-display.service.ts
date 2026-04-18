@@ -88,7 +88,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
         if (this.layout.silkscreenHeight.frameCanvas > 0) {
             await this.drawSilkscreen();
         } else {
-            await this.drawEmulationCanvas();
+            this.drawEmulationCanvas();
         }
     }
 

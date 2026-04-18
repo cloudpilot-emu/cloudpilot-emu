@@ -98,7 +98,7 @@ export class EmulationPage implements DragDropClient {
         });
 
     ionViewWillLeave = () =>
-        this.mutex.runExclusive(() => {
+        this.mutex.runExclusive(async () => {
             this.audioService.suspend();
             this.dragDropService.unregisterClient(this);
 
@@ -107,7 +107,19 @@ export class EmulationPage implements DragDropClient {
             if (this.emulationService.isRunning()) {
                 this.autoLockUI = false;
             }
-            void this.emulationService.pause();
+            await this.emulationService.pause();
+
+            if (this.canvasAnimationFrameHandle !== undefined) {
+                cancelAnimationFrame(this.canvasAnimationFrameHandle);
+                this.canvasAnimationFrameHandle = undefined;
+            }
+
+            if (this.statisticsAnimationFrameHandle !== undefined) {
+                cancelAnimationFrame(this.statisticsAnimationFrameHandle);
+                this.statisticsAnimationFrameHandle = undefined;
+            }
+
+            this.showStatistics = undefined;
 
             this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
             this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
@@ -326,13 +338,14 @@ export class EmulationPage implements DragDropClient {
     }
 
     private onKvsUpdate = (): void => {
-        if (this.kvsService.kvs.showStatistics) {
+        if (this.kvsService.kvs.showStatistics !== this.showStatistics) {
+            this.showStatistics = this.kvsService.kvs.showStatistics;
             this.updateStatistics();
         }
     };
 
     private onSnapshotDone = (statistics: SnapshotStatistics): void => {
-        if (this.kvsService.kvs.showStatistics) {
+        if (this.showStatistics) {
             this.updateStatistics(statistics, this.emulationService.getStatistics());
         }
     };
@@ -343,7 +356,12 @@ export class EmulationPage implements DragDropClient {
         }
 
         this.statisticsAnimationFrameHandle = requestAnimationFrame(() => {
-            void this.canvasDisplayService.updateStatistics(snapshotStatistics, emulationStatistics);
+            if (this.showStatistics) {
+                void this.canvasDisplayService.updateStatistics(snapshotStatistics, emulationStatistics);
+            } else {
+                void this.canvasDisplayService.clearStatistics();
+            }
+
             this.statisticsAnimationFrameHandle = undefined;
         });
     }
@@ -351,7 +369,7 @@ export class EmulationPage implements DragDropClient {
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
         if (this.canvasAnimationFrameHandle) cancelAnimationFrame(this.canvasAnimationFrameHandle);
 
-        requestAnimationFrame(() => {
+        this.canvasAnimationFrameHandle = requestAnimationFrame(() => {
             this.canvasDisplayService.updateEmulationCanvas(canvas);
             this.canvasAnimationFrameHandle = undefined;
         });
@@ -430,4 +448,6 @@ export class EmulationPage implements DragDropClient {
 
     private canvasAnimationFrameHandle: number | undefined;
     private statisticsAnimationFrameHandle: number | undefined;
+
+    private showStatistics: boolean | undefined;
 }
