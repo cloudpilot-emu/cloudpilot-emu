@@ -116,14 +116,22 @@ export class EngineUarmImpl implements EngineUarm {
         return this.pcmChannel.port1;
     }
 
-    enablePcmStreaming(): Promise<void> {
+    async enablePcmStreaming(): Promise<void> {
+        if (this.pcmStreaming) return;
+
+        await this.pcmStreamingMutex.runExclusive(() => this.rpcHost.call('enablePcmStreaming', undefined));
+        this.pcmStreaming = true;
+
         console.log('streaming enabled');
-        return this.pcmStreamingMutex.runExclusive(() => this.rpcHost.call('enablePcmStreaming', undefined));
     }
 
-    disablePcmStreaming(): Promise<void> {
+    async disablePcmStreaming(): Promise<void> {
+        if (!this.pcmStreaming) return;
+
+        await this.pcmStreamingMutex.runExclusive(() => this.rpcHost.call('disablePcmStreaming', undefined));
+        this.pcmStreaming = false;
+
         console.log('streaming disabled');
-        return this.pcmStreamingMutex.runExclusive(() => this.rpcHost.call('disablePcmStreaming', undefined));
     }
 
     penDown(x: number, y: number): void {
@@ -478,4 +486,5 @@ export class EngineUarmImpl implements EngineUarm {
     private osVersion: number | undefined;
 
     private pcmStreamingMutex = new Mutex();
+    private pcmStreaming = false;
 }
