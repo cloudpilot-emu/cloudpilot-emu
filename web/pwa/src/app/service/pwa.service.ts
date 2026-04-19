@@ -96,6 +96,20 @@ export class PwaService {
         }
     }
 
+    determineInstallationMode(): InstallationMode {
+        if (PlatformBackendNativeAppTauri.isSupported()) return InstallationMode.app;
+
+        if (isIOSNative) return InstallationMode.app;
+
+        if (window.navigator.standalone) return InstallationMode.pwa;
+
+        if (document.referrer.startsWith('android-app://')) return InstallationMode.twa;
+
+        if (window.matchMedia('(display-mode: standalone)').matches) return InstallationMode.pwa;
+
+        return InstallationMode.web;
+    }
+
     private getInstallMessage(): string {
         if (isIOS) return INSTRUCTIONS_IOS;
 
@@ -108,20 +122,6 @@ export class PwaService {
         if (isMacOSSafari) return INVITATION_SAFARI_MACOS;
 
         return INVITATION_ANDROID;
-    }
-
-    private determineInstallationMode(): InstallationMode {
-        if (PlatformBackendNativeAppTauri.isSupported()) return InstallationMode.app;
-
-        if (isIOSNative) return InstallationMode.app;
-
-        if (window.navigator.standalone) return InstallationMode.pwa;
-
-        if (document.referrer.startsWith('android-app://')) return InstallationMode.twa;
-
-        if (window.matchMedia('(display-mode: standalone)').matches) return InstallationMode.pwa;
-
-        return InstallationMode.web;
     }
 
     private serviceWorkerKeepalive = async () => {

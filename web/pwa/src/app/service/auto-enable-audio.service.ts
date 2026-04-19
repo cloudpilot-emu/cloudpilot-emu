@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
-import { isIOS, isIOSNative } from '@common/helper/browser';
+
+import { InstallationMode } from '@pwa/model/InstallationMode';
 
 import { AudioService } from './audio.service';
 import { KvsService } from './kvs.service';
+import { PwaService } from './pwa.service';
 
 const EVENTS = ['touchstart', 'click', 'keydown'];
 
@@ -16,6 +18,7 @@ export class AutoEnableAudioService {
     constructor(
         private kvsService: KvsService,
         private audioService: AudioService,
+        private pwaService: PwaService,
     ) {
         void this.initialize();
     }
@@ -24,7 +27,7 @@ export class AutoEnableAudioService {
         await this.kvsService.initialize();
         if (!this.kvsService.kvs.enableAudioOnFirstInteraction) return;
 
-        if (isIOS && isIOSNative) {
+        if (this.pwaService.determineInstallationMode() === InstallationMode.app) {
             void this.audioService.initialize();
             return;
         }

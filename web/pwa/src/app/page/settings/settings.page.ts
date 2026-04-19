@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import helpUrl from '@assets/doc/settings.md';
-import { isIOS, isIOSNative } from '@common/helper/browser';
+import { isIOS } from '@common/helper/browser';
 import { ModalController } from '@ionic/angular';
 import { MutexInterface } from 'async-mutex';
 import { environment } from 'pwa/src/environments/environment';
@@ -16,6 +16,7 @@ import {
 } from '@pwa/helper/homeIndicatorFix';
 import { validateProxyAddress } from '@pwa/helper/proxyAddress';
 import { AppChannel } from '@pwa/model/AppChannel';
+import { InstallationMode } from '@pwa/model/InstallationMode';
 import { NetworkRedirectionMode } from '@pwa/model/Kvs';
 import { AlertService } from '@pwa/service/alert.service';
 import { ClipboardService } from '@pwa/service/clipboard.service';
@@ -23,6 +24,7 @@ import { FeatureService } from '@pwa/service/feature.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { NetworkBackendFactory } from '@pwa/service/network-backend/network-backend-factory.service';
 import { PlatformService } from '@pwa/service/platform.service';
+import { PwaService } from '@pwa/service/pwa.service';
 
 const enum fields {
     volume = 'volume',
@@ -57,6 +59,7 @@ export class SettingsPage implements OnInit {
         private networkBackendFactory: NetworkBackendFactory,
         private featureService: FeatureService,
         private platformService: PlatformService,
+        private pwaService: PwaService,
     ) {}
 
     ngOnInit(): void {
@@ -226,7 +229,7 @@ export class SettingsPage implements OnInit {
     private onAudioOnStartChange = (audioOnStart: boolean) => {
         this.kvsService.kvs.enableAudioOnFirstInteraction = audioOnStart;
 
-        if (isIOS && isIOSNative) {
+        if (this.pwaService.determineInstallationMode() === InstallationMode.app) {
             void this.alertService.message(
                 'Enable audio on start',
                 `
