@@ -81,6 +81,10 @@ export class PlatformService implements OnDestroy {
         return this.backend.getAppVersion();
     }
 
+    getAppPlatform(): string | undefined {
+        return this.backend.getAppPlatform();
+    }
+
     supportsNativeNetworkIntegration(): boolean {
         return this.backend.supportsNativeNetworkIntegration();
     }

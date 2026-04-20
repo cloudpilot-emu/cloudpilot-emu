@@ -28,6 +28,7 @@ export interface PlatformBackend {
     switchAppChannel(channel: AppChannel): void;
 
     getAppVersion(): string | undefined;
+    getAppPlatform(): string | undefined;
 
     supportsNativeNetworkIntegration(): boolean;
     supportsNativeClipboard(): boolean;

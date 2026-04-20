@@ -6,7 +6,9 @@ import changelogUrl from '@root/CHANGELOG.md';
 import { HelpComponent } from '@pwa/component/help/help.component';
 import { debounce } from '@pwa/helper/debounce';
 import { VERSION } from '@pwa/helper/version';
+import { InstallationMode } from '@pwa/model/InstallationMode';
 import { PlatformService } from '@pwa/service/platform.service';
+import { PwaService } from '@pwa/service/pwa.service';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 
 @Component({
@@ -20,7 +22,10 @@ export class AboutPage {
         private modalController: ModalController,
         private serviceWorkerService: ServiceWorkerService,
         private platformService: PlatformService,
-    ) {}
+        pwaService: PwaService,
+    ) {
+        this.isApp = pwaService.determineInstallationMode() === InstallationMode.app;
+    }
 
     get version(): string {
         return VERSION;
@@ -30,8 +35,17 @@ export class AboutPage {
         return aboutUrl;
     }
 
-    get appVersion(): string | undefined {
-        return this.platformService.getAppVersion();
+    get appType(): string | undefined {
+        if (!this.isApp) return undefined;
+
+        const version = this.platformService.getAppVersion();
+        const platform = this.platformService.getAppPlatform();
+
+        if (version === undefined && platform === undefined) return 'Native app';
+        if (version === undefined) return `Native app for ${platform}`;
+        if (platform === undefined) return `Native app version ${version}`;
+
+        return `Native app for ${platform} version ${version}`;
     }
 
     async showChangelog(): Promise<void> {
@@ -56,4 +70,5 @@ export class AboutPage {
     }
 
     loading = true;
+    private readonly isApp: boolean;
 }

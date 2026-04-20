@@ -199,6 +199,10 @@ export class PlatformBackendNativeAppIos implements PlatformBackend {
         return undefined;
     }
 
+    getAppPlatform(): string | undefined {
+        return 'iOS';
+    }
+
     readonly netRpcResult = new Event<NetRpcResultPayload>();
 
     private onNativeMessage = (message: NativeMessage) => {

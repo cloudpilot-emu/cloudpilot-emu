@@ -51,6 +51,10 @@ export class PlatformBrowser implements PlatformBackend {
         return undefined;
     }
 
+    getAppPlatform(): string | undefined {
+        return undefined;
+    }
+
     switchAppChannel(): void {
         throw new Error('channel management not supported');
     }

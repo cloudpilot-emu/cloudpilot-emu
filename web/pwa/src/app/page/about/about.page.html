@@ -26,8 +26,8 @@
     <div class="version">
         <span class="text-selectable">CloudpilotEmu version {{ version }}</span>
         <br />
-        @if (appVersion !== undefined) {
-            <span class="text-selectable">Native app version {{ appVersion }}</span>
+        @if (appType !== undefined) {
+            <span class="text-selectable">{{ appType }}</span>
             <br />
         }
         <a href="javascript:" (click)="showChangelog()">Changelog</a>

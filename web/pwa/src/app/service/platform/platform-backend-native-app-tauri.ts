@@ -119,11 +119,33 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         const version = window.__cpe_shim_tauri_version;
         if (version === undefined) return undefined;
 
-        const major = version >>> 16;
+        const major = (version >>> 16) & 0xff;
         const minor = (version >>> 8) & 0xff;
         const patch = version & 0xff;
 
         return `${major}.${minor}.${patch}`;
+    }
+
+    getAppPlatform(): string | undefined {
+        const version = window.__cpe_shim_tauri_version;
+        if (version === undefined) return undefined;
+
+        switch (version >>> 24) {
+            case 1:
+                return 'MacOS';
+
+            case 2:
+                return 'Window';
+
+            case 3:
+                return 'Linux';
+
+            case 4:
+                return 'Android';
+
+            default:
+                return 'unknown';
+        }
     }
 
     supportsNativeNetworkIntegration(): boolean {
