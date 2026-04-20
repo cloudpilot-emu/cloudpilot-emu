@@ -1,4 +1,8 @@
-# Next 2.1.6
+# Version 2.1.7
+
+- Various shim app fixes.
+
+# Version 2.1.6
 
 - Various shim app fixes.
 - Work around a WebKit bug that randomly causes persistent large audio delays
