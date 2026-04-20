@@ -135,7 +135,7 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
                 return 'MacOS';
 
             case 2:
-                return 'Window';
+                return 'Windows';
 
             case 3:
                 return 'Linux';
