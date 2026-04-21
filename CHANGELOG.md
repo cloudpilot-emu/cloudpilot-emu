@@ -1,3 +1,7 @@
+# Version 2.1.8
+
+- Fix shim app failing to load without network on MacOS.
+
 # Version 2.1.7
 
 - Various shim app fixes.

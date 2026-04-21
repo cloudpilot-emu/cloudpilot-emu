@@ -93,7 +93,9 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         return false;
     }
 
-    async setWorkerRegistered(): Promise<void> {}
+    setWorkerRegistered(workerInstalled: boolean): Promise<void> {
+        return invoke('set_service_worker_installed', { workerInstalled });
+    }
 
     async getWorkerFailed(): Promise<boolean> {
         return false;
