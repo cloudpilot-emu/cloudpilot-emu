@@ -15,6 +15,9 @@ export class PlatformService implements OnDestroy {
         if (this.backend.supportsChannelManagement()) {
             void this.backend.getAppChannel().then((channel) => (this.appChannel = channel));
         }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).__cpeReload = () => this.reload();
     }
 
     ngOnDestroy(): void {
@@ -95,6 +98,14 @@ export class PlatformService implements OnDestroy {
 
     supportsChannelManagement(): boolean {
         return this.backend.supportsChannelManagement();
+    }
+
+    saveFile(content: Uint8Array, name: string): Promise<void> {
+        return this.backend.saveFile(content, name);
+    }
+
+    supportsSaveFile(): boolean {
+        return this.backend.supportsSaveFile();
     }
 
     private backend: PlatformBackend;

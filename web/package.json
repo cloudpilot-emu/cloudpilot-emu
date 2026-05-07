@@ -62,6 +62,8 @@
         "@ionic/angular": "^8.7.3",
         "@ionic/angular-toolkit": "^12.3.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
+        "@tauri-apps/plugin-dialog": "^2.7.1",
+        "@tauri-apps/plugin-fs": "^2.5.1",
         "@trivago/prettier-plugin-sort-imports": "^5.2.2",
         "@types/deep-equal": "^1.0.4",
         "@types/emscripten": "^1.39.10",

@@ -1,6 +1,8 @@
 import { Channel, invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
 import { Event } from 'microevent.ts';
 
 import { AppChannel } from '@pwa/model/AppChannel';
@@ -159,6 +161,20 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
     }
 
     supportsChannelManagement(): boolean {
+        return true;
+    }
+
+    async saveFile(content: Uint8Array, name: string): Promise<void> {
+        const path = await save({ defaultPath: name });
+        if (!path) {
+            console.log('no path selected');
+            return;
+        }
+
+        await writeFile(path, content);
+    }
+
+    supportsSaveFile(): boolean {
         return true;
     }
 

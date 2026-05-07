@@ -30,9 +30,12 @@ export interface PlatformBackend {
     getAppVersion(): string | undefined;
     getAppPlatform(): string | undefined;
 
+    saveFile(content: Uint8Array, name: string): Promise<void>;
+
     supportsNativeNetworkIntegration(): boolean;
     supportsNativeClipboard(): boolean;
     supportsChannelManagement(): boolean;
+    supportsSaveFile(): boolean;
 
     readonly netRpcResult: EventInterface<NetRpcResultPayload>;
 }

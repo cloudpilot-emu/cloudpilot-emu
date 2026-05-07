@@ -203,6 +203,14 @@ export class PlatformBackendNativeAppIos implements PlatformBackend {
         return 'iOS';
     }
 
+    saveFile(): Promise<void> {
+        throw new Error('Native file handling not supported.');
+    }
+
+    supportsSaveFile(): boolean {
+        return false;
+    }
+
     readonly netRpcResult = new Event<NetRpcResultPayload>();
 
     private onNativeMessage = (message: NativeMessage) => {

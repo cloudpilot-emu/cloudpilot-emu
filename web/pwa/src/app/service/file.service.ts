@@ -9,6 +9,7 @@ import { AlertService } from './alert.service';
 import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
 import { LoaderOptions, LoaderService } from './loader.service';
+import { PlatformService } from './platform.service';
 
 const CONTENT_LOADER_DELAY = 100;
 
@@ -28,6 +29,7 @@ export class FileService {
         private alertService: AlertService,
         private fetchService: FetchService,
         private loaderService: LoaderService,
+        private platformService: PlatformService,
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -47,10 +49,21 @@ export class FileService {
     }
 
     saveFile(name: string, content: Uint8Array, type = 'application/octet-stream'): void {
-        this.saveBlob(name, new Blob([content], { type }));
+        if (this.platformService.supportsSaveFile()) {
+            void this.platformService.saveFile(content, name).catch((e) => console.error(e));
+        } else {
+            this.saveBlob(name, new Blob([content], { type }));
+        }
     }
 
     saveBlob(name: string, content: Blob): void {
+        if (this.platformService.supportsSaveFile()) {
+            void content
+                .bytes()
+                .then((data) => this.platformService.saveFile(data, name))
+                .catch((e) => console.error(e));
+        }
+
         const url = URL.createObjectURL(content);
 
         const a = document.createElement('a');
