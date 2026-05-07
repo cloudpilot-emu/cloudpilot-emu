@@ -117,7 +117,7 @@ export class FileService {
                     ),
                 'Saving...',
             );
-        const onFail = () => void this.alertService.errorMessage('Failed to save file');
+        const onFail = () => void this.alertService.errorMessage('Failed to save file.');
 
         this.platformService.saveFile(content, name, { showLoader, onFail }).catch((e) => console.error(e));
     }
