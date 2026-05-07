@@ -5,7 +5,7 @@ import { AppChannel } from '@pwa/model/AppChannel';
 
 import { LifecycleService } from './lifecycle.service';
 import { createNativeAppBackend } from './platform/factory';
-import { NetRpcResultPayload, PlatformBackend } from './platform/platform-backend';
+import { NetRpcResultPayload, PlatformBackend, SaveFileContext } from './platform/platform-backend';
 
 @Injectable({ providedIn: 'root' })
 export class PlatformService implements OnDestroy {
@@ -100,12 +100,12 @@ export class PlatformService implements OnDestroy {
         return this.backend.supportsChannelManagement();
     }
 
-    saveFile(content: Uint8Array, name: string): Promise<void> {
-        return this.backend.saveFile(content, name);
+    saveFile(content: Uint8Array, name: string, context: SaveFileContext): Promise<void> {
+        return this.backend.saveFile(content, name, context);
     }
 
-    supportsSaveFile(): boolean {
-        return this.backend.supportsSaveFile();
+    needsPlatformSaveFile(): boolean {
+        return this.backend.needsPlatformSaveFile();
     }
 
     private backend: PlatformBackend;

@@ -2,13 +2,15 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { save } from '@tauri-apps/plugin-dialog';
-import { writeFile } from '@tauri-apps/plugin-fs';
+import { FileHandle, create as createFile } from '@tauri-apps/plugin-fs';
 import { Event } from 'microevent.ts';
 
 import { AppChannel } from '@pwa/model/AppChannel';
 
 import { LifecycleService } from '../lifecycle.service';
-import { NetRpcResultPayload, PlatformBackend } from './platform-backend';
+import { NetRpcResultPayload, PlatformBackend, SaveFileContext } from './platform-backend';
+
+const FILE_CHUNK_SIZE = 1024 * 1024;
 
 declare global {
     interface Window {
@@ -164,18 +166,48 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         return true;
     }
 
-    async saveFile(content: Uint8Array, name: string): Promise<void> {
-        const path = await save({ defaultPath: name });
-        if (!path) {
-            console.log('no path selected');
-            return;
+    async saveFile(content: Uint8Array, name: string, context: SaveFileContext): Promise<void> {
+        let path;
+
+        try {
+            path = await save({ defaultPath: name });
+            if (!path) {
+                console.log('no path selected');
+                return;
+            }
+        } catch (e) {
+            context.onFail();
+            throw e;
         }
 
-        await writeFile(path, content);
+        let file: FileHandle | undefined;
+        try {
+            await context.showLoader(async (updateProgress) => {
+                file = await createFile(path);
+
+                let bytesWritten = 0;
+                const chunkCopy = new Uint8Array(FILE_CHUNK_SIZE);
+
+                while (bytesWritten < content.length) {
+                    const chunk = content.subarray(bytesWritten, bytesWritten + FILE_CHUNK_SIZE);
+                    chunkCopy.set(chunk);
+
+                    await file.write(chunkCopy.subarray(0, chunk.length));
+
+                    bytesWritten += chunk.length;
+                    updateProgress(bytesWritten / content.length);
+                }
+            });
+        } catch (e) {
+            context.onFail();
+            throw e;
+        } finally {
+            if (file) await file.close();
+        }
     }
 
-    supportsSaveFile(): boolean {
-        return true;
+    needsPlatformSaveFile(): boolean {
+        return this.getVersionCode() >= 0x000204;
     }
 
     readonly netRpcResult = new Event<NetRpcResultPayload>();
@@ -198,6 +230,10 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
 
         this.rpcResultChannel.onmessage = (payload) =>
             this.netRpcResult.dispatch({ sessionId: payload.session_id, rpcData: Uint8Array.from(payload.rpc_data) });
+    }
+
+    private getVersionCode(): number {
+        return window.__cpe_shim_tauri_version === undefined ? 0 : window.__cpe_shim_tauri_version & 0xffffff;
     }
 
     private isDestroyed = false;

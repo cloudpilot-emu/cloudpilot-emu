@@ -10,6 +10,7 @@ import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
 import { LoaderOptions, LoaderService } from './loader.service';
 import { PlatformService } from './platform.service';
+import { SaveFileContext } from './platform/platform-backend';
 
 const CONTENT_LOADER_DELAY = 100;
 
@@ -49,19 +50,17 @@ export class FileService {
     }
 
     saveFile(name: string, content: Uint8Array, type = 'application/octet-stream'): void {
-        if (this.platformService.supportsSaveFile()) {
-            void this.platformService.saveFile(content, name).catch((e) => console.error(e));
+        if (this.platformService.needsPlatformSaveFile()) {
+            this.platformSaveFile(content, name);
         } else {
             this.saveBlob(name, new Blob([content], { type }));
         }
     }
 
     saveBlob(name: string, content: Blob): void {
-        if (this.platformService.supportsSaveFile()) {
-            void content
-                .bytes()
-                .then((data) => this.platformService.saveFile(data, name))
-                .catch((e) => console.error(e));
+        if (this.platformService.needsPlatformSaveFile()) {
+            void content.bytes().then((data) => this.platformSaveFile(data, name));
+            return;
         }
 
         const url = URL.createObjectURL(content);
@@ -107,6 +106,20 @@ export class FileService {
         });
 
         return;
+    }
+
+    private platformSaveFile(content: Uint8Array, name: string): void {
+        const showLoader: SaveFileContext['showLoader'] = (fn) =>
+            this.loaderService.showWhile(
+                (handle) =>
+                    fn((progress) =>
+                        this.loaderService.updateMessage(handle, `Saving (${Math.round(progress * 100)}%)...`),
+                    ),
+                'Saving...',
+            );
+        const onFail = () => void this.alertService.errorMessage('Failed to save file');
+
+        this.platformService.saveFile(content, name, { showLoader, onFail }).catch((e) => console.error(e));
     }
 
     private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {

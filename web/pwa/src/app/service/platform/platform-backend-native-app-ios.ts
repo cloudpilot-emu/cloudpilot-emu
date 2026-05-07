@@ -207,7 +207,7 @@ export class PlatformBackendNativeAppIos implements PlatformBackend {
         throw new Error('Native file handling not supported.');
     }
 
-    supportsSaveFile(): boolean {
+    needsPlatformSaveFile(): boolean {
         return false;
     }
 

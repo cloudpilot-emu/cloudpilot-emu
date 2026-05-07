@@ -7,6 +7,10 @@ export interface NetRpcResultPayload {
     rpcData: Uint8Array;
 }
 
+export interface SaveFileContext {
+    showLoader: <T>(fn: (updateProgress: (progress: number) => void) => Promise<T>) => Promise<T>;
+    onFail: () => void;
+}
 export interface PlatformBackend {
     teardown(): void;
 
@@ -30,12 +34,12 @@ export interface PlatformBackend {
     getAppVersion(): string | undefined;
     getAppPlatform(): string | undefined;
 
-    saveFile(content: Uint8Array, name: string): Promise<void>;
+    saveFile(content: Uint8Array, name: string, context: SaveFileContext): Promise<void>;
 
     supportsNativeNetworkIntegration(): boolean;
     supportsNativeClipboard(): boolean;
     supportsChannelManagement(): boolean;
-    supportsSaveFile(): boolean;
+    needsPlatformSaveFile(): boolean;
 
     readonly netRpcResult: EventInterface<NetRpcResultPayload>;
 }
