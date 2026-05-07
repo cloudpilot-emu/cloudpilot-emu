@@ -2,7 +2,7 @@ import { Channel, invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
 import { readText as clipboardReadText, writeText as clipboardWriteText } from '@tauri-apps/plugin-clipboard-manager';
 import { save } from '@tauri-apps/plugin-dialog';
-import { FileHandle, create as createFile } from '@tauri-apps/plugin-fs';
+import { FileHandle, open as openFile } from '@tauri-apps/plugin-fs';
 import { Event } from 'microevent.ts';
 
 import { AppChannel } from '@pwa/model/AppChannel';
@@ -183,7 +183,7 @@ export class PlatformBackendNativeAppTauri implements PlatformBackend {
         let file: FileHandle | undefined;
         try {
             await context.showLoader(async (updateProgress) => {
-                file = await createFile(path);
+                file = await openFile(path, { write: true, truncate: true, create: true });
 
                 let bytesWritten = 0;
                 const chunkCopy = new Uint8Array(FILE_CHUNK_SIZE);
