@@ -43,6 +43,7 @@
 #include "cp15.h"
 #include "cputil.h"
 #include "device.h"
+#include "get_emu_time.h"
 #include "keys.h"
 #include "mem.h"
 #include "memory_buffer.h"
@@ -205,34 +206,6 @@ struct SoC {
 };
 
 extern "C" {
-static uint_fast16_t socUartPrvRead(void *userData) {
-    uint_fast16_t v;
-    int r;
-
-    r = socExtSerialReadChar();
-
-    if (r == CHAR_CTL_C)
-        v = UART_CHAR_BREAK;
-    else if (r == CHAR_NONE)
-        v = UART_CHAR_NONE;
-    else if (r >= 0x100)
-        v = UART_CHAR_NONE;  // we canot send this char!!!
-    else
-        v = r;
-
-    return v;
-}
-}
-
-extern "C" {
-static void socUartPrvWrite(uint_fast16_t chr, void *userData) {
-    if (chr == UART_CHAR_NONE) return;
-
-    socExtSerialWriteChar(chr);
-}
-}
-
-extern "C" {
 static void socPrvReschedule(void *ctx, uint32_t task) {
     struct SoC *soc = (struct SoC *)ctx;
 
@@ -303,6 +276,12 @@ static void socAllocateBuffers(SoC *soc) {
     if (!success) ERR("failed to allocate memory buffers");
 }
 
+uint64_t socPrvGetTime(void *ctx) {
+    SoC *soc = (struct SoC *)ctx;
+
+    return soc->scheduler->GetTime();
+}
+
 SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const uint32_t romSize,
              uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev) {
     RomInfo5 romInfo(romData, romSize);
@@ -311,6 +290,7 @@ SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const
     struct SocPeriphs sp = {};
 
     struct Reschedule rescheduleSoc = {.rescheduleCb = socPrvReschedule, .ctx = soc};
+    struct GetEmuTime getEmuTime = {.getTimeF = socPrvGetTime, .userdata = soc};
 
     memset(soc, 0, sizeof(*soc));
     soc->socRev = socRev;
@@ -526,16 +506,14 @@ SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const
     sp.uarts[2] = soc->stUart;
     sp.uarts[3] = soc->btUart;
 
-    soc->dev = deviceSetup(deviceType, &sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize,
-                           &soc->bufferNand);
+    soc->dev = deviceSetup(deviceType, &sp, rescheduleSoc, getEmuTime, soc->kp, soc->vSD,
+                           nandContent, nandSize, &soc->bufferNand);
     if (!soc->dev) ERR("Cannot init device\n");
 
     soc->vSD = vsdInit(sdCardRead, sdCardWrite, 0);
     socSdEject(soc);
 
     soc->nand = sp.nand;
-
-    if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
 
     soc->powerOnState = new Savestate<ChunkType>();
     soc->powerOnState->Save(*soc);

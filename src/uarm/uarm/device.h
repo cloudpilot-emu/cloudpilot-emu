@@ -10,6 +10,7 @@
 #include "ROM.h"
 #include "SoC.h"
 #include "device_type5.h"
+#include "get_emu_time.h"
 #include "keys.h"
 #include "mem.h"
 #include "nand.h"
@@ -60,6 +61,7 @@ struct SocPeriphs {
     // out from deviceSetup
     struct NAND *nand;
     struct SocUart *dbgUart;
+    struct SocUart *btUart;
 };
 
 enum RamTermination {  // what's after ram in phys map? (some devices probe)
@@ -79,9 +81,9 @@ uint_fast8_t deviceGetSocRev(void);
 
 // device handling
 struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
-                           struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
-                           uint8_t *nandContent, size_t nandSize,
-                           const struct MemoryBuffer *nandPageBuffer);
+                           struct Reschedule reschedule, struct GetEmuTime getEmutTime,
+                           struct Keypad *kp, struct VSD *vsd, uint8_t *nandContent,
+                           size_t nandSize, const struct MemoryBuffer *nandPageBuffer);
 void deviceKey(struct Device *dev, uint32_t key, bool down);
 void devicePeriodic(struct Device *dev, uint32_t tier);
 void devicePcmPeriodic(struct Device *dev);

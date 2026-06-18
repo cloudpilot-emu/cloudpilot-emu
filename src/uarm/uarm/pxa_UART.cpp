@@ -37,7 +37,9 @@ struct SocUart {
 
     SocUartReadF readF;
     SocUartWriteF writeF;
-    void *accessFuncsData;
+    SocUartClientIsActive clientIsActiveF;
+    SocUartClientTick clientTickF;
+    void *callbackData;
 
     struct UartFifo TX, RX;
 
@@ -171,14 +173,14 @@ static void socUartPrvDefaultWrite(uint_fast16_t chr,
 static uint16_t socUartPrvGetchar(struct SocUart *uart) {
     SocUartReadF func = uart->readF;
 
-    void *data = (func == socUartPrvDefaultRead) ? uart : uart->accessFuncsData;
+    void *data = (func == socUartPrvDefaultRead) ? uart : uart->callbackData;
 
     return func(data);
 }
 
 static void socUartPrvPutchar(struct SocUart *uart, uint_fast16_t chr) {
     SocUartWriteF func = uart->writeF;
-    void *data = (func == socUartPrvDefaultWrite) ? uart : uart->accessFuncsData;
+    void *data = (func == socUartPrvDefaultWrite) ? uart : uart->callbackData;
 
     func(chr, data);
 }
@@ -445,6 +447,7 @@ static bool socUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
 }
 
 void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF writeF,
+                     SocUartClientIsActive clientIsActiveF, SocUartClientTick clientTickF,
                      void *userData) {
     if (!readF)
         readF = socUartPrvDefaultRead;  // these are special funcs since they get their own private
@@ -453,7 +456,9 @@ void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF wri
 
     uart->readF = readF;
     uart->writeF = writeF;
-    uart->accessFuncsData = userData;
+    uart->clientIsActiveF = clientIsActiveF;
+    uart->clientTickF = clientTickF;
+    uart->callbackData = userData;
 }
 
 struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct SocIc *ic,
@@ -474,7 +479,7 @@ struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule
     socUartPrvFifoFlush(&uart->TX);
     socUartPrvFifoFlush(&uart->RX);
 
-    socUartSetFuncs(uart, NULL, NULL, NULL);
+    socUartSetFuncs(uart, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     if (!memRegionAdd(physMem, baseAddr, PXA_UART_SIZE, socUartPrvMemAccessF, uart))
         ERR("cannot add UART at 0x%08x to MEM\n", baseAddr);
@@ -486,6 +491,8 @@ void socUartProcess(struct SocUart *uart)  // send and rceive up to one characte
 {
     uint_fast16_t v;
     uint_fast8_t t;
+
+    if (uart->clientTickF) uart->clientTickF(uart->callbackData);
 
     // first process sending (if any)
     if (!(uart->LSR & UART_LSR_TEMT)) {
@@ -618,7 +625,10 @@ static void socUartPrvRecalc(struct SocUart *uart) {
     socUartPrvIrq(uart, errorSet);
 }
 
-bool socUartTaskRequired(struct SocUart *uart) { return (uart->LSR & UART_LSR_TEMT) == 0; }
+bool socUartTaskRequired(struct SocUart *uart) {
+    return (uart->clientIsActiveF ? uart->clientIsActiveF(uart->callbackData) : false) ||
+           (uart->LSR & UART_LSR_TEMT) == 0;
+}
 
 template <typename T>
 void pxaUartSave(SocUart *uart, T &savestate, uint32_t index) {

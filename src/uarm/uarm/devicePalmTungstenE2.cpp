@@ -7,6 +7,7 @@
 #include "device.h"
 #include "mmiodev_DirectNAND.h"
 #include "savestate/savestateAll.h"
+#include "uartdev_bcm2035.h"
 
 // clang-format off
 /*
@@ -103,6 +104,7 @@
 struct Device {
     struct WM9712L *wm9712L;
     struct DirectNAND *nand;
+    struct Bcm2035 *bcm2035;
     struct SocGpio *gpio;
 
     struct Reschedule reschedule;
@@ -128,9 +130,9 @@ static void devicePrvReschedule(void *ctx, uint32_t task) {
 }
 
 struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
-                           struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
-                           uint8_t *nandContent, size_t nandSize,
-                           const struct MemoryBuffer *pageBuffer) {
+                           struct Reschedule reschedule, struct GetEmuTime getTime,
+                           struct Keypad *kp, struct VSD *vsd, uint8_t *nandContent,
+                           size_t nandSize, const struct MemoryBuffer *pageBuffer) {
     static const struct NandSpecs nandSpecs = {
         .bytesPerPage = 528,
         .blocksPerDevice = 2048,
@@ -155,6 +157,8 @@ struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
 
     dev->wm9712L = wm9712LInit(sp->ac97, sp->gpio, 50);
     if (!dev->wm9712L) ERR("Cannot init WM9712L");
+
+    dev->bcm2035 = bcm2035Init(getTime);
 
     dev->nand =
         directNandInit(sp->mem, deviceReschedule, 0x04000002UL, 0x04000004UL, 0x04000000UL,
@@ -200,9 +204,12 @@ struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
 
     deviceSetSdCardInserted(dev, false);
 
-    sp->dbgUart = sp->uarts[1];  // HWUART
+    // yes, this is really swapped
+    sp->dbgUart = sp->uarts[3];  // BTUART
+    sp->btUart = sp->uarts[1];   // HWUART
 
     sp->nand = directNandGetNand(dev->nand);
+    bcm2035RegisterWithUart(dev->bcm2035, sp->btUart);
 
     struct DeviceDisplayConfiguration displayConfiguration;
     deviceGetDisplayConfiguration(type, &displayConfiguration);

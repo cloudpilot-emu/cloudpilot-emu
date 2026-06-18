@@ -90,6 +90,7 @@ SOURCE_CXX =		 					\
 	uarm/ac97dev_WM9712L.cpp			\
 	uarm/nand.cpp 						\
 	uarm/mmiodev_DirectNAND.cpp			\
+	uarm/uartdev_bcm2035.cpp			\
 	uarm/vSD.cpp						\
 	uarm/devicePalmTungstenE2.cpp 		\
 	uarm/cp15.cpp 						\
