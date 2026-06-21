@@ -2,19 +2,23 @@
 
 #include <cstdio>
 
+#include "scheduler.h"
+
 constexpr uint8_t CMD_ENTER_UPLOAD[] = {0x01, 0x2e, 0xfc, 0x00};
 constexpr uint8_t CMD_ENTER_UPLOAD_RESPONSE[] = {0x04, 0x0e, 0x04, 0x01, 0x2e, 0xfc, 0x00};
-constexpr uint8_t INVALID_ACK_UPLOAD_MODE_RESPONSE[] = {0x34, 0x31};
+constexpr uint8_t INVALID_ACK_UPLOAD_MODE_RESPONSE[] = {0xff, 0xff};
 
-constexpr uint64_t CMD_ENTER_UPLOAD_RESPONSE_DELAY_NSEC = 100000000;  // 50 msec
-constexpr uint64_t ACK_UPLOAD_MODE_DELAY_NSEC = 100000000;            // 50 msec
+constexpr uint64_t CMD_ENTER_UPLOAD_RESPONSE_DELAY_NSEC = 10_msec;  // 50 msec
+constexpr uint64_t ACK_UPLOAD_MODE_DELAY_NSEC = 150_msec;           // 50 msec
+constexpr uint64_t WAIT_FOR_RECEIVE_ACK_DELAY = 150_msec;           // 50 msec
 
 enum class State {
     receiveUploadCmd,
     waitForSendCmdEnterUploadResponse,
     sendCmdUploadResponse,
     waitForSendAckUploadMode,
-    sendAckUploadMode
+    sendAckUploadMode,
+    waitForReceiveAckDelay
 };
 
 enum class Mode { send, receive, wait };
@@ -79,6 +83,9 @@ static void bcm2035SetState(Bcm2035* bcm2035, State state) {
             bcm2035SetModeSend(bcm2035, INVALID_ACK_UPLOAD_MODE_RESPONSE,
                                sizeof(INVALID_ACK_UPLOAD_MODE_RESPONSE));
             break;
+
+        case State::waitForReceiveAckDelay:
+            bcm2035SetModeWait(bcm2035, WAIT_FOR_RECEIVE_ACK_DELAY);
     }
 
     bcm2035->state = state;
@@ -87,23 +94,27 @@ static void bcm2035SetState(Bcm2035* bcm2035, State state) {
 static State transitionNext(State currentState) {
     switch (currentState) {
         case State::receiveUploadCmd:
-            printf("upload command received\n");
+            fprintf(stderr, "BCM2035: upload command received\n");
             return State::waitForSendCmdEnterUploadResponse;
 
         case State::waitForSendCmdEnterUploadResponse:
-            printf("sending EnterUpload response\n");
+            fprintf(stderr, "BCM2035:sending EnterUpload response\n");
             return State::sendCmdUploadResponse;
 
         case State::sendCmdUploadResponse:
-            printf("response sent off\n");
+            fprintf(stderr, "BCM2035:response sent off\n");
             return State::waitForSendAckUploadMode;
 
         case State::waitForSendAckUploadMode:
-            printf("sending ACK\n");
+            fprintf(stderr, "BCM2035:sending ACK\n");
             return State::sendAckUploadMode;
 
         case State::sendAckUploadMode:
-            printf("ACK sent off\n");
+            fprintf(stderr, "BCM2035: ACK sent off\n");
+            return State::waitForReceiveAckDelay;
+
+        case State::waitForReceiveAckDelay:
+            fprintf(stderr, "BCM2035: resetting state machine\n");
             return State::receiveUploadCmd;
     }
 }
@@ -114,7 +125,6 @@ static uint_fast16_t bcm2035ReadF(void* userData) {
     if (bcm2035->mode != Mode::send) return UART_CHAR_NONE;
 
     uint8_t c = bcm2035->buffer[bcm2035->bufferIndex++];
-    printf("BCM2035 sent 0x%02x\n", (int)c);
 
     if (bcm2035->bufferIndex >= bcm2035->bufferSize) {
         bcm2035SetState(bcm2035, transitionNext(bcm2035->state));
@@ -124,7 +134,6 @@ static uint_fast16_t bcm2035ReadF(void* userData) {
 }
 
 static void bcm2035WriteF(uint_fast16_t chr, void* userData) {
-    printf("BCM2035 received 0x%04x\n", chr);
     Bcm2035* bcm2035 = reinterpret_cast<Bcm2035*>(userData);
 
     if (bcm2035->mode != Mode::receive) return;
