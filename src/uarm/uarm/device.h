@@ -81,7 +81,7 @@ uint_fast8_t deviceGetSocRev(void);
 
 // device handling
 struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
-                           struct Reschedule reschedule, struct GetEmuTime getEmutTime,
+                           struct Reschedule reschedule, struct GetEmuTime getEmuTime,
                            struct Keypad *kp, struct VSD *vsd, uint8_t *nandContent,
                            size_t nandSize, const struct MemoryBuffer *nandPageBuffer);
 void deviceKey(struct Device *dev, uint32_t key, bool down);

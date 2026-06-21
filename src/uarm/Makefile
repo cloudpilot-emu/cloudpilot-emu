@@ -119,9 +119,8 @@ SOURCE_CXX_EMCC = 						\
 	web/uarm.cpp						\
 	web/bridge.cpp
 
-SOURCE_C_TEST = 						\
-	$(SOURCE_C) 						\
-	test/stub.c
+SOURCE_C_TEST = $(SOURCE_C)
+
 SOURCE_CXX_TEST =						\
 	$(SOURCE_CXX)						\
 	test/scheduler.cpp 					\

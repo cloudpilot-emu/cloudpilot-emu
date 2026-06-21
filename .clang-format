@@ -5,3 +5,4 @@ NamespaceIndentation: All
 IndentPPDirectives: BeforeHash
 DerivePointerAlignment: true
 PointerAlignment: Right
+InsertNewlineAtEOF: true

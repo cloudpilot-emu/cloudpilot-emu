@@ -46,17 +46,6 @@ struct Options {
     bool smallWindow;
 };
 
-extern "C" int socExtSerialReadChar(void) { return CHAR_NONE; }
-
-extern "C" void socExtSerialWriteChar(int chr) {
-    if (!(chr & 0xFF00))
-        printf("%c", chr);
-    else
-        printf("<<~~ EC_0x%x ~~>>", chr);
-
-    fflush(stdout);
-}
-
 namespace {
     constexpr size_t AUDIO_QUEUE_SIZE = 44100 / MAIN_LOOP_FPS * 10;
     constexpr size_t NAND_SIZE = 34603008;

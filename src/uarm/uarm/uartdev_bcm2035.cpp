@@ -11,9 +11,9 @@ constexpr uint8_t CMD_ENTER_UPLOAD[] = {0x01, 0x2e, 0xfc, 0x00};
 constexpr uint8_t CMD_ENTER_UPLOAD_RESPONSE[] = {0x04, 0x0e, 0x04, 0x01, 0x2e, 0xfc, 0x00};
 constexpr uint8_t INVALID_ACK_UPLOAD_MODE_RESPONSE[] = {0xff, 0xff};
 
-constexpr uint64_t CMD_ENTER_UPLOAD_RESPONSE_DELAY_NSEC = 10_msec;  // 50 msec
-constexpr uint64_t ACK_UPLOAD_MODE_DELAY_NSEC = 150_msec;           // 50 msec
-constexpr uint64_t WAIT_FOR_RECEIVE_ACK_DELAY = 150_msec;           // 50 msec
+constexpr uint64_t CMD_ENTER_UPLOAD_RESPONSE_DELAY = 10_msec;
+constexpr uint64_t ACK_UPLOAD_MODE_DELAY = 150_msec;
+constexpr uint64_t WAIT_FOR_RECEIVE_ACK = 150_msec;
 
 enum class State : uint8_t {
     receiveUploadCmd,
@@ -85,7 +85,7 @@ static void bcm2035SetState(Bcm2035* bcm2035, State state) {
             break;
 
         case State::waitForSendCmdEnterUploadResponse:
-            bcm2035SetModeWait(bcm2035, CMD_ENTER_UPLOAD_RESPONSE_DELAY_NSEC);
+            bcm2035SetModeWait(bcm2035, CMD_ENTER_UPLOAD_RESPONSE_DELAY);
             break;
 
         case State::sendCmdUploadResponse:
@@ -94,7 +94,7 @@ static void bcm2035SetState(Bcm2035* bcm2035, State state) {
             break;
 
         case State::waitForSendAckUploadMode:
-            bcm2035SetModeWait(bcm2035, ACK_UPLOAD_MODE_DELAY_NSEC);
+            bcm2035SetModeWait(bcm2035, ACK_UPLOAD_MODE_DELAY);
             break;
 
         case State::sendAckUploadMode:
@@ -103,7 +103,7 @@ static void bcm2035SetState(Bcm2035* bcm2035, State state) {
             break;
 
         case State::waitForReceiveAckDelay:
-            bcm2035SetModeWait(bcm2035, WAIT_FOR_RECEIVE_ACK_DELAY);
+            bcm2035SetModeWait(bcm2035, WAIT_FOR_RECEIVE_ACK);
     }
 
     bcm2035->state = state;
@@ -116,15 +116,15 @@ static State transitionNext(State currentState) {
             return State::waitForSendCmdEnterUploadResponse;
 
         case State::waitForSendCmdEnterUploadResponse:
-            fprintf(stderr, "BCM2035:sending EnterUpload response\n");
+            fprintf(stderr, "BCM2035: sending EnterUpload response\n");
             return State::sendCmdUploadResponse;
 
         case State::sendCmdUploadResponse:
-            fprintf(stderr, "BCM2035:response sent off\n");
+            fprintf(stderr, "BCM2035: response sent off\n");
             return State::waitForSendAckUploadMode;
 
         case State::waitForSendAckUploadMode:
-            fprintf(stderr, "BCM2035:sending ACK\n");
+            fprintf(stderr, "BCM2035: sending ACK\n");
             return State::sendAckUploadMode;
 
         case State::sendAckUploadMode:
@@ -134,6 +134,9 @@ static State transitionNext(State currentState) {
         case State::waitForReceiveAckDelay:
             fprintf(stderr, "BCM2035: resetting state machine\n");
             return State::receiveUploadCmd;
+
+        default:
+            ERR("unreachable");
     }
 }
 
@@ -213,6 +216,7 @@ void bcm2035Load(struct Bcm2035* bcm2035, T& loader) {
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
+    bcm2035->DoSaveLoad(helper);
 
     switch (bcm2035->state) {
         case State::receiveUploadCmd:

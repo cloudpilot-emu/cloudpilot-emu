@@ -12,8 +12,6 @@ extern "C" {
 
 struct Bcm2035;
 
-typedef uint64_t (*GetTimeF)(void* userdata);
-
 struct Bcm2035* bcm2035Init(GetEmuTime getTime);
 
 void bcm2035RegisterWithUart(struct Bcm2035* bcm2035, SocUart* uart);
