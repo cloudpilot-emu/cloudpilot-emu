@@ -110,7 +110,7 @@ void qfree(void **root) {
 
 int min(int a, int b) { return a < b ? a : b; }
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 static int vasprintf(char **strp, const char *fmt, va_list va) {
     int length;
     va_list vacopy;

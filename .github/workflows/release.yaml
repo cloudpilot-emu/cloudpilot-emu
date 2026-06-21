@@ -6,7 +6,7 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+"
 
 env:
-  EM_VERSION: 4.0.10
+  EM_VERSION: 6.0.0
   NODE_VERSION: 24
   EM_CACHE_FOLDER: emsdk-cache
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git

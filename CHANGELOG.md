@@ -1,3 +1,8 @@
+# Version 2.2.0
+
+- Stub bluetooth controller on E2 sufficiently to keep the device from locking
+  up if it is enabled.
+
 # Version 2.1.9
 
 - Fix saving failes in shim app.
