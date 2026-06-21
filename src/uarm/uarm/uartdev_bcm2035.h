@@ -20,6 +20,13 @@ void bcm2035RegisterWithUart(struct Bcm2035* bcm2035, SocUart* uart);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void bcm2035Save(struct Bcm2035* bcm2035, T& savestate);
+
+template <typename T>
+void bcm2035Load(struct Bcm2035* bcm2035, T& loader);
+
 #endif
 
 #endif  // _UART_BCM2035_H_

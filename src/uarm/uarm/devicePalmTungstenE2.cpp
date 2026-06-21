@@ -269,12 +269,14 @@ template <typename T>
 void deviceSave(struct Device *dev, T &savestate) {
     wm9712Lsave(dev->wm9712L, savestate);
     directNandSave(dev->nand, savestate);
+    bcm2035Save(dev->bcm2035, savestate);
 }
 
 template <typename T>
 void deviceLoad(struct Device *dev, T &loader) {
     wm9712Load(dev->wm9712L, loader);
     directNandLoad(dev->nand, loader);
+    bcm2035Load(dev->bcm2035, loader);
 }
 
 template void deviceSave<Savestate<ChunkType>>(Device *dev, Savestate<ChunkType> &savestate);

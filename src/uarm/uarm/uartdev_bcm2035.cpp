@@ -2,7 +2,10 @@
 
 #include <cstdio>
 
+#include "savestate/savestateAll.h"
 #include "scheduler.h"
+
+#define SAVESTATE_VERSION 0
 
 constexpr uint8_t CMD_ENTER_UPLOAD[] = {0x01, 0x2e, 0xfc, 0x00};
 constexpr uint8_t CMD_ENTER_UPLOAD_RESPONSE[] = {0x04, 0x0e, 0x04, 0x01, 0x2e, 0xfc, 0x00};
@@ -12,7 +15,7 @@ constexpr uint64_t CMD_ENTER_UPLOAD_RESPONSE_DELAY_NSEC = 10_msec;  // 50 msec
 constexpr uint64_t ACK_UPLOAD_MODE_DELAY_NSEC = 150_msec;           // 50 msec
 constexpr uint64_t WAIT_FOR_RECEIVE_ACK_DELAY = 150_msec;           // 50 msec
 
-enum class State {
+enum class State : uint8_t {
     receiveUploadCmd,
     waitForSendCmdEnterUploadResponse,
     sendCmdUploadResponse,
@@ -21,7 +24,7 @@ enum class State {
     waitForReceiveAckDelay
 };
 
-enum class Mode { send, receive, wait };
+enum class Mode : uint8_t { send, receive, wait };
 
 struct Bcm2035 {
     GetEmuTime getTime;
@@ -30,11 +33,26 @@ struct Bcm2035 {
     Mode mode;
 
     const uint8_t* buffer;
-    size_t bufferSize;
-    size_t bufferIndex;
+    uint32_t bufferSize;
+    uint32_t bufferIndex;
 
     uint64_t delay;
     uint64_t transitionTimestamp;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        uint8_t state8 = static_cast<uint8_t>(state);
+        uint8_t mode8 = static_cast<uint8_t>(mode);
+
+        chunkHelper.Do(typename T::Pack8() << state8 << mode8)
+            .Do32(bufferSize)
+            .Do32(bufferIndex)
+            .Do64(delay)
+            .Do64(transitionTimestamp);
+
+        state = static_cast<State>(state8);
+        mode = static_cast<Mode>(mode8);
+    }
 };
 
 static void bcm2035SetModeSend(Bcm2035* bcm2035, const uint8_t* buffer, size_t bufferSize) {
@@ -179,3 +197,43 @@ void bcm2035RegisterWithUart(struct Bcm2035* bcm2035, SocUart* uart) {
     socUartSetFuncs(uart, bcm2035ReadF, bcm2035WriteF, bcm2035ClientIsActive, bcm2035ClientTick,
                     bcm2035);
 }
+
+template <typename T>
+void bcm2035Save(struct Bcm2035* bcm2035, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::bcm2035, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    bcm2035->DoSaveLoad(helper);
+}
+
+template <typename T>
+void bcm2035Load(struct Bcm2035* bcm2035, T& loader) {
+    auto chunk = loader.GetChunk(ChunkType::bcm2035, SAVESTATE_VERSION, "bcm2035");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+
+    switch (bcm2035->state) {
+        case State::receiveUploadCmd:
+            bcm2035->buffer = CMD_ENTER_UPLOAD;
+            break;
+
+        case State::sendCmdUploadResponse:
+            bcm2035->buffer = CMD_ENTER_UPLOAD_RESPONSE;
+            break;
+
+        case State::sendAckUploadMode:
+            bcm2035->buffer = INVALID_ACK_UPLOAD_MODE_RESPONSE;
+            break;
+
+        default:
+            break;
+    }
+}
+
+template void bcm2035Save<Savestate<ChunkType>>(Bcm2035* bcm2035, Savestate<ChunkType>& savestate);
+template void bcm2035Save<SavestateProbe<ChunkType>>(Bcm2035* bcm2035,
+                                                     SavestateProbe<ChunkType>& savestate);
+template void bcm2035Load<SavestateLoader<ChunkType>>(Bcm2035* bcm2035,
+                                                      SavestateLoader<ChunkType>& loader);
