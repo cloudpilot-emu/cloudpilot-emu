@@ -1,3 +1,7 @@
+# Version 2.2.1
+
+- Minor documentation update.
+
 # Version 2.2.0
 
 - Stub bluetooth controller on E2 sufficiently to keep the device from locking
