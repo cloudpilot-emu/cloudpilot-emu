@@ -392,6 +392,15 @@ int main(int argc, const char** argv) {
                        .ramSize = program.present<unsigned int>("--ram-size"),
                        .smallWindow = program.get<bool>("--small-window")};
 
+#ifndef GDB_STUB_ENABLED
+    if (options.gdbPort.has_value()) {
+        cerr << "cp-uarm was built without GDB stub support." << endl;
+        cerr << "Rebuild the native CLI with -DGDB_STUB_ENABLED" << endl;
+        cerr << "for both CFLAGS_NATIVE_EXTRA and CXXFLAGS_NATIVE_EXTRA in src/Makefile.local," << endl;
+        exit(1);
+    }
+#endif
+
     logEnable();
 
     if (!run(options)) exit(1);
