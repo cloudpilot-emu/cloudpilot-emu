@@ -2,9 +2,9 @@
 
 #include "ROM.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "CPEndian.h"
 #include "cputil.h"
@@ -88,7 +88,7 @@ struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void *data, const uint3
     rom->data = (uint32_t *)data;
     rom->size = size;
 
-    rom->dataPeephole = malloc(size);
+    rom->dataPeephole = reinterpret_cast<uint32_t *>(malloc(size));
     if (!rom->dataPeephole) ERR("failed to allocate shadow buffer for peephole optimizations");
 
     memcpy(rom->dataPeephole, rom->data, rom->size);

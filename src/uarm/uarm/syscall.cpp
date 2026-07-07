@@ -1,6 +1,6 @@
 #include "syscall.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 const char* getSyscallName(uint32_t syscall) {
     switch (syscall) {

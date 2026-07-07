@@ -2,8 +2,8 @@
 
 #include "RAM.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "CPEndian.h"
 #include "SoC.h"

@@ -1,6 +1,6 @@
 #include "pace.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "CPEndian.h"
 #include "cputil.h"
@@ -15,56 +15,25 @@
 
 #define SAVESTATE_VERSION 1
 
-static struct ArmMem* mem = NULL;
-static struct ArmMmu* mmu = NULL;
-
-static uint_fast8_t fsr = 0;
-static uint32_t lastAddr = 0;
-static bool wasWrite = false;
-
-static uint32_t pendingStatus = 0;
-static uint32_t statePtr;
-static bool priviledged = false;
-
+namespace {
 #ifdef __EMSCRIPTEN__
-static cpuop_func* cpufunctbl_base;
+    cpuop_func* cpufunctbl_base;
 #else
-static cpuop_func* cpufunctbl[65536];  // (normally in newcpu.c)
+    cpuop_func* cpufunctbl[65536];  // (normally in newcpu.c)
 #endif
 
-static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
-    if (fsr != 0) return 0;
+    struct ArmMem* mem = NULL;
+    struct ArmMmu* mmu = NULL;
 
-    lastAddr = addr;
-    wasWrite = false;
+    uint_fast8_t fsr = 0;
+    uint32_t lastAddr = 0;
+    bool wasWrite = false;
 
-    MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+    uint32_t pendingStatus = 0;
+    uint32_t statePtr;
+    bool priviledged = false;
 
-    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
-        return 0;
-    }
-
-    const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-
-    uint32_t result = 0;
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-    bool ok = memAccess(mem, pa, size, false, reinterpret_cast<uint8_t*>(&result) + 4 - size);
-#else
-    bool ok = memAccess(mem, pa, size, false, &result);
-#endif
-
-    if (!ok) {
-        fsr = 10;  // external abort on non-linefetch
-        return 0;
-    }
-
-    return result;
-}
-
-static uint32_t uae_get32_split(uint32_t addr) {
-    if ((addr & 0x3ff) <= (0x3ff - 4)) {
+    uint32_t pace_get_le(uint32_t addr, uint8_t size) {
         if (fsr != 0) return 0;
 
         lastAddr = addr;
@@ -78,25 +47,122 @@ static uint32_t uae_get32_split(uint32_t addr) {
         }
 
         const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-        uint32_t val_le;
 
-        if (!memAccess(mem, pa, 2, false, &val_le)) {
-            fsr = 10;
+        uint32_t result = 0;
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+        bool ok = memAccess(mem, pa, size, false, reinterpret_cast<uint8_t*>(&result) + 4 - size);
+#else
+        bool ok = memAccess(mem, pa, size, false, &result);
+#endif
+
+        if (!ok) {
+            fsr = 10;  // external abort on non-linefetch
             return 0;
         }
 
-        lastAddr += 2;
-
-        if (!memAccess(mem, pa + 2, 2, false, (uint8_t*)(&val_le) + 2)) {
-            fsr = 10;
-            return 0;
-        }
-
-        return htobe32(val_le);
-    } else {
-        return htobe32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
+        return result;
     }
-}
+
+    uint32_t uae_get32_split(uint32_t addr) {
+        if ((addr & 0x3ff) <= (0x3ff - 4)) {
+            if (fsr != 0) return 0;
+
+            lastAddr = addr;
+            wasWrite = false;
+
+            MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+
+            if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+                fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+                return 0;
+            }
+
+            const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+            uint32_t val_le;
+
+            if (!memAccess(mem, pa, 2, false, &val_le)) {
+                fsr = 10;
+                return 0;
+            }
+
+            lastAddr += 2;
+
+            if (!memAccess(mem, pa + 2, 2, false, (uint8_t*)(&val_le) + 2)) {
+                fsr = 10;
+                return 0;
+            }
+
+            return htobe32(val_le);
+        } else {
+            return htobe32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
+        }
+    }
+
+    void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
+        if (fsr != 0) return;
+
+        lastAddr = addr;
+        wasWrite = true;
+
+        // fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
+
+        MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, true);
+
+        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+            fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+            return;
+        }
+
+        uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+        bool ok = memAccess(mem, pa, size, true, reinterpret_cast<uint8_t*>(&value) + 4 - size);
+#else
+        bool ok = memAccess(mem, pa, size, true, &value);
+#endif
+
+        if (!ok) {
+            fsr = 10;  // external abort on non-linefetch
+        }
+    }
+
+    void uae_put32_split(uint32_t addr, uint32_t value) {
+        value = htobe32(value);
+
+        if ((addr & 0x3ff) <= (0x3ff - 4)) {
+            if (fsr != 0) return;
+
+            lastAddr = addr;
+            wasWrite = true;
+
+            MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+
+            if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+                fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+                return;
+            }
+
+            const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+
+            if (!memAccess(mem, pa, 2, true, &value)) {
+                fsr = 10;
+                return;
+            }
+
+            lastAddr += 2;
+
+            if (!memAccess(mem, pa + 2, 2, true, (uint8_t*)(&value) + 2)) fsr = 10;
+        } else {
+            pace_put_le(addr, value, 2);
+            pace_put_le(addr + 2, value >> 16, 2);
+        }
+    }
+
+}  // namespace
+
+// The following functions are called by UAE
+extern "C" {
 
 uint8_t uae_get8(uint32_t addr) { return pace_get_le(addr, 1); }
 
@@ -125,34 +191,6 @@ uint32_t uae_get32(uint32_t addr) {
     }
 }
 
-static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
-    if (fsr != 0) return;
-
-    lastAddr = addr;
-    wasWrite = true;
-
-    // fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
-
-    MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, true);
-
-    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
-        return;
-    }
-
-    uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-    bool ok = memAccess(mem, pa, size, true, reinterpret_cast<uint8_t*>(&value) + 4 - size);
-#else
-    bool ok = memAccess(mem, pa, size, true, &value);
-#endif
-
-    if (!ok) {
-        fsr = 10;  // external abort on non-linefetch
-    }
-}
-
 void uae_put8(uint32_t addr, uint8_t value) { pace_put_le(addr, value, 1); };
 
 void uae_put16(uint32_t addr, uint16_t value) {
@@ -162,38 +200,6 @@ void uae_put16(uint32_t addr, uint16_t value) {
     }
 
     pace_put_le(addr, be16toh(value), 2);
-}
-
-static void uae_put32_split(uint32_t addr, uint32_t value) {
-    value = htobe32(value);
-
-    if ((addr & 0x3ff) <= (0x3ff - 4)) {
-        if (fsr != 0) return;
-
-        lastAddr = addr;
-        wasWrite = true;
-
-        MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
-
-        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-            fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
-            return;
-        }
-
-        const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-
-        if (!memAccess(mem, pa, 2, true, &value)) {
-            fsr = 10;
-            return;
-        }
-
-        lastAddr += 2;
-
-        if (!memAccess(mem, pa + 2, 2, true, (uint8_t*)(&value) + 2)) fsr = 10;
-    } else {
-        pace_put_le(addr, value, 2);
-        pace_put_le(addr + 2, value >> 16, 2);
-    }
 }
 
 void uae_put32(uint32_t addr, uint32_t value) {
@@ -248,6 +254,7 @@ unsigned long op_line1010(uint32_t opcode) REGPARAM {
 }
 
 void notifiyReturn() { pendingStatus = pace_status_return; }
+}
 
 static void staticInit() {
     static bool initialized = false;

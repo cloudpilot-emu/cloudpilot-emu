@@ -1,18 +1,21 @@
 #include "sdcard.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-static size_t sectorsTotal = 0;
-static bool sdCardDirty = false;
+namespace {
+    size_t sectorsTotal = 0;
+    bool sdCardDirty = false;
 
-static uint8_t* data = NULL;
-static uint32_t* dirtyPages = NULL;
+    uint8_t* data = NULL;
+    uint32_t* dirtyPages = NULL;
 
-static size_t dirtyPagesSize = 0;
+    size_t dirtyPagesSize = 0;
 
-static char cardId[SD_CARD_ID_MAX_LEN + 1];
+    char cardId[SD_CARD_ID_MAX_LEN + 1];
+
+}  // namespace
 
 void sdCardInitializeWithData(size_t sectors, void* buf, const char* id) {
     sdCardReset();
@@ -20,19 +23,19 @@ void sdCardInitializeWithData(size_t sectors, void* buf, const char* id) {
     size_t dirtyPagesSize4 = sectors / (16 * 32);
     if ((dirtyPagesSize4 * 16 * 32) < sectors) dirtyPagesSize4++;
 
-    data = buf;
+    data = reinterpret_cast<uint8_t*>(buf);
     sectorsTotal = sectors;
     dirtyPagesSize = dirtyPagesSize4 * 4;
     sdCardDirty = false;
 
-    dirtyPages = malloc(dirtyPagesSize);
+    dirtyPages = reinterpret_cast<uint32_t*>(malloc(dirtyPagesSize));
     memset(dirtyPages, 0, dirtyPagesSize);
 
     sdCardRekey(id);
 }
 
 void sdCardInitialize(size_t sectors, const char* id) {
-    uint8_t* buf = malloc(sectors * SD_SECTOR_SIZE);
+    uint8_t* buf = reinterpret_cast<uint8_t*>(malloc(sectors * SD_SECTOR_SIZE));
     memset(buf, 0, sectors * SD_SECTOR_SIZE);
 
     sdCardInitializeWithData(sectors, buf, id);
