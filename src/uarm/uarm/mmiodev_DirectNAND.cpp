@@ -2,9 +2,8 @@
 
 #include "mmiodev_DirectNAND.h"
 
-#include <string.h>
-
 #include <cstdlib>
+#include <cstring>
 
 #include "CPU.h"
 #include "cputil.h"

@@ -2,7 +2,6 @@
 #ifndef _SOC_UWIRE_H_
 #define _SOC_UWIRE_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "mem.h"

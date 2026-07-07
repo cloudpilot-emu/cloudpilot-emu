@@ -3,7 +3,6 @@
 #ifndef _PXA270_KPC_H_
 #define _PXA270_KPC_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "mem.h"

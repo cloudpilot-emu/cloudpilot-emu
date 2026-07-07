@@ -2,9 +2,8 @@
 
 #include "pxa_GPIO.h"
 
-#include <string.h>
-
 #include <cstdlib>
+#include <cstring>
 
 #include "cputil.h"
 #include "mem.h"

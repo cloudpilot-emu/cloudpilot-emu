@@ -3,7 +3,6 @@
 #ifndef _RAM_H_
 #define _RAM_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "mem.h"

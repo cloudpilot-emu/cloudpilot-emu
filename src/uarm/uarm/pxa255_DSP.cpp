@@ -2,9 +2,8 @@
 
 #include "pxa255_DSP.h"
 
-#include <string.h>
-
 #include <cstdlib>
+#include <cstring>
 
 #include "cputil.h"
 #include "savestate/savestateAll.h"

@@ -1,10 +1,9 @@
 #include "patch_dispatch.h"
 
-#include <string.h>
-
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "CPU.h"
 #include "Logging.h"

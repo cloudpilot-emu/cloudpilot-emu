@@ -3,7 +3,6 @@
 #ifndef _GDB_STUB_H_
 #define _GDB_STUB_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "CPU.h"

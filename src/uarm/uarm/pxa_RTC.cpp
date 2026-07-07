@@ -2,10 +2,9 @@
 
 #include "pxa_RTC.h"
 
-#include <string.h>
-
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "cputil.h"
 #include "mem.h"

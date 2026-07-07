@@ -3,7 +3,6 @@
 #ifndef _AC97_WM9712L_H_
 #define _AC97_WM9712L_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "soc_AC97.h"
