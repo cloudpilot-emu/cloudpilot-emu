@@ -3,14 +3,10 @@
 #ifndef _ROM_H_
 #define _ROM_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "mem.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct ArmRom;
 
@@ -25,9 +21,5 @@ bool romInstructionFetch(void *userData, uint32_t pa, uint_fast8_t size, void *b
 uint32_t romGetSize(struct ArmRom *rom);
 
 void *romGetData(struct ArmRom *rom);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

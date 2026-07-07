@@ -7,10 +7,6 @@
 #include "mem.h"
 #include "soc_IC.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct MemoryBuffer;
 struct PxaLcd;
 struct SoC;
@@ -29,14 +25,10 @@ void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd);
 
 bool pxaLcdIsEnabled(struct PxaLcd *lcd);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void pxaLcdSave(struct PxaLcd *lcd, T &savestate);
 
 template <typename T>
 void pxaLcdLoad(struct PxaLcd *lcd, T &loader);
-#endif
 
 #endif

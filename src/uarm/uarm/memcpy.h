@@ -1,11 +1,7 @@
 #ifndef _MEMCPY_H_
 #define _MEMCPY_H_
 
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstdint>
 
 struct ArmMmu;
 struct ArmMem;
@@ -25,9 +21,5 @@ void memcpy_hostToArm(uint32_t dest, const uint8_t* src, uint32_t size, bool pri
 
 void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
                      struct ArmMem* mem, struct ArmMmu* mmu, struct MemcpyResult* result);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  // _MEMCPY_H_

@@ -5,10 +5,6 @@
 
 #include "soc_IC.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define PXA_I_CIF 33  // PXA27x
 
 #define PXA_I_RTC_ALM 31
@@ -47,14 +43,10 @@ extern "C" {
 #define PXA_I_MSL 1       // PXA27x
 #define PXA_I_SSP3 0      // PXA27x
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void pxaIcSave(struct SocIc* ic, T& savestate);
 
 template <typename T>
 void pxaIcLoad(struct SocIc* ic, T& loader);
-#endif
 
 #endif

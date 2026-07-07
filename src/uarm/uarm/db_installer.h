@@ -2,13 +2,9 @@
 #ifndef _DB_INSTALLER_H_
 #define _DB_INSTALLER_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "SoC.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define DB_INSTALL_RESULT_NEEDS_RESET 1
 #define DB_INSTALL_RESULT_OK 0
@@ -23,9 +19,5 @@ extern "C" {
 struct SyscallDispatch;
 
 int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  // _DB_INSTALLER_H_

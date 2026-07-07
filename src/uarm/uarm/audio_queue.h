@@ -1,12 +1,8 @@
 #ifndef _AUDIO_QUEUE_H_
 #define _AUDIO_QUEUE_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstddef>
+#include <cstdint>
 
 struct AudioQueue;
 
@@ -19,9 +15,5 @@ size_t audioQueuePopChunk(struct AudioQueue* audioQueue, uint32_t* destination, 
 size_t audioQueuePendingSamples(struct AudioQueue* audioQueue);
 
 void audioQueueClear(struct AudioQueue* audioQueue);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  //  _AUDIO_QUEUE_H_

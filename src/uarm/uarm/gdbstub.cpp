@@ -9,7 +9,8 @@
     #include <sys/socket.h>
     #include <sys/time.h>
     #include <sys/types.h>
-    #include <unistd.h>
+
+    #include <unicstd>
 
 #endif
 #include <cerrno>

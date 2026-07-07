@@ -3,9 +3,9 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdbool>
+#include <cstdint>
+#include <cstdio>
 
 #include "ROM.h"
 #include "SoC.h"
@@ -26,10 +26,6 @@
 
 #define DEVICE_PERIODIC_TIER0 0
 #define DEVICE_PERIODIC_TIER1 1
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct AudioQueue;
 
@@ -102,15 +98,10 @@ void deviceSetSdCardInserted(struct Device *dev, bool inserted);
 
 enum DeviceType5 deviceGetType(struct Device *dev);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void deviceSave(struct Device *dev, T &savestate);
 
 template <typename T>
 void deviceLoad(struct Device *dev, T &loader);
-
-#endif
 
 #endif

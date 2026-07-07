@@ -3,18 +3,14 @@
 #ifndef _SOC_H_
 #define _SOC_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdbool>
+#include <cstdint>
+#include <cstdio>
 
 #include "SoC_type.h"
 #include "buffer.h"
 #include "device_type5.h"
 #include "keys.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define CHAR_CTL_C -1L
 #define CHAR_NONE -2L
@@ -97,9 +93,5 @@ void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts);
 struct SystemState *socGetSystemState(struct SoC *soc);
 
 bool socLcdEnabled(struct SoC *soc);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

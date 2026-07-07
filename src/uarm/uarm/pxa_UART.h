@@ -3,7 +3,7 @@
 #ifndef _PXA_UART_H_
 #define _PXA_UART_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "CPU.h"
 #include "mem.h"
@@ -25,12 +25,10 @@
 #define PXA_STUART_BASE 0x40700000UL
 #define PXA_HWUART_BASE 0x41600000UL  // PXA25x/PXA26x only
 
-#ifdef __cplusplus
 template <typename T>
 void pxaUartSave(struct SocUart* uart, T& savestate, uint32_t index = 0);
 
 template <typename T>
 void pxaUartLoad(struct SocUart* uart, T& loader, uint32_t index = 0);
-#endif
 
 #endif

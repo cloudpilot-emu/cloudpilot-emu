@@ -2,8 +2,9 @@
 
 #include "pxa_AC97.h"
 
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdlib>
 
 #include "cputil.h"
 #include "mem.h"

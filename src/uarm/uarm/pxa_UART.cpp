@@ -2,8 +2,9 @@
 
 #include "pxa_UART.h"
 
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdlib>
 
 #include "CPEndian.h"
 #include "cputil.h"

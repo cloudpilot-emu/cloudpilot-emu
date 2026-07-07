@@ -3,12 +3,8 @@
 #ifndef _MEM_H_
 #define _MEM_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstdbool>
+#include <cstdint>
 
 struct ArmMem;
 
@@ -25,9 +21,5 @@ bool memRegionAddRom(struct ArmMem* mem, uint32_t pa, uint32_t sz, ArmMemAccessF
 bool memAccess(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, bool write, void* buf);
 
 bool memInstructionFetch(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, void* buf);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

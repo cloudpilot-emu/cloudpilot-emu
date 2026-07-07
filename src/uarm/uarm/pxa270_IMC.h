@@ -5,16 +5,8 @@
 
 #include "mem.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct PxaImc;
 
 struct PxaImc* pxaImcInit(struct ArmMem* physMem);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

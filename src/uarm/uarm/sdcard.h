@@ -10,10 +10,6 @@
 #define SD_SECTOR_SIZE 512
 #define SD_CARD_ID_MAX_LEN 32
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void sdCardInitialize(size_t sectors, const char* id);
 void sdCardInitializeWithData(size_t sectors, void* buf, const char* id);
 
@@ -35,9 +31,5 @@ bool sdCardIsDirty();
 void sdCardSetDirty(bool isDirty);
 
 const char* sdCardGetId();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  // _SD_CARD_H_

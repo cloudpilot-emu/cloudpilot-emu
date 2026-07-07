@@ -8,10 +8,6 @@
 #include "reschedule.h"
 #include "soc_IC.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct SocUart;
 
 #define UART_CHAR_BREAK 0x800
@@ -33,9 +29,5 @@ void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF wri
                      void *userData);
 
 bool socUartTaskRequired(struct SocUart *uart);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

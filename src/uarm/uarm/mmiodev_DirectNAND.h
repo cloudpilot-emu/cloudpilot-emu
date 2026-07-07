@@ -3,17 +3,13 @@
 #ifndef _DIRECT_NAND_H_
 #define _DIRECT_NAND_H_
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "CPU.h"
 #include "mem.h"
 #include "nand.h"
 #include "reschedule.h"
 #include "soc_GPIO.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct DirectNAND;
 struct NAND;
@@ -32,15 +28,10 @@ bool directNandTaskRequired(struct DirectNAND *nand);
 
 struct NAND *directNandGetNand(struct DirectNAND *nand);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void directNandSave(struct DirectNAND *nand, T &savestate);
 
 template <typename T>
 void directNandLoad(struct DirectNAND *nand, T &loader);
-
-#endif
 
 #endif

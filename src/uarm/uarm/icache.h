@@ -3,16 +3,12 @@
 #ifndef _ICACHE_H_
 #define _ICACHE_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "CPU.h"
 #include "MMU.h"
 #include "mem.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct icache;
 
@@ -23,13 +19,8 @@ void icacheInval(struct icache* ic);
 void icacheInvalAddr(struct icache* ic, uint32_t addr);
 void icacheInvalRange(struct icache* ic, uint32_t addr, uint32_t size);
 
-#ifdef __cplusplus
-}
-
 template <int sz, int tier = 0>
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsr, uint32_t& instr,
                  uint32_t& decoded);
-
-#endif
 
 #endif

@@ -1,8 +1,8 @@
 #include "syscall_dispatch.h"
 
-#include <stdlib.h>
 #include <string.h>
 
+#include <cstdlib>
 #include <iostream>
 
 #include "CPU.h"

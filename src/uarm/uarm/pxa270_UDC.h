@@ -3,23 +3,15 @@
 #ifndef _PXA270_UDC_H_
 #define _PXA270_UDC_H_
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "CPU.h"
 #include "mem.h"
 #include "pxa_DMA.h"
 #include "soc_IC.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct Pxa270Udc;
 
 struct Pxa270Udc *pxa270UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -3,11 +3,7 @@
 #ifndef _VIRTUAL_SD_H_
 #define _VIRTUAL_SD_H_
 
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstdint>
 
 struct VSD;
 typedef struct VSD VSD;
@@ -41,15 +37,10 @@ enum SdDataReplyType vsdDataXferBlockFromCard(struct VSD *vsd, void *data, uint3
 // util
 uint8_t vsdCRC7(uint8_t *data, uint32_t sz);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void vsdSave(struct VSD *vsd, T &savestate);
 
 template <typename T>
 void vsdLoad(struct VSD *vsd, T &loader);
-
-#endif
 
 #endif

@@ -1,15 +1,11 @@
 #ifndef _PACE_H_
 #define _PACE_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "MMU.h"
 #include "mem.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define PACE_RETURN_MAGIC_PC 0xfffffff0
 
@@ -66,14 +62,10 @@ void paceSetAreg(uint8_t index, uint32_t value);
 
 enum paceStatus paceExecute();
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void paceSave(T& savestate);
 
 template <typename T>
 void paceLoad(T& loader);
-#endif
 
 #endif  // _PACE_H_

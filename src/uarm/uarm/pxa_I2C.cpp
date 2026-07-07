@@ -1,7 +1,8 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdlib>
 
 #include "cputil.h"
 #include "mem.h"

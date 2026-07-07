@@ -3,15 +3,11 @@
 #ifndef _PXA_TIMR_H_
 #define _PXA_TIMR_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "CPU.h"
 #include "mem.h"
 #include "soc_IC.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct PxaTimr;
 
@@ -23,14 +19,10 @@ uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr* timr);
 
 void pxaTimrSuspendInterrupts(struct PxaTimr* timr, bool suspendInterrupts);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void pxaTimrSave(struct PxaTimr* timr, T& savestate);
 
 template <typename T>
 void pxaTimrLoad(struct PxaTimr* timr, T& loader);
-#endif
 
 #endif

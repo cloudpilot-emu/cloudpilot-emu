@@ -2,8 +2,9 @@
 
 #include "icache.h"
 
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdlib>
 
 #include "CPU.h"
 #include "cputil.h"
