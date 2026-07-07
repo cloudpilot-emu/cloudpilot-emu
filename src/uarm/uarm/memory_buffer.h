@@ -1,7 +1,6 @@
 #ifndef _MEMORY_BUFFER_H_
 #define _MEMORY_BUFFER_H_
 
-#include <cstdbool>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>

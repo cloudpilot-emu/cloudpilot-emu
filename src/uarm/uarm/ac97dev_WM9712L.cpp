@@ -2,10 +2,9 @@
 
 #include "ac97dev_WM9712L.h"
 
-#include <string.h>
-
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "audio_queue.h"
 #include "cputil.h"

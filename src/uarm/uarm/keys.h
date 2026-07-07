@@ -3,7 +3,6 @@
 #ifndef _KEYS_H_
 #define _KEYS_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "soc_GPIO.h"

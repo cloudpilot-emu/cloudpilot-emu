@@ -1,7 +1,6 @@
 #ifndef _PATCH_68K_H_
 #define _PATCH_68K_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "device_type5.h"

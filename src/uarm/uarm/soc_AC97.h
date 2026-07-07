@@ -3,7 +3,6 @@
 #ifndef _SOC_AC97_H_
 #define _SOC_AC97_H_
 
-#include <cstdbool>
 #include <cstdint>
 #include <cstdio>
 

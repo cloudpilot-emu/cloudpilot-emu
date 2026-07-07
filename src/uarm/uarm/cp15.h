@@ -3,7 +3,6 @@
 #ifndef _CP15_H_
 #define _CP15_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "CPU.h"

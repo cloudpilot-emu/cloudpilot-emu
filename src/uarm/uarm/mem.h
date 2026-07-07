@@ -3,7 +3,6 @@
 #ifndef _MEM_H_
 #define _MEM_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 struct ArmMem;

@@ -2,10 +2,9 @@
 
 #include "pxa_LCD.h"
 
-#include <string.h>
-
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "CPEndian.h"
 #include "SoC.h"

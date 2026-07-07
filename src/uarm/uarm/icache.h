@@ -3,7 +3,6 @@
 #ifndef _ICACHE_H_
 #define _ICACHE_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "CPU.h"

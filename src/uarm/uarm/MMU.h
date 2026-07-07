@@ -3,7 +3,6 @@
 #ifndef _MMU_H_
 #define _MMU_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "mem.h"

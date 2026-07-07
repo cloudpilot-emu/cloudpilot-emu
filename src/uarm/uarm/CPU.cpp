@@ -2,9 +2,8 @@
 
 #include "CPU.h"
 
-#include <string.h>
-
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <unordered_map>
 

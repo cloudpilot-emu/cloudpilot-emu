@@ -5,7 +5,6 @@
 
 struct ArmCpu;
 
-#include <cstdbool>
 #include <cstdint>
 #include <functional>
 

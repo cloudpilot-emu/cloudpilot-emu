@@ -1,7 +1,6 @@
 #ifndef _SD_CARD_H_
 #define _SD_CARD_H_
 
-#include <cstdbool>
 #include <cstddef>
 #include <cstdint>
 

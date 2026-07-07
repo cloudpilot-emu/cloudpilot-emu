@@ -3,7 +3,6 @@
 #ifndef _SOC_I2S_H_
 #define _SOC_I2S_H_
 
-#include <cstdbool>
 #include <cstdint>
 #include <cstdio>
 

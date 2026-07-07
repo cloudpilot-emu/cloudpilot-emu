@@ -1,7 +1,6 @@
 #ifndef _PACE_H_
 #define _PACE_H_
 
-#include <cstdbool>
 #include <cstdint>
 
 #include "MMU.h"
