@@ -2,8 +2,8 @@
 
 #include "mem.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "RAM.h"
 #include "ROM.h"

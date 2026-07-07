@@ -1,9 +1,9 @@
 #ifndef _SD_CARD_H_
 #define _SD_CARD_H_
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstddef>
+#include <cstdint>
 
 #include "buffer.h"
 

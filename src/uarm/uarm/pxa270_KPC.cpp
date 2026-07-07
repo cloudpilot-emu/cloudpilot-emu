@@ -2,8 +2,8 @@
 
 #include "pxa270_KPC.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "cputil.h"
 #include "pxa_IC.h"

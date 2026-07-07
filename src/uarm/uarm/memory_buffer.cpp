@@ -1,6 +1,6 @@
 #include "memory_buffer.h"
 
-#include <string.h>
+#include <cstring>
 
 bool memoryBufferAllocate(struct MemoryBuffer* memoryBuffer, size_t size) {
     if (size % MEMORY_BUFFER_GRANULARITY) return false;
@@ -8,14 +8,14 @@ bool memoryBufferAllocate(struct MemoryBuffer* memoryBuffer, size_t size) {
     size_t pageCount = size / 1024;
 
     memoryBuffer->size = pageCount * 1024;
-    memoryBuffer->buffer = malloc(memoryBuffer->size);
+    memoryBuffer->buffer = reinterpret_cast<uint8_t*>(malloc(memoryBuffer->size));
     memset(memoryBuffer->buffer, 0, memoryBuffer->size);
 
     size_t dirtyPageCount4 = pageCount / 32;
     if (dirtyPageCount4 * 32 < pageCount) dirtyPageCount4++;
 
     memoryBuffer->dirtyPagesSize = dirtyPageCount4 * 4;
-    memoryBuffer->dirtyPages = malloc(memoryBuffer->dirtyPagesSize);
+    memoryBuffer->dirtyPages = reinterpret_cast<uint32_t*>(malloc(memoryBuffer->dirtyPagesSize));
     memset(memoryBuffer->dirtyPages, 0, memoryBuffer->dirtyPagesSize);
 
     return true;

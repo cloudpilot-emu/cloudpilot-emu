@@ -38,24 +38,6 @@ YARN = yarn
 
 SOURCE_C = 								\
 	cputil.c							\
-	uarm/sdcard.c 						\
-	uarm/patches.c						\
-	uarm/syscall.c						\
-	uarm/mem.c 							\
-	uarm/memory_buffer.c				\
-	uarm/RAM.c 							\
-	uarm/ROM.c 							\
-	uarm/gdbstub.c						\
-	uarm/keys.c 						\
-	uarm/timeutil.c						\
-	uarm/app_launcher.c 				\
-	uarm/pxa270_UDC.c 					\
-	uarm/pxa270_IMC.c 					\
-	uarm/pxa270_KPC.c 					\
-	uarm/pxa270_WMMX.c 					\
-	uarm/pace_patch.c 					\
-	uarm/peephole.c						\
-	uarm/patch68k.c 					\
 	uarm/uae/cpudefs.c 					\
 	uarm/uae/cpuemu.c 					\
 	uarm/uae/cpustbl.c 					\
@@ -63,6 +45,20 @@ SOURCE_C = 								\
 	uarm/uae/newcpu.c
 
 SOURCE_CXX =		 					\
+	uarm/patch68k.cpp 					\
+	uarm/peephole.cpp					\
+	uarm/pace_patch.cpp					\
+	uarm/app_launcher.cpp 				\
+	uarm/timeutil.cpp					\
+	uarm/keys.cpp 						\
+	uarm/gdbstub.cpp 					\
+	uarm/ROM.cpp						\
+	uarm/RAM.cpp						\
+	uarm/memory_buffer.cpp				\
+	uarm/mem.cpp						\
+	uarm/syscall.cpp					\
+	uarm/sdcard.cpp						\
+	uarm/patches.cpp					\
 	uarm/socPXA.cpp						\
 	MainLoop.cpp						\
 	uarm/patch_dispatch.cpp				\
@@ -70,6 +66,10 @@ SOURCE_CXX =		 					\
 	uarm/CPU.cpp						\
 	uarm/pace.cpp 						\
 	uarm/MMU.cpp						\
+	uarm/pxa270_WMMX.cpp				\
+	uarm/pxa270_KPC.cpp					\
+	uarm/pxa270_IMC.cpp					\
+	uarm/pxa270_UDC.cpp					\
 	uarm/pxa_TIMR.cpp 					\
 	uarm/pxa_IC.cpp						\
 	uarm/pxa_LCD.cpp					\

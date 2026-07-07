@@ -3,7 +3,7 @@
 #ifndef _VIRTUAL_SD_H_
 #define _VIRTUAL_SD_H_
 
-#include "SoC.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

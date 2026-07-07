@@ -1,9 +1,9 @@
 #include "patches.h"
 
-#include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "CPU.h"
-#include "stdlib.h"
 #include "syscall.h"
 #include "system_state.h"
 
@@ -23,7 +23,7 @@ static bool headpatch_SysSetAutoOffTime(void* ctx, uint32_t syscall, uint32_t* r
 }
 
 static bool headpatch_PenRawToScreen(void* ctx, uint32_t syscall, uint32_t* registers) {
-    struct PatchContext* patchContext = ctx;
+    struct PatchContext* patchContext = reinterpret_cast<PatchContext*>(ctx);
 
     const uint32_t pointP = registers[0];
     int16_t x, y;
@@ -41,7 +41,7 @@ static bool headpatch_PenRawToScreen(void* ctx, uint32_t syscall, uint32_t* regi
 }
 
 static bool headpatch_PenScreenToRaw(void* ctx, uint32_t syscall, uint32_t* registers) {
-    struct PatchContext* patchContext = ctx;
+    struct PatchContext* patchContext = reinterpret_cast<PatchContext*>(ctx);
 
     const uint32_t pointP = registers[0];
     int16_t x, y;
@@ -67,7 +67,7 @@ static bool headpatch_SysSleep(void* ctx, uint32_t syscall, uint32_t* registers)
 
 static void tailpatch_uiInitialize(void* ctx, uint32_t syscall,
                                    const uint32_t* registersAtinvocation, uint32_t* registers) {
-    struct PatchContext* patchContext = ctx;
+    struct PatchContext* patchContext = reinterpret_cast<PatchContext*>(ctx);
     systemStateSetUiInitialized(patchContext->systemState, true);
 
     registers[13] -= 4;

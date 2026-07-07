@@ -1,9 +1,9 @@
 #include "app_launcher.h"
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 
 #include "cputil.h"
 #include "syscall_dispatch.h"

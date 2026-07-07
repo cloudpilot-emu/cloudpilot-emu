@@ -1,8 +1,10 @@
 #include "pace_patch.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include "cputil.h"
 
 #define findCallout(var, name, location)                                                     \
     const uint32_t var = decodeBBlBlx(rom, enterPace + location - 0x1fd28);                  \
@@ -13,7 +15,9 @@
     printf("found PACE callout for " name " at %#010x\n", var);
 
 static uint32_t decodeBBlBlx(void* rom, uint32_t addr) {
-    const uint32_t instruction = *(uint32_t*)(rom + addr);
+    if (addr & 0x03) ERR("alignment fault in decode decodeBBlBlx: 0x%08x", addr);
+
+    const uint32_t instruction = reinterpret_cast<uint32_t*>(rom)[addr >> 2];
     const uint8_t prefix = instruction >> 24;
 
     int32_t offset = instruction << 8;
@@ -37,7 +41,7 @@ static uint32_t decodeBBlBlx(void* rom, uint32_t addr) {
 }
 
 struct PacePatch* createPacePatch() {
-    struct PacePatch* patch = malloc(sizeof(*patch));
+    struct PacePatch* patch = reinterpret_cast<PacePatch*>(malloc(sizeof(*patch)));
     memset(patch, 0, sizeof(*patch));
 
     return patch;
@@ -57,7 +61,9 @@ void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t 
 
     uint32_t paceLocation = 0;
     for (uint32_t i = 0; i < romSize - sizeof(paceStartPattern); i += 4) {
-        if (memcmp(rom + i, paceStartPattern, sizeof(paceStartPattern)) != 0) continue;
+        if (memcmp(reinterpret_cast<uint8_t*>(rom) + i, paceStartPattern,
+                   sizeof(paceStartPattern)) != 0)
+            continue;
 
         if (paceLocation != 0) {
             fprintf(stderr,

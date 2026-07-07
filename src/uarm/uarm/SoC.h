@@ -26,9 +26,6 @@ struct SyscallDispatch;
 struct NAND;
 struct SystemState;
 
-typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
-typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
-
 struct SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData,
                     const uint32_t romSize, uint8_t *nandContent, size_t nandSize, int gdbPort,
                     uint_fast8_t socRev);

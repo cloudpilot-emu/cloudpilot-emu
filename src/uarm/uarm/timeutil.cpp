@@ -1,7 +1,7 @@
 #include "timeutil.h"
 
-#include <stddef.h>
-#include <time.h>
+#include <cstddef>
+#include <ctime>
 
 #define REFRESH_TZ_INTERVAL_SECONDS 10
 #define PALM_EPOCH_OFFSET 2082844800ull
