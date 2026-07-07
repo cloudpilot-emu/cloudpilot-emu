@@ -2,8 +2,9 @@
 
 #include "pxa_MemCtrl.h"
 
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdlib>
 
 #include "cputil.h"
 #include "savestate/savestateAll.h"

@@ -2,9 +2,10 @@
 
 #include "pxa_TIMR.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdio>
+#include <cstdlib>
 
 #include "cputil.h"
 #include "mem.h"

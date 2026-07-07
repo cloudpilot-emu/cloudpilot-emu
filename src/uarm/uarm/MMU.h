@@ -3,14 +3,10 @@
 #ifndef _MMU_H_
 #define _MMU_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "mem.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct ArmMmu;
 
@@ -47,14 +43,10 @@ void mmuTlbFlush(struct ArmMmu *mmu);
 
 void mmuDump(struct ArmMmu *mmu);  // for calling in GDB :)
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void mmuSave(struct ArmMmu *mmu, T &savestate);
 
 template <typename T>
 void mmuLoad(struct ArmMmu *mmu, T &loader);
-#endif
 
 #endif

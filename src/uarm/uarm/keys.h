@@ -3,14 +3,10 @@
 #ifndef _KEYS_H_
 #define _KEYS_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "soc_GPIO.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct Keypad;
 
@@ -37,9 +33,5 @@ bool keypadAddMatrixKey(struct Keypad *kp, enum KeyId key, unsigned row, unsigne
 void keypadKeyEvt(struct Keypad *kp, enum KeyId key, bool wentDown);
 
 void keypadReset(struct Keypad *kp);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

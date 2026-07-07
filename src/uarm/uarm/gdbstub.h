@@ -3,14 +3,10 @@
 #ifndef _GDB_STUB_H_
 #define _GDB_STUB_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "CPU.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct stub;
 
@@ -26,10 +22,6 @@ void gdbStubReportMemAccess(struct stub *stub, uint32_t addr, uint_fast8_t sz, b
     #define gdbStubDebugBreakRequested(...)
     #define gdbStubReportPc(...)
     #define gdbStubReportMemAccess(...)
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif

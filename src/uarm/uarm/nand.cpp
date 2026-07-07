@@ -2,9 +2,10 @@
 
 #include "nand.h"
 
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdint>
+#include <cstdlib>
 
 #include "CPU.h"
 #include "cputil.h"

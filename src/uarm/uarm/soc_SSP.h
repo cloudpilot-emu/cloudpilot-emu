@@ -3,19 +3,15 @@
 #ifndef _SOC_SSP_H_
 #define _SOC_SSP_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdbool>
+#include <cstdint>
+#include <cstdio>
 
 #include "CPU.h"
 #include "mem.h"
 #include "reschedule.h"
 #include "soc_DMA.h"
 #include "soc_IC.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct SocSsp;
 
@@ -30,9 +26,5 @@ void socSspPeriodic(struct SocSsp* ssp);
 bool socSspAddClient(struct SocSsp* ssp, SspClientProcF procF, void* userData);
 
 bool socSspTaskRequired(struct SocSsp* ssp);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

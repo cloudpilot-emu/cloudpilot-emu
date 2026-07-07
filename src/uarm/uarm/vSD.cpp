@@ -2,10 +2,11 @@
 
 #include "vSD.h"
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdbool>
+#include <cstdint>
+#include <cstdlib>
 
 #include "cputil.h"
 #include "memory_buffer.h"

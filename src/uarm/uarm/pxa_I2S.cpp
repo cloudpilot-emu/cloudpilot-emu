@@ -2,8 +2,9 @@
 
 #include "pxa_I2S.h"
 
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdlib>
 
 #include "cputil.h"
 #include "pxa_DMA.h"

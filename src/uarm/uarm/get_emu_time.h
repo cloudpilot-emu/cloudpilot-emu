@@ -1,7 +1,7 @@
 #ifndef _GET_EMU_TIME_H_
 #define _GET_EMU_TIME_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 typedef uint64_t (*GetTimeF)(void* userdata);
 

@@ -1,12 +1,8 @@
 #ifndef _PACE_PATCH_H_
 #define _PACE_PATCH_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstddef>
+#include <cstdint>
 
 #define INSTR_PACE_ENTER 0xfff9ace0
 #define INSTR_PACE_RESUME 0xfff9ace1
@@ -31,9 +27,5 @@ struct PacePatch {
 struct PacePatch* createPacePatch();
 
 void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t romSize);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  // _PACE_PATCH_H_

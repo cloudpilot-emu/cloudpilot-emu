@@ -1,16 +1,10 @@
 #ifndef _SYSCALL_DISPATCH_H_
 #define _SYSCALL_DISPATCH_H_
 
-#include <stdint.h>
+#include <cstdint>
+#include <functional>
 
 #include "SoC.h"
-
-#ifdef __cplusplus
-
-    #include <functional>
-
-extern "C" {
-#endif
 
 #define SC_EXECUTE_PURE 0
 #define SC_EXECUTE_FULL 1
@@ -67,15 +61,10 @@ uint32_t syscall68k_DmFindDatabase(struct SyscallDispatch* sd, uint32_t flags, u
 uint16_t syscall68k_SysUIAppSwitch(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
                                    uint32_t dbID, uint16_t cmd, uint32_t cmdPBP);
 
-#ifdef __cplusplus
-}
-
 using M68kStub = std::function<void(struct ArmCpu*, uint32_t parameterBase,
                                     std::function<void()> deadMansSwitch)>;
 void syscallDispatchRegisterM68kStub(struct SyscallDispatch* sd, uint32_t trampoline,
                                      M68kStub stub);
 void syscallDispatchUnregisterM68kStub(struct SyscallDispatch* sd, uint32_t trampoline);
-
-#endif
 
 #endif  // _SYSCALL_DISPATCH_H_

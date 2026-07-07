@@ -3,18 +3,14 @@
 #ifndef _SOC_AC97_H_
 #define _SOC_AC97_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdbool>
+#include <cstdint>
+#include <cstdio>
 
 #include "CPU.h"
 #include "mem.h"
 #include "soc_DMA.h"
 #include "soc_IC.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct SocAC97;
 
@@ -39,9 +35,5 @@ void socAC97clientAdd(struct SocAC97 *ac97, enum Ac97Codec which, Ac97CodecRegR 
                       Ac97CodecRegW regW, void *userData);
 bool socAC97clientClientWantData(struct SocAC97 *ac97, enum Ac97Codec which, uint32_t *dataPtr);
 void socAC97clientClientHaveData(struct SocAC97 *ac97, enum Ac97Codec which, uint32_t data);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

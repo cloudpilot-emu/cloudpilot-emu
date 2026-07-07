@@ -1,7 +1,7 @@
 #ifndef _RESCHEDULE_H_
 #define _RESCHEDULE_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #define RESCHEDULE_TASK_DEVICE_TIER0 0
 #define RESCHEDULE_TASK_NAND 1

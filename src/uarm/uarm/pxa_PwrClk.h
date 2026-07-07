@@ -7,10 +7,6 @@
 #include "SoC_type.h"
 #include "mem.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct PxaPwrClk;
 
 struct PxaPwrClk* pxaPwrClkInit(struct ArmCpu* cpu, struct ArmMem* physMem, struct SoC* soc,
@@ -18,15 +14,10 @@ struct PxaPwrClk* pxaPwrClkInit(struct ArmCpu* cpu, struct ArmMem* physMem, stru
 
 void pxaPwrClkReset(struct PxaPwrClk* pc);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void pxaPwrClkSave(struct PxaPwrClk* pc, T& savestate);
 
 template <typename T>
 void pxaPwrClkLoad(struct PxaPwrClk* pc, T& loader);
-
-#endif
 
 #endif

@@ -2,8 +2,9 @@
 
 #include "pxa_PwrClk.h"
 
-#include <stdlib.h>
 #include <string.h>
+
+#include <cstdlib>
 
 #include "SoC.h"
 #include "cputil.h"

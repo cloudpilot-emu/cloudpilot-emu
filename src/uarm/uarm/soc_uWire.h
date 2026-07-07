@@ -2,16 +2,12 @@
 #ifndef _SOC_UWIRE_H_
 #define _SOC_UWIRE_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "mem.h"
 #include "soc_DMA.h"
 #include "soc_IC.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct SocUwire;
 
@@ -27,9 +23,5 @@ struct SocUwire *socUwireInit(struct ArmMem *physMem, struct SocIc *ic, struct S
 void socUwirePeriodic(struct SocUwire *uw);
 bool socUwireAddClient(struct SocUwire *uw, uint_fast8_t cs, UWireClientProcF procF,
                        void *userData);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

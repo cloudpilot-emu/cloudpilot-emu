@@ -3,15 +3,11 @@
 #ifndef _AC97_WM9712L_H_
 #define _AC97_WM9712L_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "soc_AC97.h"
 #include "soc_GPIO.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct WM9712L;
 
@@ -34,15 +30,10 @@ void wm9712LsetPen(struct WM9712L *wm, int16_t x, int16_t y,
 
 void wm9712LsetAudioQueue(struct WM9712L *wm, struct AudioQueue *audioQueue);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void wm9712Lsave(struct WM9712L *wm, T &savestate);
 
 template <typename T>
 void wm9712Load(struct WM9712L *wm, T &loader);
-
-#endif
 
 #endif

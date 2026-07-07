@@ -1,13 +1,9 @@
 #ifndef _PATCH_DISPATCH_H_
 #define _PATCH_DISPATCH_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "CPU.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef bool (*HeadpatchF)(void* ctx, uint32_t syscall, uint32_t* registers);
 typedef void (*TailpatchF)(void* ctx, uint32_t syscall, const uint32_t* registersAtinvocation,
@@ -30,14 +26,10 @@ void patchDispatchAddPatch(struct PatchDispatch* pd, uint32_t syscall, Headpatch
 
 void patchDispatchSetCpu(struct PatchDispatch* pd, struct ArmCpu* cpu);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void patchDispatchSave(struct PatchDispatch* pd, T& savestate);
 
 template <typename T>
 void patchDispatchLoad(struct PatchDispatch* pd, T& savestate);
-#endif
 
 #endif  // _PATCH_DISPATCH_H_

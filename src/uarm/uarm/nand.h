@@ -3,17 +3,13 @@
 #ifndef _NAND_H_
 #define _NAND_H_
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "CPU.h"
 #include "buffer.h"
 #include "mem.h"
 #include "reschedule.h"
 #include "soc_GPIO.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct NAND;
 struct MemoryBuffer;
@@ -58,15 +54,10 @@ void nandSetDirty(struct NAND *nand, bool isDirty);
 
 uint32_t nandGetWriteCnt(struct NAND *nand);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void nandSave(struct NAND *nand, T &savestate);
 
 template <typename T>
 void nandLoad(struct NAND *nand, T &loader);
-
-#endif
 
 #endif

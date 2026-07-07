@@ -1,14 +1,10 @@
 #ifndef _MEMORY_BUFFER_H_
 #define _MEMORY_BUFFER_H_
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstdbool>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 
 #define MEMORY_BUFFER_GRANULARITY (32 * 1024)
 
@@ -33,9 +29,5 @@ bool memoryBufferGetSubBuffer(struct MemoryBuffer* memoryBuffer, struct MemoryBu
                               size_t offset, size_t size);
 
 void memoryBufferMarkRangeDirty(struct MemoryBuffer* memoryBuffer, size_t address, size_t size);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  // _MEMORY_BACKBUFFER_H_

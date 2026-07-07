@@ -1,12 +1,8 @@
 #ifndef _PEEPHOLE_H_
 #define _PEEPHOLE_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstddef>
+#include <cstdint>
 
 #define INSTR_PEEPHOLE_ADS_UDIVMOD 0xfff9ee90
 #define INSTR_PEEPHOLE_ADS_SDIVMOD 0xfff9ee91
@@ -18,9 +14,5 @@ extern "C" {
 #define FIRST_INSTRUCTION_ADS_SDIVMOD 0xE2102480
 
 void peepholeOptimize(uint32_t* code, size_t size);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif  // _PEEPHOLE_H_

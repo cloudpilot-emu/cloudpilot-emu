@@ -3,16 +3,12 @@
 #ifndef _CP15_H_
 #define _CP15_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
 
 #include "CPU.h"
 #include "MMU.h"
 #include "icache.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct ArmCP15;
 
@@ -21,14 +17,10 @@ struct ArmCP15* cp15Init(struct ArmCpu* cpu, struct ArmMmu* mmu, struct icache* 
 void cp15SetFaultStatus(struct ArmCP15* cp15, uint32_t addr, uint_fast8_t faultStatus);
 void cp15Cycle(struct ArmCP15* cp15);
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void cp15Save(struct ArmCP15* cp15, T& savestate);
 
 template <typename T>
 void cp15Load(struct ArmCP15* cp15, T& loader);
-#endif
 
 #endif

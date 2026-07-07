@@ -5,18 +5,12 @@
 
 struct ArmCpu;
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstdint>
+#include <functional>
 
 #include "mem.h"
 #include "pace_patch.h"
-
-#ifdef __cplusplus
-
-    #include <functional>
-
-extern "C" {
-#endif
 
 #define ARM_SR_N 0x80000000UL
 #define ARM_SR_Z 0x40000000UL
@@ -126,9 +120,6 @@ void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall);
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
 struct ArmMem *cpuGetMem(struct ArmCpu *cpu);
 
-#ifdef __cplusplus
-}
-
 uint32_t cpuDecodeArm(uint32_t instr);
 uint32_t cpuDecodeThumb(uint16_t instr, uint32_t &translatedInstr);
 
@@ -160,6 +151,5 @@ void cpuPrepareInjectedCall(struct ArmCpu *cpu, T &savestate);
 
 template <typename T>
 void cpuFinishInjectedCall(struct ArmCpu *cpu, T &loader);
-#endif
 
 #endif

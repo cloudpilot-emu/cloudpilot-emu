@@ -1,6 +1,6 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "ac97dev_WM9712L.h"
 #include "cputil.h"

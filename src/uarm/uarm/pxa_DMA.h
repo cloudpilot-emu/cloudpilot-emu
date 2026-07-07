@@ -5,10 +5,6 @@
 
 #include "soc_DMA.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // common
 #define DMA_CMR_DREQ_0 0
 #define DMA_CMR_DREQ_1 1
@@ -104,14 +100,10 @@ extern "C" {
 #define DMA_CMR_QCIF_RX_2 70
 #define DMA_CMR_DREQ_2 74
 
-#ifdef __cplusplus
-}
-
 template <typename T>
 void pxaDmaSave(struct SocDma* dma, T& savestate);
 
 template <typename T>
 void pxaDmaLoad(struct SocDma* dma, T& loader);
-#endif
 
 #endif

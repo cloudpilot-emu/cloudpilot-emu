@@ -7,10 +7,6 @@
 #include "mem.h"
 #include "soc_IC.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct SocGpio;
 
 typedef void (*GpioChangedNotifF)(void* userData, uint32_t gpio, bool oldState, bool newState);
@@ -42,9 +38,5 @@ void socGpioSetNotif(struct SocGpio* gpio, uint_fast8_t gpioNum, GpioChangedNoti
 
 // for all (but only one notifier)
 void socGpioSetDirsChangedNotif(struct SocGpio* gpio, GpioDirsChangedF notifF, void* userData);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
