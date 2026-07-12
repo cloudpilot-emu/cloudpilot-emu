@@ -5,11 +5,10 @@
 
 #include <cstdint>
 
-#include "CPU.h"
-#include "MMU.h"
-#include "icache.h"
-
 struct ArmCP15MMU;
+struct ArmCpu;
+struct ArmMmu;
+struct icache;
 
 struct ArmCP15MMU* cp15MMUInit(struct ArmCpu* cpu, struct ArmMmu* mmu, struct icache* ic,
                                uint32_t cpuid, uint32_t cacheId, bool xscale, bool omap);

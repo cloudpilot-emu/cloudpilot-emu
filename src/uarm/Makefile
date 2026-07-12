@@ -95,6 +95,7 @@ SOURCE_CXX =		 					\
 	uarm/vSD.cpp						\
 	uarm/devicePalmTungstenE2.cpp 		\
 	uarm/cp15mmu.cpp 					\
+	uarm/cp15mpu.cpp 					\
 	uarm/memcpy.cpp						\
 	uarm/syscall_dispatch.cpp			\
 	uarm/db_installer.cpp				\

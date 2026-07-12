@@ -5,7 +5,10 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "CPU.h"
+#include "MMU.h"
 #include "cputil.h"
+#include "icache.h"
 #include "savestate/savestateAll.h"
 
 #define SAVESTATE_VERSION 0
@@ -82,7 +85,7 @@ static bool cp15prvCoprocRegXferFunc(struct ArmCpu* cpu, void* userData, bool tw
 
             if (op2 == 0 && CRm == 0) {
                 if (read)
-                    val = cp15->control;
+                    val = cp15->control | 2;
                 else {
                     uint32_t origVal = val;
 
