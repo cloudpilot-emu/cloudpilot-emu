@@ -3,8 +3,13 @@
 #include <cstddef>
 #include <cstring>
 
+#include "cputil.h"
+#include "savestate/savestateAll.h"
+
 #define MPU_NUM_REGIONS 8
 #define CACHE_EMPTY_VALUE (MPU_NUM_REGIONS | (MPU_NUM_REGIONS << 4))
+
+#define SAVESTATE_VERSION 0
 
 struct MpuRegion {
     bool enabled{false};
@@ -12,8 +17,13 @@ struct MpuRegion {
     uint32_t size{0};
 
     uint32_t config;
-    uint32_t cacheable;
+    uint8_t cacheable;
     uint8_t ap{0};
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        chunkHelper.Do32(base).Do32(size).Do32(config).Do(typename T::Pack8() << cacheable << ap);
+    }
 };
 
 struct ArmMpu {
@@ -27,6 +37,12 @@ struct ArmMpu {
     uint8_t cacheable{0};
     uint8_t bufferable{0};
     uint16_t ap{0};
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        chunkHelper.Do(typename T::Pack8() << cacheable << bufferable).Do16(ap);
+        for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) regions[i].DoSaveLoad(chunkHelper);
+    }
 };
 
 namespace {
@@ -107,7 +123,7 @@ void mpuSetEnabled(ArmMpu* mpu, bool enabled) { mpu->enabled = enabled; }
 void mpuSetCacheable(ArmMpu* mpu, uint8_t cacheable) {
     mpu->cacheable = cacheable;
 
-    for (size_t i = 0; i < MPU_NUM_REGIONS; i++) {
+    for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
         mpu->regions[i].cacheable = ((cacheable >> i) & 0x01) ? MPU_TEST_RESULT_BIT_CACHEABLE : 0;
     }
 }
@@ -117,7 +133,7 @@ void mpuSetBufferable(ArmMpu* mpu, uint8_t bufferable) { mpu->bufferable = buffe
 void mpuSetAP(ArmMpu* mpu, uint16_t ap) {
     mpu->ap = ap;
 
-    for (size_t i = 0; i < MPU_NUM_REGIONS; i++) {
+    for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
         mpu->regions[i].ap = (ap >> (i << 1)) & 0x03;
     }
 }
@@ -142,3 +158,29 @@ uint8_t mpuGetBufferable(ArmMpu* mpu) { return mpu->bufferable; }
 uint16_t mpuGetAP(ArmMpu* mpu) { return mpu->ap; }
 
 uint32_t mpuGetRegionConfig(ArmMpu* mpu, uint8_t region) { return mpu->regions[region].config; }
+
+template <typename T>
+void mpuSave(struct ArmMpu* mpu, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::mpu, SAVESTATE_VERSION);
+    if (!chunk) ERR("unable to allocate chunk");
+
+    SaveChunkHelper helper(*chunk);
+    mpu->DoSaveLoad(helper);
+}
+
+template <typename T>
+void mpuLoad(struct ArmMpu* mpu, T& loader) {
+    auto chunk = loader.GetChunkOrFail(ChunkType::mpu, SAVESTATE_VERSION, "mpu");
+    if (!chunk) return;
+
+    mpuReset(mpu);
+
+    LoadChunkHelper helper(*chunk);
+    mpu->DoSaveLoad(helper);
+
+    rebuildCache(mpu);
+}
+
+template void mpuSave<Savestate<ChunkType>>(ArmMpu* mpu, Savestate<ChunkType>& savestate);
+template void mpuSave<SavestateProbe<ChunkType>>(ArmMpu* mpu, SavestateProbe<ChunkType>& savestate);
+template void mpuLoad<SavestateLoader<ChunkType>>(ArmMpu* mpu, SavestateLoader<ChunkType>& loader);
