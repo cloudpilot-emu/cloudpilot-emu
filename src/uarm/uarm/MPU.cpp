@@ -4,6 +4,7 @@
 #include <cstring>
 
 #define MPU_NUM_REGIONS 8
+#define CACHE_EMPTY_VALUE (MPU_NUM_REGIONS | (MPU_NUM_REGIONS << 4))
 
 struct MpuRegion {
     bool enabled{false};
@@ -18,8 +19,10 @@ struct MpuRegion {
 struct ArmMpu {
     bool enabled{false};
 
+    // 4k pages, 8 pages per cache entry -> 32 - 12 - 3 = 17
     uint32_t regionCache[1 << 17];
 
+    // last region is a dummy and always disabled
     MpuRegion regions[MPU_NUM_REGIONS + 1];
     uint8_t cacheable{0};
     uint8_t bufferable{0};
@@ -28,10 +31,9 @@ struct ArmMpu {
 
 namespace {
     void rebuildCache(ArmMpu* mpu) {
-        memset(mpu->regionCache, MPU_NUM_REGIONS | (MPU_NUM_REGIONS << 4),
-               sizeof(mpu->regionCache));
+        memset(mpu->regionCache, CACHE_EMPTY_VALUE, sizeof(mpu->regionCache));
 
-        for (int8_t iRegion = MPU_NUM_REGIONS - 1; iRegion > 0; iRegion--) {
+        for (int8_t iRegion = MPU_NUM_REGIONS - 1; iRegion >= 0; iRegion--) {
             const MpuRegion& region = mpu->regions[iRegion];
             const size_t pages = region.size >> 12;
 
@@ -39,7 +41,7 @@ namespace {
                 uint32_t& cacheEntry = mpu->regionCache[page >> 3];
                 const uint32_t shift = (page & 0x07) << 2;
 
-                cacheEntry &= ~(0x03 << shift);
+                cacheEntry &= ~(0x0f << shift);
                 cacheEntry |= iRegion << shift;
             }
         }
@@ -68,12 +70,13 @@ void mpuReset(ArmMpu* mpu) {
         region.size = 0;
     }
 
-    memset(mpu->regionCache, MPU_NUM_REGIONS | (MPU_NUM_REGIONS << 4), sizeof(mpu->regionCache));
+    memset(mpu->regionCache, CACHE_EMPTY_VALUE, sizeof(mpu->regionCache));
 }
 
 MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool write, bool privileged) {
     if (!mpu->enabled) return 1;
 
+    // 4k pages, 8 regions per entry -> 12 + 3 = 15
     uint32_t regionIndex = mpu->regionCache[pa >> 15];
     regionIndex >>= ((regionIndex >> 12) & 0x07) << 2;
     regionIndex &= 0x0f;
@@ -105,7 +108,7 @@ void mpuSetCacheable(ArmMpu* mpu, uint8_t cacheable) {
     mpu->cacheable = cacheable;
 
     for (size_t i = 0; i < MPU_NUM_REGIONS; i++) {
-        mpu->regions[i].cacheable = ((cacheable >> i) & 0x01) ? 0x02 : 0;
+        mpu->regions[i].cacheable = ((cacheable >> i) & 0x01) ? MPU_TEST_RESULT_BIT_CACHEABLE : 0;
     }
 }
 

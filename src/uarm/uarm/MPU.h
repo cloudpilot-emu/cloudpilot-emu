@@ -7,8 +7,11 @@ struct ArmMpu;
 
 typedef uint32_t MPUTestResult;
 
-#define MPU_TEST_RESULT_OK(x) (x & 0x01)
-#define MPU_TEST_RESULT_CACHEABLE(x) (x & 0x02)
+#define MPU_TEST_RESULT_BIT_OK 0x01
+#define MPU_TEST_RESULT_BIT_CACHEABLE 0x02
+
+#define MPU_TEST_RESULT_OK(x) (x & MPU_TEST_RESULT_BIT_OK)
+#define MPU_TEST_RESULT_CACHEABLE(x) (x & MPU_TEST_RESULT_BIT_CACHEABLE)
 
 ArmMpu* mpuCreate();
 
