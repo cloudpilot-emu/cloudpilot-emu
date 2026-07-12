@@ -94,7 +94,7 @@ SOURCE_CXX =		 					\
 	uarm/uartdev_bcm2035.cpp			\
 	uarm/vSD.cpp						\
 	uarm/devicePalmTungstenE2.cpp 		\
-	uarm/cp15.cpp 						\
+	uarm/cp15mmu.cpp 					\
 	uarm/memcpy.cpp						\
 	uarm/syscall_dispatch.cpp			\
 	uarm/db_installer.cpp				\

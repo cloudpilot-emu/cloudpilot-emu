@@ -40,7 +40,7 @@
 #include "ROM.h"
 #include "SoC.h"
 #include "audio_queue.h"
-#include "cp15.h"
+#include "cp15mmu.h"
 #include "cputil.h"
 #include "device.h"
 #include "get_emu_time.h"
