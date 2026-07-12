@@ -66,6 +66,7 @@ SOURCE_CXX =		 					\
 	uarm/CPU.cpp						\
 	uarm/pace.cpp 						\
 	uarm/MMU.cpp						\
+	uarm/MPU.cpp						\
 	uarm/pxa270_WMMX.cpp				\
 	uarm/pxa270_KPC.cpp					\
 	uarm/pxa270_IMC.cpp					\
