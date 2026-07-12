@@ -139,7 +139,7 @@ void mpuSetAP(ArmMpu* mpu, uint16_t ap) {
 }
 
 void mpuSetRegionConfig(ArmMpu* mpu, uint8_t iRegion, uint32_t config) {
-    MpuRegion& region = mpu->regions[iRegion];
+    MpuRegion& region = mpu->regions[iRegion & 0x07];
 
     region.config = config;
     region.enabled = config & 0x01;
