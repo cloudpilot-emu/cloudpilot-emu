@@ -9,7 +9,7 @@
 
 #include "CPEndian.h"
 #include "MMU.h"
-#include "cp15.h"
+#include "cp15mmu.h"
 #include "cputil.h"
 #include "gdbstub.h"
 #include "icache.h"
@@ -137,7 +137,7 @@ struct ArmCpu {
     struct icache *ic;
     struct ArmMmu *mmu;
     struct ArmMem *mem;
-    struct ArmCP15 *cp15;
+    struct ArmCP15MMU *cp15;
 
     struct PacePatch *pacePatch;
     uint32_t paceOffset;
@@ -411,7 +411,7 @@ static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, bool write, bo
         addr |= cpu->pid;
 #endif
 
-    cp15SetFaultStatus(cpu->cp15, addr, fsr);
+    cp15MMUSetFaultStatus(cpu->cp15, addr, fsr);
 
     if (instrFetch) {
         // handle prefetch abort (LR is addr of aborted instr + 4)
@@ -3231,7 +3231,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->ic = icacheInit(mem, cpu->mmu);
     if (!cpu->ic) ERR("Cannot init icache");
 
-    cpu->cp15 = cp15Init(cpu, cpu->mmu, cpu->ic, cpuid, cacheId, xscale, omap);
+    cpu->cp15 = cp15MMUInit(cpu, cpu->mmu, cpu->ic, cpuid, cacheId, xscale, omap);
     if (!cpu->mmu) ERR("Cannot init CP15");
 
     cpu->patchDispatch = patchDispatch;
@@ -3549,7 +3549,7 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
                             ARM_SR_MODE_IRQ | ARM_SR_I);
     }
 
-    cp15Cycle(cpu->cp15);
+    cp15MMUCycle(cpu->cp15);
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
     cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
@@ -3701,7 +3701,7 @@ template <typename T>
 void cpuSave(ArmCpu *cpu, T &savestate) {
     paceSave(savestate);
     mmuSave(cpu->mmu, savestate);
-    cp15Save(cpu->cp15, savestate);
+    cp15MMUSave(cpu->cp15, savestate);
     patchDispatchSave(cpu->patchDispatch, savestate);
 
     auto chunk = savestate.GetChunk(ChunkType::cpu, SAVESTATE_VERSION);
@@ -3717,7 +3717,7 @@ void cpuLoad(ArmCpu *cpu, T &loader) {
 
     paceLoad(loader);
     mmuLoad(cpu->mmu, loader);
-    cp15Load(cpu->cp15, loader);
+    cp15MMULoad(cpu->cp15, loader);
     patchDispatchLoad(cpu->patchDispatch, loader);
 
     uint32_t version;

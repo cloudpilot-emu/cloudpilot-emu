@@ -1,6 +1,6 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
-#include "cp15.h"
+#include "cp15mmu.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -10,7 +10,7 @@
 
 #define SAVESTATE_VERSION 0
 
-struct ArmCP15 {
+struct ArmCP15MMU {
     struct ArmCpu* cpu;
     struct ArmMmu* mmu;
     struct icache* ic;
@@ -41,7 +41,7 @@ struct ArmCP15 {
     void DoSaveLoad(T& chunkHelper);
 };
 
-void cp15Cycle(struct ArmCP15* cp15)  // mmu on/off lags by a cycle
+void cp15MMUCycle(struct ArmCP15MMU* cp15)  // mmu on/off lags by a cycle
 {
     if (cp15->mmuSwitchCy) {
         if (!--cp15->mmuSwitchCy) {
@@ -55,7 +55,7 @@ void cp15Cycle(struct ArmCP15* cp15)  // mmu on/off lags by a cycle
 static bool cp15prvCoprocRegXferFunc(struct ArmCpu* cpu, void* userData, bool two, bool read,
                                      uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
                                      uint8_t op2) {
-    struct ArmCP15* cp15 = (struct ArmCP15*)userData;
+    struct ArmCP15MMU* cp15 = (struct ArmCP15MMU*)userData;
     uint32_t val = 0, tmp;
 
     if (!read) val = cpuGetRegExternal(cpu, Rx);
@@ -324,9 +324,9 @@ success:
     return true;
 }
 
-struct ArmCP15* cp15Init(struct ArmCpu* cpu, struct ArmMmu* mmu, struct icache* ic, uint32_t cpuid,
-                         uint32_t cacheId, bool xscale, bool omap) {
-    struct ArmCP15* cp15 = (struct ArmCP15*)malloc(sizeof(*cp15));
+struct ArmCP15MMU* cp15MMUInit(struct ArmCpu* cpu, struct ArmMmu* mmu, struct icache* ic,
+                               uint32_t cpuid, uint32_t cacheId, bool xscale, bool omap) {
+    struct ArmCP15MMU* cp15 = (struct ArmCP15MMU*)malloc(sizeof(*cp15));
     struct ArmCoprocessor cp = {
         .regXfer = cp15prvCoprocRegXferFunc,
         .dataProcessing = nullptr,
@@ -355,14 +355,14 @@ struct ArmCP15* cp15Init(struct ArmCpu* cpu, struct ArmMmu* mmu, struct icache* 
     return cp15;
 }
 
-void cp15SetFaultStatus(struct ArmCP15* cp15, uint32_t addr, uint_fast8_t faultStatus) {
+void cp15MMUSetFaultStatus(struct ArmCP15MMU* cp15, uint32_t addr, uint_fast8_t faultStatus) {
     cp15->FAR = addr;
     cp15->FSR = faultStatus;
 }
 
 template <typename T>
-void cp15Save(struct ArmCP15* cp15, T& savestate) {
-    auto chunk = savestate.GetChunk(ChunkType::cp15, SAVESTATE_VERSION);
+void cp15MMUSave(struct ArmCP15MMU* cp15, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::cp15mmu, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
@@ -370,8 +370,8 @@ void cp15Save(struct ArmCP15* cp15, T& savestate) {
 }
 
 template <typename T>
-void cp15Load(struct ArmCP15* cp15, T& loader) {
-    auto chunk = loader.GetChunkOrFail(ChunkType::cp15, SAVESTATE_VERSION, "cp15");
+void cp15MMULoad(struct ArmCP15MMU* cp15, T& loader) {
+    auto chunk = loader.GetChunkOrFail(ChunkType::cp15mmu, SAVESTATE_VERSION, "cp15mmu");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
@@ -384,12 +384,12 @@ void cp15Load(struct ArmCP15* cp15, T& loader) {
 }
 
 template <typename T>
-void ArmCP15::DoSaveLoad(T& chunkHelper) {
+void ArmCP15MMU::DoSaveLoad(T& chunkHelper) {
     chunkHelper.Do32(control).Do32(ttb).Do32(FSR).Do32(FAR).Do32(CPAR).Do32(ACP).Do32(mmuSwitchCy);
 }
 
-template void cp15Save<Savestate<ChunkType>>(ArmCP15* cp15, Savestate<ChunkType>& savestate);
-template void cp15Save<SavestateProbe<ChunkType>>(ArmCP15* cp15,
-                                                  SavestateProbe<ChunkType>& savestate);
-template void cp15Load<SavestateLoader<ChunkType>>(ArmCP15* cp15,
-                                                   SavestateLoader<ChunkType>& loader);
+template void cp15MMUSave<Savestate<ChunkType>>(ArmCP15MMU* cp15, Savestate<ChunkType>& savestate);
+template void cp15MMUSave<SavestateProbe<ChunkType>>(ArmCP15MMU* cp15,
+                                                     SavestateProbe<ChunkType>& savestate);
+template void cp15MMULoad<SavestateLoader<ChunkType>>(ArmCP15MMU* cp15,
+                                                      SavestateLoader<ChunkType>& loader);

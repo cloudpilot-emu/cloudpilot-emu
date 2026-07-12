@@ -29,7 +29,7 @@ enum class ChunkType : uint32_t {
     cpu = 0x10010,
     pace = 0x10020,
     mmu = 0x10030,
-    cp15 = 0x10040,
+    cp15mmu = 0x10040,
     patchDispatch = 0x10050,
     nand = 0x10060,
     vsd = 0x10070,
