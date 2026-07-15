@@ -33,18 +33,25 @@
 // BYTESWAP is used by Byteswapping.h/.cpp to determine if
 // byteswapping should actually occur.  If not, it's a NOP.
 
-// #error "You need to define __BYTE_ORDER for this platform."
+#define EM_LITTLE_ENDIAN 1
+#define EM_BIG_ENDIAN 2
 
-// You can either define __BYTE_ORDER here, or you can provide
-// a file called endian.h.  If you take the latter course, rerun
-// the configure script so that it can rebuild the makefile with
-// HAVE_ENDIAN_H defined.
-
-// Settle on a canonical name.
-
-#define EM_LITTLE_ENDIAN __LITTLE_ENDIAN
-#define EM_BIG_ENDIAN __BIG_ENDIAN
-#define EM_HOST_BYTE_ORDER __LITTLE_ENDIAN
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)
+    // GCC, Clang, Apple Clang, Emscripten, MinGW, clang-cl
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        #define EM_HOST_BYTE_ORDER EM_LITTLE_ENDIAN
+    #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+        #define EM_HOST_BYTE_ORDER EM_BIG_ENDIAN
+    #else
+        #error "Unsupported __BYTE_ORDER__"
+    #endif
+#elif defined(_MSC_VER) || defined(_WIN32)
+    // MSVC provides no __BYTE_ORDER__. Every supported Windows target
+    // (x86, x64, ARM, ARM64) runs little-endian.
+    #define EM_HOST_BYTE_ORDER EM_LITTLE_ENDIAN
+#else
+    #error "Cannot determine endianness"
+#endif
 
 #if (EM_HOST_BYTE_ORDER == EM_LITTLE_ENDIAN)
     #define BYTESWAP 1
