@@ -1407,10 +1407,11 @@ template <bool wasT, bool link>
 static void execFn_bl_reg(struct ArmCpu *cpu, uint32_t instr) {
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
+    const uint32_t ea = cpuPrvGetReg<wasT>(cpu, instr & 0x0F);
     if (link)
         cpuPrvSetRegNotPC(cpu, REG_NO_LR,
                           cpu->curInstrPC + (wasT ? 3 : 4));  // save return value for BLX
-    cpuPrvSetPC(cpu, cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
+    cpuPrvSetPC(cpu, ea);
 }
 
 template <bool wasT, bool spsr>
