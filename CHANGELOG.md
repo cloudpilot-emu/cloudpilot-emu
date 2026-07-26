@@ -1,3 +1,8 @@
+# Version 2.2.2
+
+- Match an exotic edge case in ARM emulation to an actual PXA, courtesy to
+  Palmsnipe.
+
 # Version 2.2.1
 
 - Minor documentation update.
