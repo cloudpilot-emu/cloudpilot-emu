@@ -2,6 +2,7 @@
 #define _MAIN_LOOP_H_
 
 #include <cstdint>
+#include <deque>
 
 #include "Average.h"
 #include "SoC.h"
@@ -13,6 +14,7 @@ class MainLoop {
     MainLoop(SoC* soc);
 
     double Cycle(uint64_t now);
+    void QueueKeyboardEvent(uint16_t key);
 
     uint64_t GetTimesliceSizeUsec() const;
 
@@ -38,6 +40,7 @@ class MainLoop {
     uint64_t currentIpsMax{0};
 
     Average<uint64_t> cyclesPerSecondAverage;
+    std::deque<uint16_t> keyboardEvents;
 
     uint32_t maxLoad{0};
     uint32_t cyclesPerSecondLimit{0};

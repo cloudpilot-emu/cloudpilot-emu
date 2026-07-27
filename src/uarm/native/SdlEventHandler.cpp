@@ -2,6 +2,8 @@
 
 #include <SDL.h>
 
+#include "MainLoop.h"
+#include "encoding.h"
 #include "keys.h"
 
 namespace {
@@ -43,10 +45,10 @@ namespace {
     }
 }  // namespace
 
-SdlEventHandler::SdlEventHandler(struct SoC* soc, int scale,
+SdlEventHandler::SdlEventHandler(struct SoC* soc, MainLoop& mainLoop, int scale,
                                  DeviceDisplayConfiguration& deviceDisplayConfiguration,
                                  Rotation rotation)
-    : soc(soc), scale(scale), rotation(rotation) {
+    : soc(soc), mainLoop(mainLoop), scale(scale), rotation(rotation) {
     width = deviceDisplayConfiguration.width;
     height = deviceDisplayConfiguration.height + deviceDisplayConfiguration.graffitiHeight;
 }
@@ -83,7 +85,22 @@ void SdlEventHandler::HandleEvents() {
 
                 break;
 
+            case SDL_TEXTINPUT:
+                for (const unsigned char key : Utf8ToIsolatin1(event.text.text))
+                    mainLoop.QueueKeyboardEvent(key);
+                break;
+
             case SDL_KEYDOWN: {
+                if (event.key.keysym.sym == SDLK_BACKSPACE) {
+                    mainLoop.QueueKeyboardEvent(0x08);
+                    break;
+                }
+
+                if (event.key.keysym.sym == SDLK_TAB) {
+                    mainLoop.QueueKeyboardEvent(0x09);
+                    break;
+                }
+
                 enum KeyId key = mapKey(event.key.keysym.sym);
                 if (key) socKeyDown(soc, key);
                 break;

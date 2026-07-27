@@ -42,6 +42,11 @@ double MainLoop::Cycle(uint64_t now) {
     double deltaUsec = now - virtualTimeUsec;
     if (deltaUsec < 0) return 0;
 
+    if (!keyboardEvents.empty()) {
+        socQueueKeyboardEvent(soc, keyboardEvents.front());
+        keyboardEvents.pop_front();
+    }
+
     if (deltaUsec > LAG_THRESHOLD_SKIP_USEC) {
         deltaUsec = TIMESLICE_SIZE_USEC;
         virtualTimeUsec = now - deltaUsec;
@@ -72,6 +77,10 @@ double MainLoop::Cycle(uint64_t now) {
     currentIpsMax = cyclesPerSecondAverage.Calculate();
 
     return slizeSizeSeconds;
+}
+
+void MainLoop::QueueKeyboardEvent(uint16_t key) {
+    if (key != 0) keyboardEvents.push_back(key);
 }
 
 uint64_t MainLoop::GetTimesliceSizeUsec() const { return TIMESLICE_SIZE_USEC; }
