@@ -554,6 +554,12 @@ void socKeyDown(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::K
 
 void socKeyUp(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyUp(key)); }
 
+void socQueueKeyboardEvent(SoC *soc, uint16_t key) {
+    if (key == 0 || !systemStateIsUiInitialized(soc->systemState)) return;
+
+    syscall_EvtEnqueueKey(soc->syscallDispatch, SC_EXECUTE_FULL, key, 0, 0);
+}
+
 void socPenDown(SoC *soc, int x, int y) {
     soc->penEventQueue->Push(PenEvent::PenDown(std::min<int>(std::max<int>(x, 0), 320),
                                                std::min<int>(std::max<int>(y, 0), 480)));

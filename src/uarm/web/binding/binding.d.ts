@@ -72,6 +72,7 @@ export interface Uarm {
 
     KeyDown(key: KeyId): void;
     KeyUp(key: KeyId): void;
+    QueueKey(key: number): void;
 
     PendingSamples(): number;
     PopQueuedSamples(): VoidPtr;

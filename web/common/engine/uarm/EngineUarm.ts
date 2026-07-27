@@ -94,7 +94,7 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     supportsKeyboardIO(): boolean {
-        return false;
+        return true;
     }
 
     shutdown(): void {
@@ -150,7 +150,9 @@ export class EngineUarmImpl implements EngineUarm {
         this.dispatchMessage({ type: HostMessageType.buttonUp, button });
     }
 
-    keyStroke(key: number, ctrl?: boolean): void {}
+    keyStroke(key: number): void {
+        this.dispatchMessage({ type: HostMessageType.keyStroke, key });
+    }
 
     reset(): Promise<void> {
         return this.rpcHost.call('reset', ResetType.normal);

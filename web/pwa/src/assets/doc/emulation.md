@@ -12,9 +12,8 @@ You can interact with the emulator by touching or clicking the screen and the
 hardware buttons below. The power button is located in the menu on the top
 left.
 
-A hardware keyboard can be used to type directly in OS4 and earlier devices (see "Keyboard
-mappings" at the end of this page). This is not available on OS5 devices; on these
-the keyboard always controls the hardware keys.
+A hardware keyboard can be used to type directly into the emulated device (see "Keyboard
+mappings" at the end of this page).
 
 On browsers that support the necessary APIs the clipboard can be shared with
 the host on OS4 and earlier devices. Check "Clipboard integration" below for more details.
@@ -152,9 +151,6 @@ the Palm, and in game mode it controls the hardware buttons.
 
 Game mode can be toggled by pressing `shift-ctrl`. A gamepad icon will appear at the top
 while game mode is active. In normal mode the game mode mappings are accessible by holding `ctrl`.
-
-On OS5 devices, normal mode is not available, and the keyboard will always control the
-hardware buttons.
 
 In both modes `page up` and `page down` control the up / down buttons of the device.
 

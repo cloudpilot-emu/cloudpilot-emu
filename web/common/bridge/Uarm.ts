@@ -187,6 +187,11 @@ export class Uarm {
     }
 
     @guard()
+    queueKey(key: number): void {
+        this.uarm.QueueKey(key);
+    }
+
+    @guard()
     getTimestampUsec(): bigint {
         return this.uarm.GetTimestampUsec();
     }

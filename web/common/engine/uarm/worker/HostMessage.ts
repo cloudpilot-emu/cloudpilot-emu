@@ -11,6 +11,7 @@ export const enum HostMessageType {
     buttonDown = 'buttonDown',
     penUp = 'penUp',
     penDown = 'penDown',
+    keyStroke = 'keyStroke',
     returnFrame = 'returnFrame',
     returnSnapshot = 'returnSnapshot',
     setBackgrounded = 'setBackgrounded',
@@ -46,6 +47,11 @@ export interface HostMessagePenDown {
     y: number;
 }
 
+export interface HostMessageKeyStroke {
+    type: HostMessageType.keyStroke;
+    key: number;
+}
+
 export interface HostMessageReturnFrame {
     type: HostMessageType.returnFrame;
     frame: ArrayBuffer;
@@ -69,6 +75,7 @@ export type HostMessage =
     | HostMessageButtonDown
     | HostMessagePenUp
     | HostMessagePenDown
+    | HostMessageKeyStroke
     | HostMessageReturnFrame
     | HostMessageReturnSnapshot
     | HostMessageSetBackgrounded;

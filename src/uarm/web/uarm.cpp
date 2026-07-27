@@ -161,6 +161,8 @@ void Uarm::KeyDown(int key) { socKeyDown(soc, (enum KeyId)key); }
 
 void Uarm::KeyUp(int key) { socKeyUp(soc, (enum KeyId)key); }
 
+void Uarm::QueueKey(uint16_t key) { socQueueKeyboardEvent(soc, key); }
+
 uint32_t Uarm::PendingSamples() { return audioQueuePendingSamples(audioQueue); }
 
 uint32_t* Uarm::PopQueuedSamples() {

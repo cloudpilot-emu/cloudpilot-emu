@@ -304,6 +304,23 @@ uint16_t syscall_FtrGet(struct SyscallDispatch* sd, uint32_t flags, uint32_t cre
     return err;
 }
 
+uint16_t syscall_EvtEnqueueKey(struct SyscallDispatch* sd, uint32_t flags, uint16_t chr,
+                               uint16_t keyCode, uint16_t modifiers) {
+    const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
+    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+
+    registers[0] = chr;
+    registers[1] = keyCode;
+    registers[2] = modifiers;
+    executeInjectedSyscall(sd, flags, SYSCALL_EVT_ENQUEUE_KEY);
+
+    const uint16_t err = registers[0];
+
+    popState(sd, nestLevel);
+
+    return err;
+}
+
 static uint32_t syscall68k(struct SyscallDispatch* sd, uint32_t flags, uint16_t syscall,
                            bool returnPtr, std::function<void()> setupStack) {
     const size_t nestLevel = pushState(
