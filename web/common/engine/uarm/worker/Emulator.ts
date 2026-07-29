@@ -128,6 +128,10 @@ export class Emulator {
         this.uarm.penUp();
     }
 
+    keyStroke(key: number): void {
+        this.uarm.queueKey(key);
+    }
+
     start(): void {
         this.running = true;
         this.updateRunState();

@@ -231,8 +231,7 @@ speed and host utilization in the session settings.
 -   Formatting an unformatted memory stick in Clié devices that run OS 3.x
     locks up PalmOS. CloudpilotEmu formats newly created cards, so there is
     no need to reformat them in PalmOS.
--   On OS5, keyboard input, clipboard and network integration are not
-    currently available.
+-   On OS5, clipboard and network integration are not currently available.
 -   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
     the skin suggests otherwise.
 -   There is no support for changing the hotsync user name on OS5. Please use

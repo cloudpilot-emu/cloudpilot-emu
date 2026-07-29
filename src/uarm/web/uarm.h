@@ -45,6 +45,7 @@ class Uarm {
 
     void KeyDown(int key);
     void KeyUp(int key);
+    void QueueKey(uint16_t key);
 
     uint32_t PendingSamples();
     uint32_t* PopQueuedSamples();

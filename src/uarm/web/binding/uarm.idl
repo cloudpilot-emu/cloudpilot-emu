@@ -29,6 +29,7 @@ interface Uarm {
 
     void KeyDown(long key);
     void KeyUp(long key);
+    void QueueKey(unsigned short key);
 
     unsigned long PendingSamples();
     VoidPtr PopQueuedSamples();

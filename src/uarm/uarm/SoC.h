@@ -48,6 +48,7 @@ void socResetPendingFrame(struct SoC *soc);
 
 void socKeyDown(struct SoC *soc, enum KeyId key);
 void socKeyUp(struct SoC *soc, enum KeyId key);
+void socQueueKeyboardEvent(struct SoC *soc, uint16_t key);
 void socPenDown(struct SoC *soc, int x, int y);
 void socPenUp(struct SoC *soc);
 

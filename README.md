@@ -205,8 +205,7 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
     framebuffer support, 2D acceleration is not available.
 -   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
     locks up PalmOS.
--   On OS5, keyboard input, clipboard and network integration are not
-    currently available.
+-   On OS5, clipboard and network integration are not currently available.
 -   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
     the skin suggests otherwise.
 -   There is no support for changing the hotsync user name on OS5. Please use

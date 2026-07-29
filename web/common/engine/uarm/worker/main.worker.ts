@@ -136,6 +136,10 @@ async function onMessage(e: MessageEvent) {
             emulator?.penUp();
             break;
 
+        case HostMessageType.keyStroke:
+            emulator?.keyStroke(message.key);
+            break;
+
         case HostMessageType.returnFrame:
             emulator?.returnFrame(message.frame);
             break;

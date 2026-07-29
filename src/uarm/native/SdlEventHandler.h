@@ -5,9 +5,11 @@
 #include "SoC.h"
 #include "device.h"
 
+class MainLoop;
+
 class SdlEventHandler {
    public:
-    SdlEventHandler(struct SoC* soc, int scale,
+    SdlEventHandler(struct SoC* soc, MainLoop& mainLoop, int scale,
                     DeviceDisplayConfiguration& deviceDisplayConfiguration, Rotation rotation);
 
     void HandleEvents();
@@ -24,6 +26,7 @@ class SdlEventHandler {
 
    private:
     struct SoC* soc;
+    MainLoop& mainLoop;
 
     bool penDown{false};
     int scale{1};
