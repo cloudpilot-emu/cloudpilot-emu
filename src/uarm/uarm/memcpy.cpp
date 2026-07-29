@@ -57,7 +57,7 @@ namespace {
                                       reinterpret_cast<unsigned long>(host) | 0x08);
 
         while (size > 0) {
-            MMUTranslateResult translateResult = mmuTranslate(mmu, arm, privileged, false);
+            MMUTranslateResult translateResult = mmuTranslate(mmu, arm, privileged, write);
             if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
                 result->ok = false;
                 result->fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
