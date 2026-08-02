@@ -48,8 +48,11 @@ struct icacheline {
 } __attribute__((aligned(8)));
 
 struct icache {
+    union {
+        struct ArmMmu* mmu;
+        struct ArmMpu* mpu;
+    } memorySystem;
     struct ArmMem* mem;
-    struct ArmMmu* mmu;
 
     uint32_t revision;
     struct icacheline cache[1 << CACHE_INDEX_BITS];
@@ -64,7 +67,7 @@ void icacheInval(struct icache* ic) {
     }
 }
 
-struct icache* icacheInit(struct ArmMem* mem, struct ArmMmu* mmu) {
+static icache* icacheInitCommon(struct ArmMem* mem) {
     struct icache* ic = (struct icache*)malloc(sizeof(*ic));
 
     if (!ic) ERR("cannot alloc icache");
@@ -72,9 +75,22 @@ struct icache* icacheInit(struct ArmMem* mem, struct ArmMmu* mmu) {
     memset(ic, 0, sizeof(*ic));
 
     ic->mem = mem;
-    ic->mmu = mmu;
 
     icacheInval(ic);
+
+    return ic;
+}
+
+struct icache* icacheInit(struct ArmMem* mem, struct ArmMmu* mmu) {
+    struct icache* ic = icacheInitCommon(mem);
+    ic->memorySystem.mmu = mmu;
+
+    return ic;
+}
+
+struct icache* icacheInit(struct ArmMem* mem, struct ArmMpu* mpu) {
+    struct icache* ic = icacheInitCommon(mem);
+    ic->memorySystem.mpu = mpu;
 
     return ic;
 }
@@ -93,7 +109,7 @@ void icacheInvalRange(struct icache* ic, uint32_t addr, uint32_t size) {
     }
 }
 
-template <int sz, int tier>
+template <int msys, int sz, int tier>
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
                  uint32_t& decoded) {
     if (va & (sz - 1)) {  // alignment issue
@@ -107,18 +123,32 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
 
     if (line->revision != ic->revision || line->tag != tag) {
         uint8_t data[sizeof(line->data)];
-        bool cacheable = mmuIsOn(ic->mmu);
+        bool cacheable;
         uint32_t pa = va;
 
-        if (cacheable) {
-            MMUTranslateResult translateResult = mmuTranslate(ic->mmu, va, true, false);
-            if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-                *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
+        if constexpr (msys == ARM_MEMORY_SYSTEM_MMU) {
+            cacheable = mmuIsOn(ic->memorySystem.mmu);
+
+            if (cacheable) {
+                MMUTranslateResult translateResult =
+                    mmuTranslate(ic->memorySystem.mmu, va, true, false);
+                if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+                    *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
+                    return false;
+                }
+
+                pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+                cacheable = MMU_TRANSLATE_RESULT_CACHEABLE(translateResult);
+            }
+        } else {
+            MPUTestResult mpuTestResult = mpuTestAddress(ic->memorySystem.mpu, pa, true, false);
+
+            if (!MPU_TEST_RESULT_OK(mpuTestResult)) {
+                fsrP = 1;
                 return false;
             }
 
-            pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-            cacheable = MMU_TRANSLATE_RESULT_CACHEABLE(translateResult);
+            cacheable = MPU_TEST_RESULT_BIT_CACHEABLE(mpuTestResult);
         }
 
         if (!cacheable) {
@@ -130,11 +160,11 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
             }
 
             if (sz == 4) {
-                decoded = cpuDecodeArm(instr);
+                decoded = cpuDecodeArm<msys>(instr);
             } else {
                 uint32_t translatedInstr;
 
-                decoded = cpuDecodeThumb(instr, translatedInstr);
+                decoded = cpuDecodeThumb<msys>(instr, translatedInstr);
                 instr = translatedInstr;
             }
 
@@ -222,11 +252,17 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
     return true;
 }
 
-template bool icacheFetch<2, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
-                                uint32_t& decoded);
-template bool icacheFetch<4, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
-                                uint32_t& decoded);
-template bool icacheFetch<2, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
-                                uint32_t& decoded);
-template bool icacheFetch<4, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& instr,
-                                uint32_t& decoded);
+#define DEFINE_FETCH_MSYS_SZ_TIER(msys, sz, tier)                                                  \
+    template bool icacheFetch<msys, sz, tier>(struct icache * ic, uint32_t va, uint_fast8_t* fsrP, \
+                                              uint32_t& instr, uint32_t& decoded);
+
+#define DEFINE_FETCH_MSYS_SZ(msys, sz)      \
+    DEFINE_FETCH_MSYS_SZ_TIER(msys, sz, 0); \
+    DEFINE_FETCH_MSYS_SZ_TIER(msys, sz, 1);
+
+#define DEFINE_FETCH_MSYS(msys)    \
+    DEFINE_FETCH_MSYS_SZ(msys, 2); \
+    DEFINE_FETCH_MSYS_SZ(msys, 4);
+
+DEFINE_FETCH_MSYS(ARM_MEMORY_SYSTEM_MMU);
+DEFINE_FETCH_MSYS(ARM_MEMORY_SYSTEM_MPU);

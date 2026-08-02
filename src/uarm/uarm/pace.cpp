@@ -3,6 +3,9 @@
 #include <cstdlib>
 
 #include "CPEndian.h"
+#include "CPU.h"
+#include "MMU.h"
+#include "MPU.h"
 #include "cputil.h"
 #include "mem.h"
 #include "memcpy.h"
@@ -15,6 +18,14 @@
 
 #define SAVESTATE_VERSION 1
 
+#ifdef __BIG_ENDIAN__
+    #define HI_WORD(x) ((uint16_t*)(x))
+    #define LO_WORD(x) ((uint16_t*)(x) + 1)
+#else
+    #define HI_WORD(x) ((uint16_t*)(x) + 1)
+    #define LO_WORD(x) ((uint16_t*)(x))
+#endif
+
 namespace {
 #ifdef __EMSCRIPTEN__
     cpuop_func* cpufunctbl_base;
@@ -22,8 +33,14 @@ namespace {
     cpuop_func* cpufunctbl[65536];  // (normally in newcpu.c)
 #endif
 
-    struct ArmMem* mem = NULL;
-    struct ArmMmu* mmu = NULL;
+    struct ArmMem* mem = nullptr;
+
+    union {
+        struct ArmMpu* mpu{nullptr};
+        struct ArmMmu* mmu;
+    } memorySystem;
+
+    uint8_t memorySystemKind = ARM_MEMORY_SYSTEM_MMU;
 
     uint_fast8_t fsr = 0;
     uint32_t lastAddr = 0;
@@ -39,14 +56,25 @@ namespace {
         lastAddr = addr;
         wasWrite = false;
 
-        MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+        uint32_t pa;
+        if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+            MMUTranslateResult translateResult =
+                mmuTranslate(memorySystem.mmu, addr, priviledged, false);
 
-        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-            fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
-            return 0;
+            if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+                fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+                return 0;
+            }
+
+            pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+        } else {
+            if (!MPU_TEST_RESULT_OK(mpuTestAddress(memorySystem.mpu, addr, priviledged, false))) {
+                fsr = 1;
+                return 0;
+            }
+
+            pa = addr;
         }
-
-        const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
         uint32_t result = 0;
 
@@ -65,13 +93,14 @@ namespace {
     }
 
     uint32_t uae_get32_split(uint32_t addr) {
-        if ((addr & 0x3ff) <= (0x3ff - 4)) {
-            if (fsr != 0) return 0;
+        if (fsr != 0) return;
 
+        if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU && (addr & 0x3ff) <= (0x3ff - 4)) {
             lastAddr = addr;
             wasWrite = false;
 
-            MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+            MMUTranslateResult translateResult =
+                mmuTranslate(memorySystem.mmu, addr, priviledged, false);
 
             if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
                 fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
@@ -81,21 +110,45 @@ namespace {
             const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
             uint32_t val_le;
 
-            if (!memAccess(mem, pa, 2, false, &val_le)) {
+            if (!memAccess(mem, pa, 2, false, LO_WORD(&val_le))) {
                 fsr = 10;
                 return 0;
             }
 
             lastAddr += 2;
 
-            if (!memAccess(mem, pa + 2, 2, false, (uint8_t*)(&val_le) + 2)) {
+            if (!memAccess(mem, pa + 2, 2, false, HI_WORD(&val_le))) {
                 fsr = 10;
                 return 0;
             }
 
-            return htobe32(val_le);
+            return bswap32(val_le);
+        } else if (memorySystemKind == ARM_MEMORY_SYSTEM_MPU && (addr & 0xfff) <= (0xfff - 4)) {
+            lastAddr = addr;
+            wasWrite = false;
+
+            if (!MPU_TEST_RESULT_OK(mpuTestAddress(memorySystem.mpu, addr, priviledged, false))) {
+                fsr = 1;
+                return 0;
+            }
+
+            uint32_t val_le;
+
+            if (!memAccess(mem, addr, 2, false, LO_WORD(&val_le))) {
+                fsr = 1;
+                return 0;
+            }
+
+            lastAddr += 2;
+
+            if (!memAccess(mem, addr + 2, 2, false, HI_WORD(&val_le))) {
+                fsr = 1;
+                return 0;
+            }
+
+            return bswap32(val_le);
         } else {
-            return htobe32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
+            return bswap32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
         }
     }
 
@@ -105,16 +158,23 @@ namespace {
         lastAddr = addr;
         wasWrite = true;
 
-        // fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
+        uint32_t pa;
+        if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+            MMUTranslateResult translateResult =
+                mmuTranslate(memorySystem.mmu, addr, priviledged, true);
 
-        MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, true);
+            if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+                fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+                return;
+            }
 
-        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-            fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
-            return;
+            pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+        } else {
+            if (!MPU_TEST_RESULT_OK(mpuTestAddress(memorySystem.mpu, addr, priviledged, true))) {
+                fsr = 1;
+                return;
+            }
         }
-
-        uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
 #if __BYTE_ORDER == __BIG_ENDIAN
         bool ok = memAccess(mem, pa, size, true, reinterpret_cast<uint8_t*>(&value) + 4 - size);
@@ -128,15 +188,15 @@ namespace {
     }
 
     void uae_put32_split(uint32_t addr, uint32_t value) {
-        value = htobe32(value);
+        if (fsr != 0) return;
+        value = bswap32(value);
 
-        if ((addr & 0x3ff) <= (0x3ff - 4)) {
-            if (fsr != 0) return;
-
+        if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU && (addr & 0x3ff) <= (0x3ff - 4)) {
             lastAddr = addr;
             wasWrite = true;
 
-            MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+            MMUTranslateResult translateResult =
+                mmuTranslate(memorySystem.mmu, addr, priviledged, false);
 
             if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
                 fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
@@ -145,14 +205,31 @@ namespace {
 
             const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
-            if (!memAccess(mem, pa, 2, true, &value)) {
+            if (!memAccess(mem, pa, 2, true, LO_WORD(&value))) {
                 fsr = 10;
                 return;
             }
 
             lastAddr += 2;
 
-            if (!memAccess(mem, pa + 2, 2, true, (uint8_t*)(&value) + 2)) fsr = 10;
+            if (!memAccess(mem, pa + 2, 2, true, HI_WORD(&value))) fsr = 10;
+        } else if (memorySystemKind == ARM_MEMORY_SYSTEM_MPU && (addr & 0xfff) <= (0xfff - 4)) {
+            lastAddr = addr;
+            wasWrite = true;
+
+            if (!MPU_TEST_RESULT_OK(mpuTestAddress(memorySystem.mpu, addr, priviledged, true))) {
+                fsr = 1;
+                return;
+            }
+
+            if (!memAccess(mem, addr, 2, true, LO_WORD(&value))) {
+                fsr = 10;
+                return;
+            }
+
+            lastAddr += 2;
+
+            if (!memAccess(mem, addr + 2, 2, true, HI_WORD(&value))) fsr = 10;
         } else {
             pace_put_le(addr, value, 2);
             pace_put_le(addr + 2, value >> 16, 2);
@@ -338,11 +415,20 @@ static void staticInit() {
     initialized = true;
 }
 
-void paceInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
+void paceInit(struct ArmMem* _mem, struct ArmMmu* mmu) {
     staticInit();
-
     mem = _mem;
-    mmu = _mmu;
+
+    memorySystemKind = ARM_MEMORY_SYSTEM_MMU;
+    memorySystem.mmu = mmu;
+}
+
+void paceInit(struct ArmMem* _mem, struct ArmMpu* mpu) {
+    staticInit();
+    mem = _mem;
+
+    memorySystemKind = ARM_MEMORY_SYSTEM_MPU;
+    memorySystem.mpu = mpu;
 }
 
 void paceSetStatePtr(uint32_t addr) { statePtr = addr; }
@@ -430,7 +516,14 @@ bool paceLoad68kState() {
                          : (uint8_t*)stateScratchBuffer;
 
     struct MemcpyResult result;
-    memcpy_armToHost(state, statePtr, sizeof(stateScratchBuffer), priviledged, mem, mmu, &result);
+
+    if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        memcpy_armToHost(state, statePtr, sizeof(stateScratchBuffer), priviledged, mem,
+                         memorySystem.mmu, &result);
+    } else {
+        memcpy_armToHost(state, statePtr, sizeof(stateScratchBuffer), priviledged, mem,
+                         memorySystem.mpu, &result);
+    }
 
     if (!result.ok) {
         lastAddr = result.faultAddr;
@@ -472,7 +565,14 @@ bool paceSave68kState() {
     }
 
     struct MemcpyResult result;
-    memcpy_hostToArm(statePtr, state, sizeof(stateScratchBuffer), priviledged, mem, mmu, &result);
+
+    if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        memcpy_hostToArm(statePtr, state, sizeof(stateScratchBuffer), priviledged, mem,
+                         memorySystem.mmu, &result);
+    } else {
+        memcpy_hostToArm(statePtr, state, sizeof(stateScratchBuffer), priviledged, mem,
+                         memorySystem.mpu, &result);
+    }
 
     if (!result.ok) {
         lastAddr = result.faultAddr;

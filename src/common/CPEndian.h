@@ -36,4 +36,19 @@
     #include <endian.h>
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+    #define bswap32(x) __builtin_bswap32(x)
+    #define bswap16(x) __builtin_bswap16(x)
+#elif defined(_MSC_VER)
+    #include <stdlib.h>
+    #define bswap32(x) _byteswap_ulong(x)
+    #define bswap16(x) _byteswap_ushort(x)
+#else
+static inline uint32_t bswap32(uint32_t x) {
+    return (((x & 0xff) << 24) | ((x & 0xff00) << 8) | (((x & 0xff0000) >> 8)) | ((x >> 24)));
+}
+
+static inline uint16_t bswap16(uint16_t x) { return (x >> 8) | ((x & 0xff) << 8); }
+#endif
+
 #endif  // _CPENDTIAN_H_

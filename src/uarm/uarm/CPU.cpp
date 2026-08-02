@@ -9,7 +9,9 @@
 
 #include "CPEndian.h"
 #include "MMU.h"
+#include "MPU.h"
 #include "cp15mmu.h"
+#include "cp15mpu.h"
 #include "cputil.h"
 #include "gdbstub.h"
 #include "icache.h"
@@ -134,10 +136,19 @@ struct ArmCpu {
 
     uint32_t pid;  // for fcse
 
+    uint8_t memorySystemKind;
+    union {
+        struct ArmMmu *mmu;
+        struct ArmMpu *mpu;
+    } memorySystem;
+
     struct icache *ic;
-    struct ArmMmu *mmu;
     struct ArmMem *mem;
-    struct ArmCP15MMU *cp15;
+
+    union {
+        struct ArmCP15MMU *cp15mmu;
+        struct ArmCP15MPU *cp15mpu;
+    } cp15;
 
     struct PacePatch *pacePatch;
     uint32_t paceOffset;
@@ -411,7 +422,9 @@ static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, bool write, bo
         addr |= cpu->pid;
 #endif
 
-    cp15MMUSetFaultStatus(cpu->cp15, addr, fsr);
+    if (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        cp15MMUSetFaultStatus(cpu->cp15.cp15mmu, addr, fsr);
+    }
 
     if (instrFetch) {
         // handle prefetch abort (LR is addr of aborted instr + 4)
@@ -684,7 +697,7 @@ static FORCE_INLINE int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
     return (sign < 0) ? -0x80000000L : 0x7fffffffl;
 }
 
-template <int size>
+template <int memorySystemKind, int size>
 static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
                                        bool priviledged, uint_fast8_t *fsrP) {
     gdbStubReportMemAccess(cpu->debugStub, vaddr, size, write);
@@ -701,14 +714,25 @@ static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t v
     if (vaddr < 0x02000000UL) vaddr |= cpu->pid;
 #endif
 
-    MMUTranslateResult translateResult = mmuTranslate(cpu->mmu, vaddr, priviledged, write);
+    uint32_t pa;
+    if constexpr (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        MMUTranslateResult translateResult =
+            mmuTranslate(cpu->memorySystem.mmu, vaddr, priviledged, write);
 
-    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-        *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
-        return false;
+        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+            *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
+            return false;
+        }
+
+        pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    } else {
+        if (!MPU_TEST_RESULT_OK(mpuTestAddress(cpu->memorySystem.mpu, vaddr, priviledged, write))) {
+            *fsrP = 1;
+            return false;
+        }
+
+        pa = vaddr;
     }
-
-    uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
     bool ok = memAccess(cpu->mem, pa, size, write, buf);
 
@@ -721,14 +745,45 @@ static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t v
     return true;
 }
 
-// for internal use
 template <int size>
+static FORCE_INLINE bool cpuPrvMemOpExGeneric(struct ArmCpu *cpu, void *buf, uint32_t vaddr,
+                                              bool write, bool priviledged, uint_fast8_t *fsrP) {
+    if (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        return cpuPrvMemOpEx<ARM_MEMORY_SYSTEM_MMU, size>(cpu, buf, vaddr, write, priviledged,
+                                                          fsrP);
+    } else {
+        return cpuPrvMemOpEx<ARM_MEMORY_SYSTEM_MPU, size>(cpu, buf, vaddr, write, priviledged,
+                                                          fsrP);
+    }
+}
+
+// for internal use
+template <int memorySystemKind, int size>
 static FORCE_INLINE bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
                                      bool priviledged, uint_fast8_t *fsrP) {
 #ifdef __EMSCRIPTEN__
-    return cpuPrvMemOpEx<size>(cpu, buf, vaddr, write, priviledged, fsrP);
+    return cpuPrvMemOpEx<memorySystemKind, size>(cpu, buf, vaddr, write, priviledged, fsrP);
 #else
-    if (cpuPrvMemOpEx<size>(cpu, buf, vaddr, write, priviledged, fsrP)) return true;
+    if (cpuPrvMemOpEx<memorySystemKind, size>(cpu, buf, vaddr, write, priviledged, fsrP))
+        return true;
+
+    fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
+            (unsigned long)vaddr);
+
+    gdbStubDebugBreakRequested(cpu->debugStub);
+
+    return false;
+#endif
+}
+
+// for internal use
+template <int size>
+static FORCE_INLINE bool cpuPrvMemOpGeneric(struct ArmCpu *cpu, void *buf, uint32_t vaddr,
+                                            bool write, bool priviledged, uint_fast8_t *fsrP) {
+#ifdef __EMSCRIPTEN__
+    return cpuPrvMemOpEx<memorySystemKind, size>(cpu, buf, vaddr, write, priviledged, fsrP);
+#else
+    if (cpuPrvMemOpExGeneric<size>(cpu, buf, vaddr, write, priviledged, fsrP)) return true;
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
             (unsigned long)vaddr);
@@ -745,90 +800,21 @@ bool cpuMemOpExternal(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_
 {
     switch (size) {
         case 1:
-            return cpuPrvMemOpEx<1>(cpu, buf, vaddr, write, true, NULL);
+            return cpuPrvMemOpExGeneric<1>(cpu, buf, vaddr, write, true, NULL);
 
         case 2:
-            return cpuPrvMemOpEx<2>(cpu, buf, vaddr, write, true, NULL);
+            return cpuPrvMemOpExGeneric<2>(cpu, buf, vaddr, write, true, NULL);
 
         case 4:
-            return cpuPrvMemOpEx<4>(cpu, buf, vaddr, write, true, NULL);
+            return cpuPrvMemOpExGeneric<4>(cpu, buf, vaddr, write, true, NULL);
 
         case 8:
-            return cpuPrvMemOpEx<8>(cpu, buf, vaddr, write, true, NULL);
+            return cpuPrvMemOpExGeneric<8>(cpu, buf, vaddr, write, true, NULL);
 
         default:
             ERR("invalid size %i\n", size);
     }
 }
-
-#ifdef SUPPORT_AXIM_PRINTF
-static uint32_t cpuPrvAximSysPrintfGetParam(struct ArmCpu *cpu, uint32_t *atP) {
-    uint32_t at = *atP;
-
-    *atP += 4;
-
-    return cpuPrvMemOp(cpu, &at, at, 4, false, true, NULL) ? at : 0;
-}
-
-static void cpuPrvAximSysPrintf(struct ArmCpu *cpu) {
-    if (cpu->curInstrPC == 0x8006EE64UL) {
-        uint32_t a = cpu->regs[0] / 2, params = cpu->regs[1], ptr;
-        bool infmt = false;
-        uint16_t v;
-
-        while (cpuPrvMemOp(cpu, &v, a++ * 2, 2, false, true, NULL) && v) {
-            if (infmt) switch (v) {
-                    case '%':
-                        fprintf(stderr, "%%");
-                        infmt = false;
-                        break;
-
-                    case 'a':
-                        fprintf(stderr, "0x%08x", cpuPrvAximSysPrintfGetParam(cpu, &params));
-                        infmt = false;
-                        break;
-
-                    case '0' ... '9':
-                    case 'l':
-                    case '.':
-                        break;
-
-                    case 'd':
-                        fprintf(stderr, "%d", cpuPrvAximSysPrintfGetParam(cpu, &params));
-                        infmt = false;
-                        break;
-
-                    case 'u':
-                        fprintf(stderr, "%u", cpuPrvAximSysPrintfGetParam(cpu, &params));
-                        infmt = false;
-                        break;
-
-                    case 'x':
-                    case 'X':
-                        fprintf(stderr, "%x", cpuPrvAximSysPrintfGetParam(cpu, &params));
-                        infmt = false;
-                        break;
-
-                    case 's':
-                        ptr = cpuPrvAximSysPrintfGetParam(cpu, &params) / 2;
-                        while (cpuPrvMemOp(cpu, &v, ptr++ * 2, 2, false, true, NULL) && v)
-                            fprintf(stderr, "%c", v);
-                        infmt = false;
-                        break;
-
-                    default:
-                        fprintf(stderr, "unknown format modifier %%%c", v);
-                        infmt = false;
-                        break;
-                }
-            else if (v == '%')
-                infmt = true;
-            else
-                fprintf(stderr, "%c", v);
-        }
-    }
-}
-#endif
 
 static FORCE_INLINE uint64_t cpuPrv64FromHalves(uint64_t hi, uint32_t lo) {
     // better than shifting in almost all compilers
@@ -874,90 +860,19 @@ static void cpuPrvHandlePaceMemoryFault(struct ArmCpu *cpu) {
     cpuPrvHandleMemErr(cpu, addr, wasWrite, false, fsr);
 }
 
-#ifdef SUPPORT_Z72_PRINTF
-static uint32_t cpuPrvZ72sysPrintfGetParam(struct ArmCpu *cpu, uint32_t *paramIdxP) {
-    uint32_t idx = (*paramIdxP)++, val;
-
-    if (idx < 4) return cpu->regs[idx];
-
-    idx -= 4;
-    cpuPrvMemOp(cpu, &val, cpu->regs[REG_NO_SP] + idx * 4, 4, false, true, NULL);
-
-    return val;
-}
-
-static void cpuPrvZ72sysPrintf(struct ArmCpu *cpu) {
-    if (cpu->curInstrPC == 0x200959BCUL) {
-        uint32_t a = cpu->regs[0], paramIdx = 1, ptr;
-        bool infmt = false;
-        char v;
-
-        while (cpuPrvMemOp(cpu, &v, a++, 1, false, true, NULL) && v) {
-            if (infmt) switch (v) {
-                    case '%':
-                        fprintf(stderr, "%%");
-                        infmt = false;
-                        break;
-
-                    case 'a':
-                        fprintf(stderr, "0x%08x", cpuPrvZ72sysPrintfGetParam(cpu, &paramIdx));
-                        infmt = false;
-                        break;
-
-                    case '0' ... '9':
-                    case 'l':
-                    case '.':
-                        break;
-
-                    case 'd':
-                        fprintf(stderr, "%d", cpuPrvZ72sysPrintfGetParam(cpu, &paramIdx));
-                        infmt = false;
-                        break;
-
-                    case 'u':
-                        fprintf(stderr, "%u", cpuPrvZ72sysPrintfGetParam(cpu, &paramIdx));
-                        infmt = false;
-                        break;
-
-                    case 'x':
-                    case 'X':
-                        fprintf(stderr, "%x", cpuPrvZ72sysPrintfGetParam(cpu, &paramIdx));
-                        infmt = false;
-                        break;
-
-                    case 's':
-                        ptr = cpuPrvZ72sysPrintfGetParam(cpu, &paramIdx);
-                        while (cpuPrvMemOp(cpu, &v, ptr++, 1, false, true, NULL) && v)
-                            fprintf(stderr, "%c", v);
-                        infmt = false;
-                        break;
-
-                    default:
-                        fprintf(stderr, "unknown format modifier %%%c", v);
-                        infmt = false;
-                        break;
-                }
-            else if (v == '%')
-                infmt = true;
-            else
-                fprintf(stderr, "%c", v);
-        }
-    }
-}
-#endif
-
 template <bool wasT>
 static void execFn_noop(struct ArmCpu *cpu, uint32_t instr) {}
 
 // PACE entrypoint was called from ARM: regular invocation
-static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind>
+static void execFn_memop_paceEnter(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr = 0;
 
     for (uint8_t reg : {REG_NO_LR, 11, 10, 9, 8, 7, 6, 5, 4, 0}) {
         cpu->regs[REG_NO_SP] -= 4;
 
-        if (!cpuPrvMemOp<4>(cpu, &cpu->regs[reg], cpu->regs[REG_NO_SP], true, cpu->privileged,
-                            &fsr))
+        if (!cpuPrvMemOp<memorySystemKind, 4>(cpu, &cpu->regs[reg], cpu->regs[REG_NO_SP], true,
+                                              cpu->privileged, &fsr))
             return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
     }
 
@@ -997,16 +912,18 @@ static void execFn_paceResume(struct ArmCpu *cpu, uint32_t instr) {
 }
 
 // PACE was reentered after a callout
-static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind>
+static void execFn_memop_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr = 0;
 
     // restore r0 / state pointer from stack
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, cpu->privileged, &fsr))
+    if (!cpuPrvMemOp<memorySystemKind, 4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false,
+                                          cpu->privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], false, false, fsr);
 
     // restore r9 / dispatch table pointer from stack
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[9], cpu->regs[REG_NO_SP] + 24, false, cpu->privileged,
-                        &fsr))
+    if (!cpuPrvMemOp<memorySystemKind, 4>(cpu, &cpu->regs[9], cpu->regs[REG_NO_SP] + 24, false,
+                                          cpu->privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP] + 24, false, false, fsr);
 
     paceSetPriviledged(cpu->privileged);
@@ -1043,7 +960,8 @@ static void execFn_peephole_ADC_sdiv10(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
 }
 
-static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind>
+static void execFn_memop_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t src = cpuPrvGetRegNotPC(cpu, 1);
     uint32_t dest = cpuPrvGetRegNotPC(cpu, 0);
     uint32_t size = cpuPrvGetRegNotPC(cpu, 2);
@@ -1053,7 +971,11 @@ static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr) {
     icacheInvalRange(cpu->ic, dest, size);
 
     MemcpyResult result;
-    memcpy_armToArm(dest, src, size, cpu->privileged, cpu->mem, cpu->mmu, &result);
+    if constexpr (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        memcpy_armToArm(dest, src, size, cpu->privileged, cpu->mem, cpu->memorySystem.mmu, &result);
+    } else {
+        memcpy_armToArm(dest, src, size, cpu->privileged, cpu->mem, cpu->memorySystem.mpu, &result);
+    }
 
     if (!result.ok) {
         cpuPrvHandleMemErr(cpu, result.faultAddr, result.wasWrite, false, result.fsr);
@@ -1164,8 +1086,8 @@ invalid_instr:
     execFn_invalid<wasT>(cpu, instr);
 }
 
-template <bool wasT, int tag>
-static void execFn_swb(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind, bool wasT, int tag>
+static void execFn_memop_swb(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, ea, memVal32;
     bool ok;
     uint_fast8_t fsr;
@@ -1177,14 +1099,14 @@ static void execFn_swb(struct ArmCpu *cpu, uint32_t instr) {
         case 0:  // SWP
 
             ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
-            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, cpu->privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 4>(cpu, &memVal32, ea, false, cpu->privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                 return;
             }
             op1 = memVal32;
             memVal32 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, cpu->privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 4>(cpu, &memVal32, ea, true, cpu->privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
                 return;
@@ -1195,14 +1117,14 @@ static void execFn_swb(struct ArmCpu *cpu, uint32_t instr) {
         case 4:  // SWPB
 
             ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
-            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, cpu->privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 1>(cpu, &memVal8, ea, false, cpu->privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                 return;
             }
             op1 = memVal8;
             memVal8 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, cpu->privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 1>(cpu, &memVal8, ea, true, cpu->privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
                 return;
@@ -1290,8 +1212,9 @@ static void execFn_mult(struct ArmCpu *cpu, uint32_t instr) {
     }
 }
 
-template <bool wasT, int mode, bool pc, bool addBefore, bool addAfter, bool immediate, bool negate>
-static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind, bool wasT, int mode, bool pc, bool addBefore, bool addAfter,
+          bool immediate, bool negate>
+static void execFn_memop_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t ea, increment;
     bool ok;
     uint_fast8_t fsr, reg;
@@ -1317,7 +1240,8 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
         switch (mode & ARM_MODE_3_TYPE) {
             case ARM_MODE_3_H:
 
-                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, cpu->privileged, &fsr);
+                ok = cpuPrvMemOp<memorySystemKind, 2>(cpu, &memVal16, ea, false, cpu->privileged,
+                                                      &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                     return;
@@ -1327,7 +1251,8 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
 
             case ARM_MODE_3_SH:
 
-                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, cpu->privileged, &fsr);
+                ok = cpuPrvMemOp<memorySystemKind, 2>(cpu, &memVal16, ea, false, cpu->privileged,
+                                                      &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                     return;
@@ -1337,7 +1262,8 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
 
             case ARM_MODE_3_SB:
 
-                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, cpu->privileged, &fsr);
+                ok = cpuPrvMemOp<memorySystemKind, 1>(cpu, &memVal8, ea, false, cpu->privileged,
+                                                      &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                     return;
@@ -1347,7 +1273,8 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
 
             case ARM_MODE_3_D:
 
-                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, false, cpu->privileged, &fsr);
+                ok = cpuPrvMemOp<memorySystemKind, 8>(cpu, doubleMem, ea, false, cpu->privileged,
+                                                      &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                     return;
@@ -1363,7 +1290,8 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
                 memVal16 = mode & ARM_MDOE_3_PCREL
                                ? cpuPrvGetReg<wasT, true>(cpu, (instr >> 12) & 0x0F)
                                : cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);
-                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, true, cpu->privileged, &fsr);
+                ok = cpuPrvMemOp<memorySystemKind, 2>(cpu, &memVal16, ea, true, cpu->privileged,
+                                                      &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
                     return;
@@ -1378,7 +1306,8 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
 
                 doubleMem[0] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 0);
                 doubleMem[1] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 1);
-                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, true, cpu->privileged, &fsr);
+                ok = cpuPrvMemOp<memorySystemKind, 8>(cpu, doubleMem, ea, true, cpu->privileged,
+                                                      &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
                     return;
@@ -1752,9 +1681,9 @@ static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr) {
     }
 }
 
-template <bool wasT, int mode, bool srcPc, bool destPc, bool addBefore, bool addAfter,
-          bool immediate, bool negate>
-static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind, bool wasT, int mode, bool srcPc, bool destPc, bool addBefore,
+          bool addAfter, bool immediate, bool negate>
+static void execFn_memop_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, ea, memVal32, increment;
     bool ok;
     uint_fast8_t fsr, sourceReg, destReg;
@@ -1805,7 +1734,7 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
 
     if (mode & ARM_MODE_2_LOAD) {
         if (mode & ARM_MODE_2_WORD) {
-            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 4>(cpu, &memVal32, ea, false, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                 return;
@@ -1833,7 +1762,7 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
                 cpuPrvSetReg<destPc>(cpu, destReg, memVal32);
             }
         } else {
-            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 1>(cpu, &memVal8, ea, false, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
                 return;
@@ -1845,14 +1774,14 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
 
         if (mode & ARM_MODE_2_WORD) {
             memVal32 = op1;
-            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 4>(cpu, &memVal32, ea, true, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
                 return;
             }
         } else {
             memVal8 = op1;
-            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
+            ok = cpuPrvMemOp<memorySystemKind, 1>(cpu, &memVal8, ea, true, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
                 return;
@@ -1868,8 +1797,8 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
     }
 }
 
-template <bool wasT, int mode, bool isLoad, bool sBit>
-static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind, bool wasT, int mode, bool isLoad, bool sBit>
+static void execFn_memop_load_store_multi(struct ArmCpu *cpu, uint32_t instr) {
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     bool userModeRegs = false, copySPSR = false, ok;
@@ -1888,52 +1817,52 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr) {
             userModeRegs = true;
     }
 
-#define LOAD_STORE_MULTI_ITER(idx)                                               \
-    do {                                                                         \
-        constexpr uint8_t regNo = (mode & ARM_MODE_4_INC) ? idx : 15 - idx;      \
-        if (!(regsList & (1 << regNo))) continue;                                \
-                                                                                 \
-        if (!isLoad) {                                                           \
-            memVal32 = cpuPrvGetReg<wasT>(cpu, regNo);                           \
-            if (unlikely(userModeRegs)) {                                        \
-                if (regNo >= 8 && regNo <= 12 && (cpu->M == ARM_SR_MODE_FIQ))    \
-                    memVal32 = cpu->extra_regs[regNo - 8];                       \
-                else if (regNo == REG_NO_SP)                                     \
-                    memVal32 = cpu->bank_usr.R13;                                \
-                else if (regNo == REG_NO_LR)                                     \
-                    memVal32 = cpu->bank_usr.R14;                                \
-            }                                                                    \
-        }                                                                        \
-                                                                                 \
-        if (mode & ARM_MODE_4_BFR) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;       \
-        ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, !isLoad, cpu->privileged, &fsr); \
-        if (!ok) {                                                               \
-            cpuPrvHandleMemErr(cpu, ea, !isLoad, false, fsr);                    \
-            if (regsList & (1 << reg)) cpuPrvSetReg(cpu, reg, origBaseRegVal);   \
-                                                                                 \
-            return;                                                              \
-        }                                                                        \
-        if (!(mode & ARM_MODE_4_BFR)) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;    \
-                                                                                 \
-        if (isLoad) {                                                            \
-            if (unlikely(userModeRegs)) {                                        \
-                if (regNo >= 8 && regNo <= 12 && (cpu->M == ARM_SR_MODE_FIQ)) {  \
-                    cpu->extra_regs[regNo - 8] = memVal32;                       \
-                    continue;                                                    \
-                } else if (regNo == REG_NO_SP) {                                 \
-                    cpu->bank_usr.R13 = memVal32;                                \
-                    continue;                                                    \
-                } else if (regNo == REG_NO_LR) {                                 \
-                    cpu->bank_usr.R14 = memVal32;                                \
-                    continue;                                                    \
-                }                                                                \
-            }                                                                    \
-                                                                                 \
-            if (unlikely(regNo == REG_NO_PC && copySPSR))                        \
-                loadedPc = memVal32;                                             \
-            else                                                                 \
-                cpuPrvSetReg(cpu, regNo, memVal32);                              \
-        }                                                                        \
+#define LOAD_STORE_MULTI_ITER(idx)                                                                 \
+    do {                                                                                           \
+        constexpr uint8_t regNo = (mode & ARM_MODE_4_INC) ? idx : 15 - idx;                        \
+        if (!(regsList & (1 << regNo))) continue;                                                  \
+                                                                                                   \
+        if (!isLoad) {                                                                             \
+            memVal32 = cpuPrvGetReg<wasT>(cpu, regNo);                                             \
+            if (unlikely(userModeRegs)) {                                                          \
+                if (regNo >= 8 && regNo <= 12 && (cpu->M == ARM_SR_MODE_FIQ))                      \
+                    memVal32 = cpu->extra_regs[regNo - 8];                                         \
+                else if (regNo == REG_NO_SP)                                                       \
+                    memVal32 = cpu->bank_usr.R13;                                                  \
+                else if (regNo == REG_NO_LR)                                                       \
+                    memVal32 = cpu->bank_usr.R14;                                                  \
+            }                                                                                      \
+        }                                                                                          \
+                                                                                                   \
+        if (mode & ARM_MODE_4_BFR) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;                         \
+        ok = cpuPrvMemOp<memorySystemKind, 4>(cpu, &memVal32, ea, !isLoad, cpu->privileged, &fsr); \
+        if (!ok) {                                                                                 \
+            cpuPrvHandleMemErr(cpu, ea, !isLoad, false, fsr);                                      \
+            if (regsList & (1 << reg)) cpuPrvSetReg(cpu, reg, origBaseRegVal);                     \
+                                                                                                   \
+            return;                                                                                \
+        }                                                                                          \
+        if (!(mode & ARM_MODE_4_BFR)) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;                      \
+                                                                                                   \
+        if (isLoad) {                                                                              \
+            if (unlikely(userModeRegs)) {                                                          \
+                if (regNo >= 8 && regNo <= 12 && (cpu->M == ARM_SR_MODE_FIQ)) {                    \
+                    cpu->extra_regs[regNo - 8] = memVal32;                                         \
+                    continue;                                                                      \
+                } else if (regNo == REG_NO_SP) {                                                   \
+                    cpu->bank_usr.R13 = memVal32;                                                  \
+                    continue;                                                                      \
+                } else if (regNo == REG_NO_LR) {                                                   \
+                    cpu->bank_usr.R14 = memVal32;                                                  \
+                    continue;                                                                      \
+                }                                                                                  \
+            }                                                                                      \
+                                                                                                   \
+            if (unlikely(regNo == REG_NO_PC && copySPSR))                                          \
+                loadedPc = memVal32;                                                               \
+            else                                                                                   \
+                cpuPrvSetReg(cpu, regNo, memVal32);                                                \
+        }                                                                                          \
     } while (0)
 
     LOAD_STORE_MULTI_ITER(0);
@@ -1986,8 +1915,8 @@ static void execFn_bl(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetPC(cpu, ea);
 }
 
-template <bool wasT>
-static void execFn_swi(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind, bool wasT>
+static void execFn_memop_swi(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr;
 
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
@@ -1998,14 +1927,14 @@ static void execFn_swi(struct ArmCpu *cpu, uint32_t instr) {
             uint32_t addr = cpu->regs[1];
             uint8_t ch;
 
-            while (cpuPrvMemOp<1>(cpu, &ch, addr++, false, true, &fsr) && ch)
+            while (cpuPrvMemOp<memorySystemKind, 1>(cpu, &ch, addr++, false, true, &fsr) && ch)
                 fprintf(stderr, "%c", ch);
 
             return;
         } else if (cpu->regs[0] == 3) {
             uint8_t ch;
 
-            if (cpuPrvMemOp<1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
+            if (cpuPrvMemOp<memorySystemKind, 1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
                 fprintf(stderr, "%c", ch);
 
             return;
@@ -2055,7 +1984,7 @@ static void execFn_peephole_ADC_sdivmod(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
 }
 
-template <bool wasT>
+template <int memorySystemKind, bool wasT>
 static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
     if ((instr >> 28) == 0x0f) {
         switch ((instr >> 24) & 0x0f) {
@@ -2081,13 +2010,13 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
         if (!wasT) {
             switch (instr) {
                 case INSTR_PACE_ENTER:
-                    return PREFIX_EXEC_FN(execFn_paceEnter);
+                    return PREFIX_EXEC_FN(execFn_memop_paceEnter<memorySystemKind>);
 
                 case INSTR_PACE_RESUME:
                     return PREFIX_EXEC_FN(execFn_paceResume);
 
                 case INSTR_PACE_RETURN_FROM_CALLOUT:
-                    return PREFIX_EXEC_FN(execFn_paceReturnFromCallout);
+                    return PREFIX_EXEC_FN(execFn_memop_paceReturnFromCallout<memorySystemKind>);
 
                 case INSTR_PEEPHOLE_ADS_UDIVMOD:
                     return PREFIX_EXEC_FN(execFn_peephole_ADC_udivmod);
@@ -2102,7 +2031,7 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
                     return PREFIX_EXEC_FN(execFn_peephole_ADC_sdiv10);
 
                 case INSTR_PEEPHOLE_ADS_MEMCPY:
-                    return PREFIX_EXEC_FN(execFn_peephole_ADC_memcpy);
+                    return PREFIX_EXEC_FN(execFn_memop_peephole_ADC_memcpy<memorySystemKind>);
             }
         }
 
@@ -2121,10 +2050,10 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 
                         switch ((instr >> 20) & 0x0F) {
                             case 0:  // SWP
-                                return PREFIX_EXEC_FN(execFn_swb<wasT, 0>);
+                                return PREFIX_EXEC_FN(execFn_memop_swb<memorySystemKind, wasT, 0>);
 
                             case 4:  // SWPB
-                                return PREFIX_EXEC_FN(execFn_swb<wasT, 4>);
+                                return PREFIX_EXEC_FN(execFn_memop_swb<memorySystemKind, wasT, 4>);
 
                             default:
                                 return PREFIX_EXEC_FN(execFn_invalid<wasT>);
@@ -2175,17 +2104,18 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 
                     if (mode & ARM_MODE_2_INV) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
-#define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, immediate)                \
-    (negate ? PREFIX_EXEC_FN(                                                                \
-                  execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, true>) \
-            : PREFIX_EXEC_FN(                                                                \
-                  execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, false>))
+#define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, immediate)                 \
+    (negate ? PREFIX_EXEC_FN(execFn_memop_load_store_1<memorySystemKind, wasT, mode, pc,      \
+                                                       addBefore, addAfter, immediate, true>) \
+            : PREFIX_EXEC_FN(execFn_memop_load_store_1<memorySystemKind, wasT, mode, pc,      \
+                                                       addBefore, addAfter, immediate, false>))
 
-#define EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, addAfter)                         \
-    ((addBefore || addAfter)                                                               \
-         ? (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, true)   \
-                      : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, false)) \
-         : PREFIX_EXEC_FN(execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, false, false>))
+#define EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, addAfter)                               \
+    ((addBefore || addAfter)                                                                     \
+         ? (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, true)         \
+                      : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, false))       \
+         : PREFIX_EXEC_FN(execFn_memop_load_store_1<memorySystemKind, wasT, mode, pc, addBefore, \
+                                                    addAfter, false, false>))
 
 #define EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, addBefore)              \
     (addAfter ? EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, true) \
@@ -2435,18 +2365,19 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
             const bool syscall = (regSrc == 9 && regDst == 12) || (regSrc == 12 && destPc);
 
 #define EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, immediate)         \
-    (negate ? PREFIX_EXEC_FN(execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, \
-                                                 immediate, true>)                               \
-            : PREFIX_EXEC_FN(execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, \
-                                                 immediate, false>))
+    (negate                                                                                      \
+         ? PREFIX_EXEC_FN(execFn_memop_load_store_2<memorySystemKind, wasT, mode, srcPc, destPc, \
+                                                    addBefore, addAfter, immediate, true>)       \
+         : PREFIX_EXEC_FN(execFn_memop_load_store_2<memorySystemKind, wasT, mode, srcPc, destPc, \
+                                                    addBefore, addAfter, immediate, false>))
 
-#define EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, addAfter)                   \
-    ((addBefore || addAfter)                                                                    \
-         ? (immediate                                                                           \
-                ? EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, true)   \
-                : EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, false)) \
-         : (PREFIX_EXEC_FN(execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter,  \
-                                               false, false>)))
+#define EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, addAfter)                     \
+    ((addBefore || addAfter)                                                                      \
+         ? (immediate                                                                             \
+                ? EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, true)     \
+                : EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, false))   \
+         : (PREFIX_EXEC_FN(execFn_memop_load_store_2<memorySystemKind, wasT, mode, srcPc, destPc, \
+                                                     addBefore, addAfter, false, false>)))
 
 #define EXEC_LOAD_STORE_2_ADD_BEFORE(mode, srcPc, destPc, addBefore)              \
     (addAfter ? EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, true) \
@@ -2511,9 +2442,12 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 #undef EXEC_LOAD_STORE_2
         }
 
-#define EXEC_LOAD_STORE_MULTI(wasT, mode, isLoad)                                               \
-    ((instr & 0x00400000UL) ? PREFIX_EXEC_FN(execFn_load_store_multi<wasT, mode, isLoad, true>) \
-                            : PREFIX_EXEC_FN(execFn_load_store_multi<wasT, mode, isLoad, false>))
+#define EXEC_LOAD_STORE_MULTI(wasT, mode, isLoad)                                         \
+    ((instr & 0x00400000UL)                                                               \
+         ? PREFIX_EXEC_FN(                                                                \
+               execFn_memop_load_store_multi<memorySystemKind, wasT, mode, isLoad, true>) \
+         : PREFIX_EXEC_FN(                                                                \
+               execFn_memop_load_store_multi<memorySystemKind, wasT, mode, isLoad, false>))
 
         case 8:
         case 9:  // load/store multiple
@@ -2582,19 +2516,20 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
             return PREFIX_EXEC_FN(execFn_cp_dp<wasT, false>);
 
         case 15:  // SWI
-            return PREFIX_EXEC_FN(execFn_swi<wasT>);
+            return PREFIX_EXEC_FN(execFn_memop_swi<memorySystemKind, wasT>);
     }
 
     return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 }
 
-static void execFn_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr) {
+template <int memorySystemKind>
+static void execFn_memop_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr) {
     const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
     const uint32_t addr = pc + ((instr & 0xff) << 2);
     uint32_t memVal32;
     uint_fast8_t fsr;
 
-    bool ok = cpuPrvMemOp<4>(cpu, &memVal32, addr, false, cpu->privileged, &fsr);
+    bool ok = cpuPrvMemOp<memorySystemKind, 4>(cpu, &memVal32, addr, false, cpu->privileged, &fsr);
     if (!ok)
         cpuPrvHandleMemErr(cpu, addr, false, false, fsr);
     else
@@ -2667,13 +2602,14 @@ static void execFn_thumb_blx_suffix(struct ArmCpu *cpu, uint32_t instr) {
     cpu->T = 0;
 }
 
+template <int memorySystemKind>
 static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderThumb(uint32_t instr) {
     switch (instr >> 12) {
         case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instr & 0x0800) {  // LDR(3)
-                return PREFIX_EXEC_FN(execFn_thumb_3_ldr);
+                return PREFIX_EXEC_FN(execFn_memop_thumb_3_ldr<memorySystemKind>);
             } else if (instr & 0x0400) {
                 const bool pcD = ((instr & 7) | ((instr >> 4) & 0x08)) == 15;
                 const bool pcS = ((instr >> 3) & 0xF) == 15;
@@ -2740,23 +2676,31 @@ static ExecFn cpuPrvDecompressExecFn(uint32_t compressed) {
 #endif
 }
 
+template <int memorySystemKind>
 uint32_t cpuDecodeArm(uint32_t instr) {
-    return cpuPrvCompressExecFn(cpuPrvDecoderArm<false>(instr));
+    return cpuPrvCompressExecFn(cpuPrvDecoderArm<memorySystemKind, false>(instr));
 }
 
+template uint32_t cpuDecodeArm<ARM_MEMORY_SYSTEM_MMU>(uint32_t instr);
+template uint32_t cpuDecodeArm<ARM_MEMORY_SYSTEM_MPU>(uint32_t instr);
+
+template <int memorySystemKind>
 uint32_t cpuDecodeThumb(uint16_t instr, uint32_t &translatedInstr) {
     translatedInstr = table_thumb2arm[instr];
 
     if (translatedInstr) {
-        return cpuPrvCompressExecFn(cpuPrvDecoderArm<true>(translatedInstr));
+        return cpuPrvCompressExecFn(cpuPrvDecoderArm<memorySystemKind, true>(translatedInstr));
     } else {
         translatedInstr = instr;
-        return cpuPrvCompressExecFn(cpuPrvDecoderThumb(instr));
+        return cpuPrvCompressExecFn(cpuPrvDecoderThumb<memorySystemKind>(instr));
     }
 
     return cpuPrvCompressExecFn(translatedInstr ? cpuPrvDecoderArm<true>(translatedInstr)
                                                 : cpuPrvDecoderThumb(instr));
 }
+
+template uint32_t cpuDecodeThumb<ARM_MEMORY_SYSTEM_MMU>(uint16_t instr, uint32_t &translatedInstr);
+template uint32_t cpuDecodeThumb<ARM_MEMORY_SYSTEM_MPU>(uint16_t instr, uint32_t &translatedInstr);
 
 #ifdef __EMSCRIPTEN__
 
@@ -3187,9 +3131,18 @@ void cpuReset(struct ArmCpu *cpu, uint32_t pc) {
     cpu->privileged = true;
 
     cpuPrvSetPC(cpu, pc);
-    mmuReset(cpu->mmu);
     icacheInval(cpu->ic);
     systemStateSetUiInitialized(cpu->systemState, false);
+
+    switch (cpu->memorySystemKind) {
+        case ARM_MEMORY_SYSTEM_MMU:
+            mmuReset(cpu->memorySystem.mmu);
+            break;
+
+        case ARM_MEMORY_SYSTEM_MPU:
+            mpuReset(cpu->memorySystem.mpu);
+            break;
+    }
 
     cpuUpdateSlowPath(cpu);
 }
@@ -3208,9 +3161,10 @@ static void initStatic() {
     for (int i = 0; i < 128; i++) table_immShiftImm[i] = cpuPrvImmShiftImmTableEntry(i);
 }
 
-struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
-                       uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
-                       struct PacePatch *pacePatch, struct SystemState *systemState) {
+struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, uint8_t memorySystemKind, bool xscale,
+                       bool omap, int debugPort, uint32_t cpuid, uint32_t cacheId,
+                       struct PatchDispatch *patchDispatch, struct PacePatch *pacePatch,
+                       struct SystemState *systemState) {
     initStatic();
 
     struct ArmCpu *cpu = (struct ArmCpu *)malloc(sizeof(*cpu));
@@ -3224,16 +3178,23 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
 
     cpu->mem = mem;
 
-    cpu->mmu = mmuInit(mem, xscale);
-    if (!cpu->mmu) ERR("Cannot init MMU");
+    cpu->memorySystemKind = memorySystemKind;
+    if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        cpu->memorySystem.mmu = mmuInit(mem, xscale);
+        cpu->cp15.cp15mmu =
+            cp15MMUInit(cpu, cpu->memorySystem.mmu, cpu->ic, cpuid, cacheId, xscale, omap);
+        cpu->ic = icacheInit(mem, cpu->memorySystem.mmu);
 
-    paceInit(cpu->mem, cpu->mmu);
+        paceInit(cpu->mem, cpu->memorySystem.mmu);
+    } else {
+        cpu->memorySystem.mpu = mpuCreate();
+        cpu->cp15.cp15mpu = cp15MPUInit(cpu, cpu->memorySystem.mpu, cpu->ic, cpuid, cacheId);
+        cpu->ic = icacheInit(mem, cpu->memorySystem.mpu);
 
-    cpu->ic = icacheInit(mem, cpu->mmu);
+        paceInit(cpu->mem, cpu->memorySystem.mpu);
+    }
+
     if (!cpu->ic) ERR("Cannot init icache");
-
-    cpu->cp15 = cp15MMUInit(cpu, cpu->mmu, cpu->ic, cpuid, cacheId, xscale, omap);
-    if (!cpu->mmu) ERR("Cannot init CP15");
 
     cpu->patchDispatch = patchDispatch;
     cpu->pacePatch = pacePatch;
@@ -3295,8 +3256,8 @@ static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
     if (!paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
     for (uint_fast8_t reg : {1, 4, 5, 6, 7, 8, 9, 10, 11, REG_NO_LR}) {
-        if (!cpuPrvMemOp<4>(cpu, &cpu->regs[reg], cpu->regs[REG_NO_SP], false, cpu->privileged,
-                            &fsr))
+        if (!cpuPrvMemOpGeneric<4>(cpu, &cpu->regs[reg], cpu->regs[REG_NO_SP], false,
+                                   cpu->privileged, &fsr))
             return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
 
         cpu->regs[REG_NO_SP] += 4;
@@ -3446,7 +3407,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCyclePace(struct ArmCpu *cpu, uint32_t cyc
     return cycleAcc;
 }
 
-template <bool injected>
+template <int memorySystemKind, bool injected>
 ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
     bool ok;
@@ -3464,7 +3425,8 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<2, injected>(cpu->ic, cpu->curInstrPC, &fsr, translatedInstr, decoded);
+        ok = icacheFetch<memorySystemKind, 2, injected>(cpu->ic, cpu->curInstrPC, &fsr,
+                                                        translatedInstr, decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
@@ -3493,7 +3455,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
     return cycleAcc;
 }
 
-template <bool injected>
+template <int memorySystemKind, bool injected>
 ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
     bool ok;
@@ -3560,9 +3522,13 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
     else if (cpu->T)
-        return cpuCycleThumb<injected>(cpu, cycles);
+        return (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU)
+                   ? cpuCycleThumb<ARM_MEMORY_SYSTEM_MMU, injected>(cpu, cycles)
+                   : cpuCycleThumb<ARM_MEMORY_SYSTEM_MPU, injected>(cpu, cycles);
     else
-        return cpuCycleArm<injected>(cpu, cycles);
+        return (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU)
+                   ? cpuCycleArm<ARM_MEMORY_SYSTEM_MMU, injected>(cpu, cycles)
+                   : cpuCycleArm<ARM_MEMORY_SYSTEM_MPU, injected>(cpu, cycles);
 }
 
 template uint32_t cpuCycle<true>(struct ArmCpu *cpu, uint32_t cycles);
@@ -3578,20 +3544,24 @@ uint32_t cpuCyclePure(struct ArmCpu *cpu) {
     if (cpu->modePace)
         return cpuCyclePace(cpu, 1);
     else if (cpu->T)
-        return cpuCycleThumb<true>(cpu, 1);
+        return (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU)
+                   ? cpuCycleThumb<ARM_MEMORY_SYSTEM_MMU, true>(cpu, 1)
+                   : cpuCycleThumb<ARM_MEMORY_SYSTEM_MPU, true>(cpu, 1);
     else
-        return cpuCycleArm<true>(cpu, 1);
+        return (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU)
+                   ? cpuCycleArm<ARM_MEMORY_SYSTEM_MMU, true>(cpu, 1)
+                   : cpuCycleArm<ARM_MEMORY_SYSTEM_MPU, true>(cpu, 1);
 }
 
 void cpuStartInjectedSyscall(struct ArmCpu *cpu, uint32_t syscall) {
     const uint8_t table = syscall >> 12;
     uint32_t tableAddr;
-    if (!cpuPrvMemOpEx<4>(cpu, &tableAddr, cpu->regs[9] - table, false, true, NULL))
+    if (!cpuPrvMemOpExGeneric<4>(cpu, &tableAddr, cpu->regs[9] - table, false, true, NULL))
         ERR("failed to dispatch syscall %#010x: unable to read table address\n", syscall);
 
     const uint32_t offset = syscall & 0xfff;
     uint32_t entryAddr;
-    if (!cpuPrvMemOpEx<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
+    if (!cpuPrvMemOpExGeneric<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
         ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
 
     cpu->modePace = false;
@@ -3609,7 +3579,8 @@ void cpuFinishInjectedSyscall68k(struct ArmCpu *cpu) {
     uint_fast8_t fsr = 0;
 
     // restore r0 / state pointer from stack
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, cpu->privileged, &fsr))
+    if (!cpuPrvMemOpGeneric<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, cpu->privileged,
+                               &fsr))
         ERR("failed to restore r0 after injected PACE trap");
 
     paceSetPriviledged(cpu->privileged);
@@ -3676,7 +3647,21 @@ void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall) {
     cpu->breakPaceSyscall = syscall;
 }
 
-struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu) { return cpu->mmu; }
+struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu) {
+    if (cpu->memorySystemKind != ARM_MEMORY_SYSTEM_MMU) {
+        ERR("this system does not use a MMU");
+    }
+
+    return cpu->memorySystem.mmu;
+}
+
+struct ArmMpu *cpuGetMPU(struct ArmCpu *cpu) {
+    if (cpu->memorySystemKind != ARM_MEMORY_SYSTEM_MPU) {
+        ERR("this system does not use a MPU");
+    }
+
+    return cpu->memorySystem.mpu;
+}
 
 struct ArmMem *cpuGetMem(struct ArmCpu *cpu) { return cpu->mem; }
 

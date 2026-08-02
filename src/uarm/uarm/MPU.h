@@ -17,7 +17,7 @@ ArmMpu* mpuCreate();
 
 void mpuReset(ArmMpu* mpu);
 
-MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool write, bool privileged);
+MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write);
 
 void mpuSetEnabled(ArmMpu* mpu, bool enabled);
 void mpuSetCacheable(ArmMpu* mpu, uint8_t cacheable);

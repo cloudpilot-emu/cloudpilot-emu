@@ -51,6 +51,9 @@ struct ArmCpu;
 #define SLOW_PATH_REASON_PACE_SYSCALL_BREAK 0x40
 #define SLOW_PATH_REASON_INJECTED_CALL_DONE 0x80
 
+#define ARM_MEMORY_SYSTEM_MMU 0
+#define ARM_MEMORY_SYSTEM_MPU 1
+
 typedef bool (*ArmCoprocRegXferF)(struct ArmCpu *cpu, void *userData, bool two /* MCR2/MRC2 ? */,
                                   bool MRC, uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
                                   uint8_t op2);
@@ -66,6 +69,7 @@ typedef bool (*ArmCoprocTwoRegF)(struct ArmCpu *cpu, void *userData, bool MRRC, 
                                  uint8_t Rd, uint8_t Rn, uint8_t CRm);
 
 struct ArmMmu;
+struct ArmMpu;
 struct ArmMem;
 struct PatchDispatch;
 struct SystemState;
@@ -78,9 +82,10 @@ struct ArmCoprocessor {
     void *userData;
 };
 
-struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
-                       uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
-                       struct PacePatch *pacePatch, struct SystemState *systemState);
+struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, uint8_t memorySystemKind, bool xscale,
+                       bool omap, int debugPort, uint32_t cpuid, uint32_t cacheId,
+                       struct PatchDispatch *patchDispatch, struct PacePatch *pacePatch,
+                       struct SystemState *systemState);
 
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu);
 
@@ -117,9 +122,13 @@ uint32_t cpuGetSlowPathReason(struct ArmCpu *cpu);
 void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall);
 
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
+struct ArmMpu *cpuGetMPU(struct ArmCpu *cpu);
 struct ArmMem *cpuGetMem(struct ArmCpu *cpu);
 
+template <int memorySystemKind>
 uint32_t cpuDecodeArm(uint32_t instr);
+
+template <int memorySystemKind>
 uint32_t cpuDecodeThumb(uint16_t instr, uint32_t &translatedInstr);
 
 template <bool monitorPC>

@@ -89,7 +89,7 @@ void mpuReset(ArmMpu* mpu) {
     memset(mpu->regionCache, CACHE_EMPTY_VALUE, sizeof(mpu->regionCache));
 }
 
-MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool write, bool privileged) {
+MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write) {
     if (!mpu->enabled) return 1;
 
     // 4k pages, 8 regions per entry -> 12 + 3 = 15

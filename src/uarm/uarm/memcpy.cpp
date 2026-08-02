@@ -1,6 +1,7 @@
 #include "memcpy.h"
 
 #include "MMU.h"
+#include "MPU.h"
 #include "mem.h"
 
 namespace {
@@ -66,7 +67,7 @@ namespace {
                 return;
             }
 
-            // break loop at 1024k boundaries (smallest possible page size) and
+            // break loop at 1k boundaries (smallest possible page size) and
             // consult MMU for each chunk
             const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
             const uint32_t pageBoundary = pa | 0x03ff;
@@ -102,20 +103,74 @@ namespace {
         }
     }
 
+    void transfer(uint8_t* host, uint32_t arm, uint32_t size, bool write, bool privileged,
+                  struct ArmMem* mem, struct ArmMpu* mpu, MemcpyResult* result) {
+        result->ok = true;
+        result->wasWrite = write;
+
+        uint8_t align = __builtin_ctz(static_cast<unsigned long>(arm) |
+                                      reinterpret_cast<unsigned long>(host) | 0x08);
+
+        while (size > 0) {
+            if (!MPU_TEST_RESULT_OK(mpuTestAddress(mpu, arm, privileged, write))) {
+                result->ok = false;
+                result->fsr = 1;
+                result->faultAddr = arm;
+
+                return;
+            }
+
+            // break loop at 4k boundaries (smallest possible page size for MPU) and
+            // consult MMU for each chunk
+            const uint32_t pageBoundary = arm | 0x0fff;
+            const uint32_t chunkSize = arm + size > pageBoundary ? pageBoundary - arm + 1 : size;
+
+            switch (align) {
+                case 0:
+                    transfer_pa<0>(host, arm, chunkSize, write, mem, result);
+                    break;
+
+                case 1:
+                    transfer_pa<1>(host, arm, chunkSize, write, mem, result);
+                    break;
+
+                case 2:
+                    transfer_pa<2>(host, arm, chunkSize, write, mem, result);
+                    break;
+
+                case 3:
+                    transfer_pa<3>(host, arm, chunkSize, write, mem, result);
+                    break;
+            }
+
+            if (!result->ok) {
+                result->fsr = 1;
+                return;
+            }
+
+            host += chunkSize;
+            arm += chunkSize;
+            size -= chunkSize;
+        }
+    }
+
 }  // namespace
 
+template <typename T>
 void memcpy_armToHost(uint8_t* dest, uint32_t src, uint32_t size, bool privileged,
-                      struct ArmMem* mem, struct ArmMmu* mmu, MemcpyResult* result) {
-    transfer(dest, src, size, false, privileged, mem, mmu, result);
+                      struct ArmMem* mem, T* msys, MemcpyResult* result) {
+    transfer(dest, src, size, false, privileged, mem, msys, result);
 }
 
+template <typename T>
 void memcpy_hostToArm(uint32_t dest, const uint8_t* src, uint32_t size, bool privileged,
-                      struct ArmMem* mem, struct ArmMmu* mmu, MemcpyResult* result) {
-    transfer(const_cast<uint8_t*>(src), dest, size, true, privileged, mem, mmu, result);
+                      struct ArmMem* mem, T* msys, MemcpyResult* result) {
+    transfer(const_cast<uint8_t*>(src), dest, size, true, privileged, mem, msys, result);
 }
 
+template <typename T>
 void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
-                     struct ArmMem* mem, struct ArmMmu* mmu, struct MemcpyResult* result) {
+                     struct ArmMem* mem, T* msys, struct MemcpyResult* result) {
     static uint64_t scratch[512];
 
     result->ok = true;
@@ -123,15 +178,34 @@ void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged
     while (size > 0 && result->ok) {
         uint32_t chunkSize = size > sizeof(scratch) ? sizeof(scratch) : size;
 
-        memcpy_armToHost(reinterpret_cast<uint8_t*>(scratch), src, chunkSize, privileged, mem, mmu,
+        memcpy_armToHost(reinterpret_cast<uint8_t*>(scratch), src, chunkSize, privileged, mem, msys,
                          result);
 
         if (result->ok)
             memcpy_hostToArm(dest, reinterpret_cast<uint8_t*>(scratch), chunkSize, privileged, mem,
-                             mmu, result);
+                             msys, result);
 
         size -= chunkSize;
         src += chunkSize;
         dest += chunkSize;
     }
 }
+
+template void memcpy_armToHost<ArmMmu>(uint8_t* dest, uint32_t src, uint32_t size, bool privileged,
+                                       struct ArmMem* mem, ArmMmu* msys, MemcpyResult* result);
+template void memcpy_armToHost<ArmMpu>(uint8_t* dest, uint32_t src, uint32_t size, bool privileged,
+                                       struct ArmMem* mem, ArmMpu* msys, MemcpyResult* result);
+
+template void memcpy_hostToArm<ArmMmu>(uint32_t dest, const uint8_t* src, uint32_t size,
+                                       bool privileged, struct ArmMem* mem, ArmMmu* msys,
+                                       MemcpyResult* result);
+template void memcpy_hostToArm<ArmMpu>(uint32_t dest, const uint8_t* src, uint32_t size,
+                                       bool privileged, struct ArmMem* mem, ArmMpu* msys,
+                                       MemcpyResult* result);
+
+template void memcpy_armToArm<ArmMmu>(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
+                                      struct ArmMem* mem, struct ArmMmu* msys,
+                                      struct MemcpyResult* result);
+template void memcpy_armToArm<ArmMpu>(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
+                                      struct ArmMem* mem, struct ArmMpu* msys,
+                                      struct MemcpyResult* result);

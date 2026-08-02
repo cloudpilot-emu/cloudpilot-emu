@@ -3,10 +3,12 @@
 
 #include <cstdint>
 
-#include "MMU.h"
 #include "mem.h"
 
 #define PACE_RETURN_MAGIC_PC 0xfffffff0
+
+struct ArmMmu;
+struct ArmMpu;
 
 enum paceStatus {
     pace_status_ok = 0,
@@ -24,6 +26,7 @@ enum paceStatus {
 };
 
 void paceInit(struct ArmMem* mem, struct ArmMmu* mmu);
+void paceInit(struct ArmMem* mem, struct ArmMpu* mpu);
 
 void paceSetStatePtr(uint32_t addr);
 void paceResetFsr();
