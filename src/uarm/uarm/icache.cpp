@@ -144,11 +144,11 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
             MPUTestResult mpuTestResult = mpuTestAddress(ic->memorySystem.mpu, pa, true, false);
 
             if (!MPU_TEST_RESULT_OK(mpuTestResult)) {
-                fsrP = 1;
+                *fsrP = 1;
                 return false;
             }
 
-            cacheable = MPU_TEST_RESULT_BIT_CACHEABLE(mpuTestResult);
+            cacheable = MPU_TEST_RESULT_CACHEABLE(mpuTestResult);
         }
 
         if (!cacheable) {
@@ -209,7 +209,7 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
             const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & DECODED_BITS) != DECODED_BITS_ARM) {
                 // fprintf(stderr, "decode cache miss ARM\n");
-                decoded = cpuDecodeArm(instr);
+                decoded = cpuDecodeArm<msys>(instr);
                 line->decoded[iInst] = (decoded << DECODED_BITS_SHIFT) | DECODED_BITS_ARM;
             } else {
 #ifdef __EMSCRIPTEN__
@@ -230,7 +230,7 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
                 // fprintf(stderr, "decode cache miss thumb\n");
                 const uint16_t instrThumb = *(uint16_t*)(line->data + i);
 
-                decoded = cpuDecodeThumb(instrThumb, instr);
+                decoded = cpuDecodeThumb<msys>(instrThumb, instr);
                 line->decoded[iInst] = (decoded << DECODED_BITS_SHIFT) | DECODED_BITS_THUMB;
                 line->translatedThumbInstructions[iInst] = instr;
             } else {

@@ -2694,9 +2694,6 @@ uint32_t cpuDecodeThumb(uint16_t instr, uint32_t &translatedInstr) {
         translatedInstr = instr;
         return cpuPrvCompressExecFn(cpuPrvDecoderThumb<memorySystemKind>(instr));
     }
-
-    return cpuPrvCompressExecFn(translatedInstr ? cpuPrvDecoderArm<true>(translatedInstr)
-                                                : cpuPrvDecoderThumb(instr));
 }
 
 template uint32_t cpuDecodeThumb<ARM_MEMORY_SYSTEM_MMU>(uint16_t instr, uint32_t &translatedInstr);
@@ -3181,15 +3178,15 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, uint8_t memorySystemKind
     cpu->memorySystemKind = memorySystemKind;
     if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
         cpu->memorySystem.mmu = mmuInit(mem, xscale);
+        cpu->ic = icacheInit(mem, cpu->memorySystem.mmu);
         cpu->cp15.cp15mmu =
             cp15MMUInit(cpu, cpu->memorySystem.mmu, cpu->ic, cpuid, cacheId, xscale, omap);
-        cpu->ic = icacheInit(mem, cpu->memorySystem.mmu);
 
         paceInit(cpu->mem, cpu->memorySystem.mmu);
     } else {
         cpu->memorySystem.mpu = mpuCreate();
-        cpu->cp15.cp15mpu = cp15MPUInit(cpu, cpu->memorySystem.mpu, cpu->ic, cpuid, cacheId);
         cpu->ic = icacheInit(mem, cpu->memorySystem.mpu);
+        cpu->cp15.cp15mpu = cp15MPUInit(cpu, cpu->memorySystem.mpu, cpu->ic, cpuid, cacheId);
 
         paceInit(cpu->mem, cpu->memorySystem.mpu);
     }
@@ -3472,7 +3469,8 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<4, injected>(cpu->ic, cpu->curInstrPC, &fsr, instr, decoded);
+        ok = icacheFetch<memorySystemKind, 4, injected>(cpu->ic, cpu->curInstrPC, &fsr, instr,
+                                                        decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
@@ -3512,7 +3510,9 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
                             ARM_SR_MODE_IRQ | ARM_SR_I);
     }
 
-    cp15MMUCycle(cpu->cp15);
+    if (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        cp15MMUCycle(cpu->cp15.cp15mmu);
+    }
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
     cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
@@ -3686,8 +3686,15 @@ uint32_t cpuGetCurInstrPC(struct ArmCpu *cpu) { return cpu->curInstrPC; }
 template <typename T>
 void cpuSave(ArmCpu *cpu, T &savestate) {
     paceSave(savestate);
-    mmuSave(cpu->mmu, savestate);
-    cp15MMUSave(cpu->cp15, savestate);
+
+    if (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        mmuSave(cpu->memorySystem.mmu, savestate);
+        cp15MMUSave(cpu->cp15.cp15mmu, savestate);
+    } else {
+        mpuSave(cpu->memorySystem.mpu, savestate);
+        cp15MPUSave(cpu->cp15.cp15mpu, savestate);
+    }
+
     patchDispatchSave(cpu->patchDispatch, savestate);
 
     auto chunk = savestate.GetChunk(ChunkType::cpu, SAVESTATE_VERSION);
@@ -3702,8 +3709,14 @@ void cpuLoad(ArmCpu *cpu, T &loader) {
     icacheInval(cpu->ic);
 
     paceLoad(loader);
-    mmuLoad(cpu->mmu, loader);
-    cp15MMULoad(cpu->cp15, loader);
+
+    if (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU) {
+        mmuLoad(cpu->memorySystem.mmu, loader);
+        cp15MMULoad(cpu->cp15.cp15mmu, loader);
+    } else {
+        mpuLoad(cpu->memorySystem.mpu, loader);
+        cp15MPULoad(cpu->cp15.cp15mpu, loader);
+    }
     patchDispatchLoad(cpu->patchDispatch, loader);
 
     uint32_t version;

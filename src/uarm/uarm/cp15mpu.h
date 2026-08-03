@@ -12,7 +12,7 @@ struct ArmCP15MPU* cp15MPUInit(struct ArmCpu* cpu, struct ArmMpu* mpu, struct ic
                                uint32_t cpuid, uint32_t cacheId);
 
 template <typename T>
-void cp15MPUSave(struct ArmCP15MMU* cp15, T& savestate);
+void cp15MPUSave(struct ArmCP15MPU* cp15, T& savestate);
 
 template <typename T>
 void cp15MPULoad(struct ArmCP15MPU* cp15, T& loader);

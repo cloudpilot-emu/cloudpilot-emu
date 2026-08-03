@@ -93,7 +93,7 @@ namespace {
     }
 
     uint32_t uae_get32_split(uint32_t addr) {
-        if (fsr != 0) return;
+        if (fsr != 0) return 0;
 
         if (memorySystemKind == ARM_MEMORY_SYSTEM_MMU && (addr & 0x3ff) <= (0x3ff - 4)) {
             lastAddr = addr;
@@ -174,6 +174,8 @@ namespace {
                 fsr = 1;
                 return;
             }
+
+            pa = addr;
         }
 
 #if __BYTE_ORDER == __BIG_ENDIAN

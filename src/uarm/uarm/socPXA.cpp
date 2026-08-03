@@ -317,9 +317,10 @@ SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const
     soc->patchDispatch = initPatchDispatch();
     soc->systemState = createSystemState();
 
-    soc->cpu = cpuInit(ROM_BASE, soc->mem, true /* xscale */, false /* omap */, gdbPort,
-                       socRev ? ((socRev == 1) ? CPUID_PXA260 : CPUID_PXA270) : CPUID_PXA255,
-                       0x0B16A16AUL, soc->patchDispatch, soc->pacePatch, soc->systemState);
+    soc->cpu =
+        cpuInit(ROM_BASE, soc->mem, ARM_MEMORY_SYSTEM_MMU, true /* xscale */, false /* omap */,
+                gdbPort, socRev ? ((socRev == 1) ? CPUID_PXA260 : CPUID_PXA270) : CPUID_PXA255,
+                0x0B16A16AUL, soc->patchDispatch, soc->pacePatch, soc->systemState);
     if (!soc->cpu) ERR("Cannot init CPU");
 
     patchDispatchSetCpu(soc->patchDispatch, soc->cpu);
