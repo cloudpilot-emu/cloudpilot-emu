@@ -12,7 +12,9 @@ function getFunctionLike(module: binaryen.Module, fragment: string): Array<binar
     for (let i = 0; i < numFunctions; i++) {
         const info = binaryen.getFunctionInfo(module.getFunctionByIndex(i));
 
-        if (info.name.includes(fragment)) refs.push(module.getFunctionByIndex(i));
+        if (info.name.includes(fragment)) {
+            refs.push(module.getFunctionByIndex(i));
+        }
     }
 
     return refs;
@@ -32,10 +34,10 @@ function buildDispatcher(module: binaryen.Module, execFnHandles: Array<[string, 
                 execFnHandles.map(([name, handle]) => `op${handle}`),
                 'invalid',
                 module.local.get(0, binaryen.i32),
-                undefined
+                undefined,
             ),
         ],
-        undefined
+        undefined,
     );
 
     block = module.block('op0', [block, module.call('abort', [], binaryen.none), module.return()], undefined);
@@ -48,11 +50,11 @@ function buildDispatcher(module: binaryen.Module, execFnHandles: Array<[string, 
                 module.call(
                     execFnHandles[i][0],
                     [module.local.get(1, binaryen.i32), module.local.get(2, binaryen.i32)],
-                    binaryen.none
+                    binaryen.none,
                 ),
                 module.return(),
             ],
-            undefined
+            undefined,
         );
     }
 
@@ -64,7 +66,7 @@ function remapExecFunctions(
     fn: binaryen.FunctionRef,
     execFnTableEntryToNameMap: Map<number, string>,
     execFnNameToHandleMap: Map<string, number>,
-    usedFunctions: Set<string>
+    usedFunctions: Set<string>,
 ): void {
     const fnInfo = binaryen.getFunctionInfo(fn);
 
@@ -99,10 +101,14 @@ function remapExecFunctions(
                     const execFnTableEntry = constInfo.value & 0xffff;
 
                     const execFnName = execFnTableEntryToNameMap.get(execFnTableEntry);
-                    if (execFnName === undefined) throw new Error(`no execFn for table entry ${execFnTableEntry}`);
+                    if (execFnName === undefined) {
+                        throw new Error(`no execFn for table entry ${execFnTableEntry}`);
+                    }
 
                     const execFnHandle = execFnNameToHandleMap.get(execFnName);
-                    if (execFnHandle === undefined) throw new Error(`no execFn handle for ${execFnName}`);
+                    if (execFnHandle === undefined) {
+                        throw new Error(`no execFn handle for ${execFnName}`);
+                    }
 
                     usedFunctions.add(execFnName);
 
@@ -119,7 +125,7 @@ function remapExecFunctions(
                     selectInfo.condition,
                     mapExpression(selectInfo.ifTrue),
                     mapExpression(selectInfo.ifFalse),
-                    selectInfo.type
+                    selectInfo.type,
                 );
             }
 
@@ -163,13 +169,26 @@ function replaceDispatcher(module: binaryen.Module, name: string, implementation
     }
 }
 
-function isThumb(name: string) {
+function isThumb(name: string): boolean {
     name = unmangleName(name);
 
     if (name.indexOf('_thumb_') >= 0) return true;
-    if (name.indexOf('<true') >= 0) return true;
+    if (name.indexOf('_memop_') < 0 && name.indexOf('<true') >= 0) {
+        return true;
+    }
+    if (name.indexOf('_memop_') >= 0 && /<(0|1), true/.test(name)) return true;
 
     return false;
+}
+
+function isMemorySystemMMU(name: string): boolean {
+    if (name.indexOf('_memop_') < 0) return true;
+    return name.indexOf('<0') >= 0;
+}
+
+function isMemorySystemMPU(name: string): boolean {
+    if (name.indexOf('_memop_') < 0) return true;
+    return name.indexOf('<1') >= 0;
 }
 
 async function main(input: string, output: string): Promise<void> {
@@ -183,7 +202,7 @@ async function main(input: string, output: string): Promise<void> {
             binaryen.Features.SignExt |
             binaryen.Features.NontrappingFPToInt |
             binaryen.Features.TailCall |
-            (1 << 19)
+            (1 << 19),
     );
     binaryen.setDebugInfo(true);
 
@@ -192,46 +211,80 @@ async function main(input: string, output: string): Promise<void> {
     const execFnTableEntries = binaryen
         .getElementSegmentInfo(elementsSegment)
         .data.map((name, i): [number, string] => [i + 1, name])
-        .filter(([i, name]) => name.includes('execFn_'));
+        .filter(([, name]) => name.includes('execFn_'));
 
     const execFnTableEntryToNameMap = new Map(execFnTableEntries);
 
-    const execFnHandlesArm = execFnTableEntries
-        .filter(([, name]) => !isThumb(name))
+    const execFnHandlesArmMmu = execFnTableEntries
+        .filter(([, name]) => !isThumb(name) && isMemorySystemMMU(name))
         .map(([i, name], handle): [string, number] => [name, handle]);
 
-    const execFnHandlesThumb = execFnTableEntries
-        .filter(([, name]) => isThumb(name))
+    const execFnHandlesArmMpu = execFnTableEntries
+        .filter(([, name]) => !isThumb(name) && isMemorySystemMPU(name))
         .map(([i, name], handle): [string, number] => [name, handle]);
 
-    const execFnNameToHandleMap = new Map([...execFnHandlesThumb, ...execFnHandlesArm]);
+    const execFnHandlesThumbMmu = execFnTableEntries
+        .filter(([, name]) => isThumb(name) && isMemorySystemMMU(name))
+        .map(([i, name], handle): [string, number] => [name, handle]);
 
-    const usedFunctions = new Set<string>();
+    const execFnHandlesThumbMpu = execFnTableEntries
+        .filter(([, name]) => isThumb(name) && isMemorySystemMPU(name))
+        .map(([i, name], handle): [string, number] => [name, handle]);
 
-    getFunctionLike(module, 'cpuPrvDecoderArm').forEach((fnInfo) =>
-        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap, usedFunctions)
+    const execFnNameToHandleMapMmu = new Map([...execFnHandlesArmMmu, ...execFnHandlesThumbMmu]);
+    const execFnNameToHandleMapMpu = new Map([...execFnHandlesArmMpu, ...execFnHandlesThumbMpu]);
+
+    const usedFunctionsMmu = new Set<string>();
+    const usedFunctionsMpu = new Set<string>();
+
+    getFunctionLike(module, 'cpuPrvDecoderArm<0').forEach((fnInfo) =>
+        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMapMmu, usedFunctionsMmu),
     );
 
-    getFunctionLike(module, 'cpuPrvDecoderThumb').forEach((fnInfo) =>
-        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap, usedFunctions)
+    getFunctionLike(module, 'cpuPrvDecoderArm<1').forEach((fnInfo) =>
+        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMapMpu, usedFunctionsMpu),
     );
 
-    const usedHandlesArm = Array.from(usedFunctions)
-        .filter((name) => !isThumb(name))
-        .map((name): [string, number] => [name, execFnNameToHandleMap.get(name)!]);
+    getFunctionLike(module, 'cpuPrvDecoderThumb<0').forEach((fnInfo) =>
+        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMapMmu, usedFunctionsMmu),
+    );
 
-    const usedHandlesThumb = Array.from(usedFunctions)
-        .filter((name) => isThumb(name))
-        .map((name): [string, number] => [name, execFnNameToHandleMap.get(name)!]);
+    getFunctionLike(module, 'cpuPrvDecoderThumb<1').forEach((fnInfo) =>
+        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMapMpu, usedFunctionsMpu),
+    );
 
-    console.log(`building dispatcher for ${usedHandlesArm.length} ARM functions`);
-    const dispatcherArm = buildDispatcher(module, usedHandlesArm);
+    const usedHandlesArmMmu = Array.from(usedFunctionsMmu)
+        .filter((name) => !isThumb(name) && isMemorySystemMMU(name))
+        .map((name): [string, number] => [name, execFnNameToHandleMapMmu.get(name)!]);
 
-    console.log(`building dispatcher for ${usedHandlesThumb.length} thumb functions`);
-    const dispatcherThumb = buildDispatcher(module, usedHandlesThumb);
+    const usedHandlesArmMpu = Array.from(usedFunctionsMpu)
+        .filter((name) => !isThumb(name) && isMemorySystemMPU(name))
+        .map((name): [string, number] => [name, execFnNameToHandleMapMpu.get(name)!]);
 
-    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm', dispatcherArm);
-    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcherThumb);
+    const usedHandlesThumbMmu = Array.from(usedFunctionsMmu)
+        .filter((name) => isThumb(name) && isMemorySystemMMU(name))
+        .map((name): [string, number] => [name, execFnNameToHandleMapMmu.get(name)!]);
+
+    const usedHandlesThumbMpu = Array.from(usedFunctionsMpu)
+        .filter((name) => isThumb(name) && isMemorySystemMPU(name))
+        .map((name): [string, number] => [name, execFnNameToHandleMapMpu.get(name)!]);
+
+    console.log(`building dispatcher for ${usedHandlesArmMmu.length} ARM/MMU functions`);
+    const dispatcherArmMmu = buildDispatcher(module, usedHandlesArmMmu);
+
+    console.log(`building dispatcher for ${usedHandlesArmMpu.length} ARM/MPU functions`);
+    const dispatcherArmMpu = buildDispatcher(module, usedHandlesArmMpu);
+
+    console.log(`building dispatcher for ${usedHandlesThumbMmu.length} thumb/MMU functions`);
+    const dispatcherThumbMmu = buildDispatcher(module, usedHandlesThumbMmu);
+
+    console.log(`building dispatcher for ${usedHandlesThumbMpu.length} thumb/MPU functions`);
+    const dispatcherThumbMpu = buildDispatcher(module, usedHandlesThumbMpu);
+
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm<0', dispatcherArmMmu);
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm<1', dispatcherArmMpu);
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb<0', dispatcherThumbMmu);
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb<1', dispatcherThumbMpu);
 
     if (module.validate()) {
         await writeFile(output, module.emitBinary());

@@ -781,7 +781,7 @@ template <int size>
 static FORCE_INLINE bool cpuPrvMemOpGeneric(struct ArmCpu *cpu, void *buf, uint32_t vaddr,
                                             bool write, bool priviledged, uint_fast8_t *fsrP) {
 #ifdef __EMSCRIPTEN__
-    return cpuPrvMemOpEx<memorySystemKind, size>(cpu, buf, vaddr, write, priviledged, fsrP);
+    return cpuPrvMemOpExGeneric<size>(cpu, buf, vaddr, write, priviledged, fsrP);
 #else
     if (cpuPrvMemOpExGeneric<size>(cpu, buf, vaddr, write, priviledged, fsrP)) return true;
 
@@ -2702,14 +2702,14 @@ template uint32_t cpuDecodeThumb<ARM_MEMORY_SYSTEM_MPU>(uint16_t instr, uint32_t
 #ifdef __EMSCRIPTEN__
 
 // The content of this function will be replaced with a jump table later.
-template <int tier>
+template <int memorySystemKind, int tier>
 static void __attribute__((noinline)) cpuPrvDispatchExecFnArm(ExecFn execFn, struct ArmCpu *cpu,
                                                               uint32_t instr) {
     ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr);
 }
 
 // The content of this function will be replaced with a jump table later.
-template <int tier>
+template <int memorySystemKind, int tier>
 static void __attribute__((noinline)) cpuPrvDispatchExecFnThumb(ExecFn execFn, struct ArmCpu *cpu,
                                                                 uint32_t instr) {
     ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr);
@@ -3434,7 +3434,8 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
         cpu->regs[REG_NO_PC] += 2;
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFnThumb<injected>(cpuPrvDecompressExecFn(decoded), cpu, translatedInstr);
+        cpuPrvDispatchExecFnThumb<memorySystemKind, injected>(cpuPrvDecompressExecFn(decoded), cpu,
+                                                              translatedInstr);
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, translatedInstr);
 #endif
@@ -3481,7 +3482,8 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
         cpu->regs[REG_NO_PC] += 4;
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFnArm<injected>(cpuPrvDecompressExecFn(decoded), cpu, instr);
+        cpuPrvDispatchExecFnArm<memorySystemKind, injected>(cpuPrvDecompressExecFn(decoded), cpu,
+                                                            instr);
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, instr);
 #endif
