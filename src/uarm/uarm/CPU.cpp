@@ -860,12 +860,12 @@ static void cpuPrvHandlePaceMemoryFault(struct ArmCpu *cpu) {
     cpuPrvHandleMemErr(cpu, addr, wasWrite, false, fsr);
 }
 
-template <bool wasT>
+template <int memorySystemKind, bool wasT>
 static void execFn_noop(struct ArmCpu *cpu, uint32_t instr) {}
 
 // PACE entrypoint was called from ARM: regular invocation
 template <int memorySystemKind>
-static void execFn_memop_paceEnter(struct ArmCpu *cpu, uint32_t instr) {
+static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr = 0;
 
     for (uint8_t reg : {REG_NO_LR, 11, 10, 9, 8, 7, 6, 5, 4, 0}) {
@@ -913,7 +913,7 @@ static void execFn_paceResume(struct ArmCpu *cpu, uint32_t instr) {
 
 // PACE was reentered after a callout
 template <int memorySystemKind>
-static void execFn_memop_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr) {
+static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr = 0;
 
     // restore r0 / state pointer from stack
@@ -961,7 +961,7 @@ static void execFn_peephole_ADC_sdiv10(struct ArmCpu *cpu, uint32_t instr) {
 }
 
 template <int memorySystemKind>
-static void execFn_memop_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr) {
+static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t src = cpuPrvGetRegNotPC(cpu, 1);
     uint32_t dest = cpuPrvGetRegNotPC(cpu, 0);
     uint32_t size = cpuPrvGetRegNotPC(cpu, 2);
@@ -984,7 +984,7 @@ static void execFn_memop_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr)
     }
 }
 
-template <bool wasT>
+template <int memorySystemKind, bool wasT>
 static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr) {
     fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
             (unsigned long)instr, (unsigned long)cpu->curInstrPC,
@@ -994,7 +994,7 @@ static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr) {
                     ARM_SR_MODE_UND | ARM_SR_I);
 }
 
-template <bool wasT, bool align2>
+template <int memorySystemKind, bool wasT, bool align2>
 static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t ea;
 
@@ -1011,7 +1011,7 @@ static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetPC(cpu, ea);
 }
 
-template <bool wasT, bool two>
+template <int memorySystemKind, bool wasT, bool two>
 static void execFn_cp_mem2reg(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t addBefore, addAfter;
     uint_fast8_t mode, cpNo;
@@ -1047,10 +1047,10 @@ static void execFn_cp_mem2reg(struct ArmCpu *cpu, uint32_t instr) {
     return;
 
 invalid_instr:
-    execFn_invalid<wasT>(cpu, instr);
+    execFn_invalid<memorySystemKind, wasT>(cpu, instr);
 }
 
-template <bool wasT, bool two>
+template <int memorySystemKind, bool wasT, bool two>
 static void execFn_cp_dp(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t cpNo;
 
@@ -1083,11 +1083,11 @@ static void execFn_cp_dp(struct ArmCpu *cpu, uint32_t instr) {
     return;
 
 invalid_instr:
-    execFn_invalid<wasT>(cpu, instr);
+    execFn_invalid<memorySystemKind, wasT>(cpu, instr);
 }
 
 template <int memorySystemKind, bool wasT, int tag>
-static void execFn_memop_swb(struct ArmCpu *cpu, uint32_t instr) {
+static void execFn_swb(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, ea, memVal32;
     bool ok;
     uint_fast8_t fsr;
@@ -1133,11 +1133,11 @@ static void execFn_memop_swb(struct ArmCpu *cpu, uint32_t instr) {
             break;
 
         default:
-            return execFn_invalid<wasT>(cpu, instr);
+            return execFn_invalid<memorySystemKind, wasT>(cpu, instr);
     }
 }
 
-template <bool wasT, int tag, bool flags>
+template <int memorySystemKind, bool wasT, int tag, bool flags>
 static void execFn_mult(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, op2, res;
     uint64_t res64;
@@ -1208,13 +1208,13 @@ static void execFn_mult(struct ArmCpu *cpu, uint32_t instr) {
             break;
 
         default:
-            return execFn_invalid<wasT>(cpu, instr);
+            return execFn_invalid<memorySystemKind, wasT>(cpu, instr);
     }
 }
 
 template <int memorySystemKind, bool wasT, int mode, bool pc, bool addBefore, bool addAfter,
           bool immediate, bool negate>
-static void execFn_memop_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
+static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t ea, increment;
     bool ok;
     uint_fast8_t fsr, reg;
@@ -1300,7 +1300,7 @@ static void execFn_memop_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
 
             case ARM_MODE_3_SH:
             case ARM_MODE_3_SB:
-                return execFn_invalid<wasT>(cpu, instr);
+                return execFn_invalid<memorySystemKind, wasT>(cpu, instr);
 
             case ARM_MODE_3_D:
 
@@ -1324,14 +1324,14 @@ static void execFn_memop_load_store_1(struct ArmCpu *cpu, uint32_t instr) {
     }
 }
 
-template <bool wasT>
+template <int memorySystemKind, bool wasT>
 static void execFn_clz(struct ArmCpu *cpu, uint32_t instr) {
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, cpuPrvClz(cpuPrvGetRegNotPC(cpu, instr & 0xF)));
 }
 
-template <bool wasT, bool link>
+template <int memorySystemKind, bool wasT, bool link>
 static void execFn_bl_reg(struct ArmCpu *cpu, uint32_t instr) {
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
@@ -1342,21 +1342,21 @@ static void execFn_bl_reg(struct ArmCpu *cpu, uint32_t instr) {
                           cpu->curInstrPC + (wasT ? 3 : 4));  // save return value for BLX
 }
 
-template <bool wasT, bool spsr>
+template <int memorySystemKind, bool wasT, bool spsr>
 static void execFn_psr2reg(struct ArmCpu *cpu, uint32_t instr) {
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, spsr ? cpu->SPSR : cpuPrvMaterializeCPSR(cpu));
 }
 
-template <bool wasT, bool spsr, bool pc>
+template <int memorySystemKind, bool wasT, bool spsr, bool pc>
 static void execFn_reg2psr(struct ArmCpu *cpu, uint32_t instr) {
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpuPrvSetPSR<spsr>(cpu, (instr >> 16) & 0x0F, cpuPrvGetReg<wasT, pc>(cpu, instr & 0x0F));
 }
 
-template <bool wasT, int tag>
+template <int memorySystemKind, bool wasT, int tag>
 static void execFn_dspadd(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, op2, res;
 
@@ -1422,7 +1422,7 @@ static void execFn_dspadd(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res);
 }
 
-template <bool wasT>
+template <int memorySystemKind, bool wasT>
 static void execFn_softbreak(struct ArmCpu *cpu, uint32_t instr) {
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
@@ -1430,7 +1430,7 @@ static void execFn_softbreak(struct ArmCpu *cpu, uint32_t instr) {
                     ARM_SR_MODE_ABT | ARM_SR_I);
 }
 
-template <bool wasT, int tag>
+template <int memorySystemKind, bool wasT, int tag>
 static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, op2, res;
     uint64_t res64;
@@ -1515,7 +1515,8 @@ static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr) {
     }
 }
 
-template <bool wasT, int op, bool setFlags, bool srcPc, bool destPc, int tier = 0>
+template <int memorySystemKind, bool wasT, int op, bool setFlags, bool srcPc, bool destPc,
+          int tier = 0>
 static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t op1, op2, res, sr;
     uint64_t res64;
@@ -1897,7 +1898,7 @@ static void execFn_memop_load_store_multi(struct ArmCpu *cpu, uint32_t instr) {
     }
 }
 
-template <bool wasT, bool link>
+template <int memorySystemKind, bool wasT, bool link>
 static void execFn_bl(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t ea;
 
@@ -1916,7 +1917,7 @@ static void execFn_bl(struct ArmCpu *cpu, uint32_t instr) {
 }
 
 template <int memorySystemKind, bool wasT>
-static void execFn_memop_swi(struct ArmCpu *cpu, uint32_t instr) {
+static void execFn_swi(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr;
 
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
@@ -1952,13 +1953,15 @@ static void execFn_memop_swi(struct ArmCpu *cpu, uint32_t instr) {
                     ARM_SR_MODE_SVC | ARM_SR_I);
 }
 
+template <int memorySystemKind>
 static void execFn_peephole_ADC_udivmod(struct ArmCpu *cpu, uint32_t instr) {
     const uint32_t num = cpuPrvGetRegNotPC(cpu, 1);
     const uint32_t den = cpuPrvGetRegNotPC(cpu, 0);
 
     if (den == 0) {
         // mov r2, #0
-        execFn_dproc<false, 13, false, false, false, 1>(cpu, FIRST_INSTRUCTION_ADS_UDIVMOD);
+        execFn_dproc<memorySystemKind, false, 13, false, false, false, 1>(
+            cpu, FIRST_INSTRUCTION_ADS_UDIVMOD);
         return;
     }
 
@@ -1968,13 +1971,15 @@ static void execFn_peephole_ADC_udivmod(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
 }
 
+template <int memorySystemKind>
 static void execFn_peephole_ADC_sdivmod(struct ArmCpu *cpu, uint32_t instr) {
     const int32_t num = cpuPrvGetRegNotPC(cpu, 1);
     const int32_t den = cpuPrvGetRegNotPC(cpu, 0);
 
     if (den == 0) {
         // ands r2, r0, #128, #8
-        execFn_dproc<false, 0, true, false, false, 1>(cpu, FIRST_INSTRUCTION_ADS_SDIVMOD);
+        execFn_dproc<memorySystemKind, false, 0, true, false, false, 1>(
+            cpu, FIRST_INSTRUCTION_ADS_SDIVMOD);
         return;
     }
 
@@ -1991,38 +1996,39 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
             case 5:
             case 7:
                 return (instr & 0x0D70F000UL) == 0x0550F000UL
-                           ? PREFIX_EXEC_FN(execFn_noop<wasT>)
-                           : PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                           ? PREFIX_EXEC_FN(execFn_noop<memorySystemKind, wasT>)
+                           : PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
             case 10:
             case 11:
-                return (instr & 0x01000000UL) ? PREFIX_EXEC_FN(execFn_b2thumb<wasT, true>)
-                                              : PREFIX_EXEC_FN(execFn_b2thumb<wasT, false>);
+                return (instr & 0x01000000UL)
+                           ? PREFIX_EXEC_FN(execFn_b2thumb<memorySystemKind, wasT, true>)
+                           : PREFIX_EXEC_FN(execFn_b2thumb<memorySystemKind, wasT, false>);
 
             case 12:
             case 13:
-                return PREFIX_EXEC_FN(execFn_cp_mem2reg<wasT, true>);
+                return PREFIX_EXEC_FN(execFn_cp_mem2reg<memorySystemKind, wasT, true>);
 
             case 14:
-                return PREFIX_EXEC_FN(execFn_cp_dp<wasT, true>);
+                return PREFIX_EXEC_FN(execFn_cp_dp<memorySystemKind, wasT, true>);
         }
 
         if (!wasT) {
             switch (instr) {
                 case INSTR_PACE_ENTER:
-                    return PREFIX_EXEC_FN(execFn_memop_paceEnter<memorySystemKind>);
+                    return PREFIX_EXEC_FN(execFn_paceEnter<memorySystemKind>);
 
                 case INSTR_PACE_RESUME:
                     return PREFIX_EXEC_FN(execFn_paceResume);
 
                 case INSTR_PACE_RETURN_FROM_CALLOUT:
-                    return PREFIX_EXEC_FN(execFn_memop_paceReturnFromCallout<memorySystemKind>);
+                    return PREFIX_EXEC_FN(execFn_paceReturnFromCallout<memorySystemKind>);
 
                 case INSTR_PEEPHOLE_ADS_UDIVMOD:
-                    return PREFIX_EXEC_FN(execFn_peephole_ADC_udivmod);
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_udivmod<memorySystemKind>);
 
                 case INSTR_PEEPHOLE_ADS_SDIVMOD:
-                    return PREFIX_EXEC_FN(execFn_peephole_ADC_sdivmod);
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_sdivmod<memorySystemKind>);
 
                 case INSTR_PEEPHOLE_ADS_UDIV10:
                     return PREFIX_EXEC_FN(execFn_peephole_ADC_udiv10);
@@ -2031,11 +2037,11 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
                     return PREFIX_EXEC_FN(execFn_peephole_ADC_sdiv10);
 
                 case INSTR_PEEPHOLE_ADS_MEMCPY:
-                    return PREFIX_EXEC_FN(execFn_memop_peephole_ADC_memcpy<memorySystemKind>);
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_memcpy<memorySystemKind>);
             }
         }
 
-        return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+        return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
     }
 
     switch ((instr >> 24) & 0x0F) {
@@ -2050,21 +2056,21 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 
                         switch ((instr >> 20) & 0x0F) {
                             case 0:  // SWP
-                                return PREFIX_EXEC_FN(execFn_memop_swb<memorySystemKind, wasT, 0>);
+                                return PREFIX_EXEC_FN(execFn_swb<memorySystemKind, wasT, 0>);
 
                             case 4:  // SWPB
-                                return PREFIX_EXEC_FN(execFn_memop_swb<memorySystemKind, wasT, 4>);
+                                return PREFIX_EXEC_FN(execFn_swb<memorySystemKind, wasT, 4>);
 
                             default:
-                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                                return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
                         }
 
                     } else {
                         const bool flags = instr & 0x00100000UL;
 
-#define EXEC_MULT(tag)                                          \
-    return flags ? PREFIX_EXEC_FN(execFn_mult<wasT, tag, true>) \
-                 : PREFIX_EXEC_FN(execFn_mult<wasT, tag, false>);
+#define EXEC_MULT(tag)                                                            \
+    return flags ? PREFIX_EXEC_FN(execFn_mult<memorySystemKind, wasT, tag, true>) \
+                 : PREFIX_EXEC_FN(execFn_mult<memorySystemKind, wasT, tag, false>);
 
                         switch ((instr >> 20) & 0x0F) {  // multiplies
 
@@ -2089,7 +2095,7 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
                                 EXEC_MULT(10);
 
                             default:
-                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                                return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
                         }
 
 #undef EXEC_MULT
@@ -2102,20 +2108,21 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
                     const bool negate = !(instr & 0x00800000UL);
                     const bool immediate = instr & 0x00400000UL;
 
-                    if (mode & ARM_MODE_2_INV) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                    if (mode & ARM_MODE_2_INV)
+                        return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
 #define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, immediate)                 \
-    (negate ? PREFIX_EXEC_FN(execFn_memop_load_store_1<memorySystemKind, wasT, mode, pc,      \
-                                                       addBefore, addAfter, immediate, true>) \
-            : PREFIX_EXEC_FN(execFn_memop_load_store_1<memorySystemKind, wasT, mode, pc,      \
-                                                       addBefore, addAfter, immediate, false>))
+    (negate ? PREFIX_EXEC_FN(execFn_load_store_1<memorySystemKind, wasT, mode, pc, addBefore, \
+                                                 addAfter, immediate, true>)                  \
+            : PREFIX_EXEC_FN(execFn_load_store_1<memorySystemKind, wasT, mode, pc, addBefore, \
+                                                 addAfter, immediate, false>))
 
-#define EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, addAfter)                               \
-    ((addBefore || addAfter)                                                                     \
-         ? (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, true)         \
-                      : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, false))       \
-         : PREFIX_EXEC_FN(execFn_memop_load_store_1<memorySystemKind, wasT, mode, pc, addBefore, \
-                                                    addAfter, false, false>))
+#define EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, addAfter)                         \
+    ((addBefore || addAfter)                                                               \
+         ? (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, true)   \
+                      : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, false)) \
+         : PREFIX_EXEC_FN(execFn_load_store_1<memorySystemKind, wasT, mode, pc, addBefore, \
+                                              addAfter, false, false>))
 
 #define EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, addBefore)              \
     (addAfter ? EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, true) \
@@ -2152,7 +2159,7 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 
                             case ARM_MODE_3_SH:
                             case ARM_MODE_3_SB:
-                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                                return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
                             case ARM_MODE_3_D:
                                 EXEC_LOAD_STORE_1(ARM_MODE_3_D);
@@ -2170,43 +2177,50 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 
                         if ((instr & 0x00BF0FFFUL) == 0x000F0000UL) {  // move PSR to reg
                             return (instr & 0x00400000UL)
-                                       ? PREFIX_EXEC_FN(execFn_psr2reg<wasT, true>)
-                                       : PREFIX_EXEC_FN(execFn_psr2reg<wasT, false>);
+                                       ? PREFIX_EXEC_FN(
+                                             execFn_psr2reg<memorySystemKind, wasT, true>)
+                                       : PREFIX_EXEC_FN(
+                                             execFn_psr2reg<memorySystemKind, wasT, false>);
                         } else if ((instr & 0x00B0FFF0UL) == 0x0020F000UL) {  // move reg to PSR
                             if ((instr & 0x0f) == 0x0f)
                                 return (instr & 0x00400000UL)
-                                           ? PREFIX_EXEC_FN(execFn_reg2psr<wasT, true, true>)
-                                           : PREFIX_EXEC_FN(execFn_reg2psr<wasT, false, true>);
+                                           ? PREFIX_EXEC_FN(
+                                                 execFn_reg2psr<memorySystemKind, wasT, true, true>)
+                                           : PREFIX_EXEC_FN(execFn_reg2psr<memorySystemKind, wasT,
+                                                                           false, true>);
                             else
                                 return (instr & 0x00400000UL)
-                                           ? PREFIX_EXEC_FN(execFn_reg2psr<wasT, true, false>)
-                                           : PREFIX_EXEC_FN(execFn_reg2psr<wasT, false, false>);
+                                           ? PREFIX_EXEC_FN(execFn_reg2psr<memorySystemKind, wasT,
+                                                                           true, false>)
+                                           : PREFIX_EXEC_FN(execFn_reg2psr<memorySystemKind, wasT,
+                                                                           false, false>);
 
                         } else
-                            return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                            return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
                     case 5:  // enhanced DSP adds/subtracts
-                        if (instr & 0x00000F00UL) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                        if (instr & 0x00000F00UL)
+                            return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
                         switch ((instr >> 21) & 3) {  // what op?
                             case 0:                   // QADD
-                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 0>);
+                                return PREFIX_EXEC_FN(execFn_dspadd<memorySystemKind, wasT, 0>);
 
                             case 1:  // QSUB
-                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 1>);
+                                return PREFIX_EXEC_FN(execFn_dspadd<memorySystemKind, wasT, 1>);
 
                             case 2:  // QDADD
-                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 2>);
+                                return PREFIX_EXEC_FN(execFn_dspadd<memorySystemKind, wasT, 2>);
 
                             case 3:  // QDSUB
-                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 3>);
+                                return PREFIX_EXEC_FN(execFn_dspadd<memorySystemKind, wasT, 3>);
 
                             default:
                                 __builtin_unreachable();
                         }
 
                     case 7:  // soft breakpoint
-                        return PREFIX_EXEC_FN(execFn_softbreak<wasT>);
+                        return PREFIX_EXEC_FN(execFn_softbreak<memorySystemKind, wasT>);
 
                     case 8:
                     case 9:
@@ -2218,21 +2232,21 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
                     case 15:
                         switch ((instr >> 21) & 3) {  // what op?
                             case 0:                   // SMLAxy
-                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 0>);
+                                return PREFIX_EXEC_FN(execFn_dspmul<memorySystemKind, wasT, 0>);
 
                             case 1:  // SMLAWy/SMULWy
                                 if ((instr & 0x00000020UL) && (instr & 0x0000F000UL))
-                                    return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                                    return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
-                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 1>);
+                                return PREFIX_EXEC_FN(execFn_dspmul<memorySystemKind, wasT, 1>);
 
                             case 2:  // SMLALxy
-                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 2>);
+                                return PREFIX_EXEC_FN(execFn_dspmul<memorySystemKind, wasT, 2>);
 
                             case 3:  // SMULxy
                                 if (instr & 0x0000F000UL)
-                                    return PREFIX_EXEC_FN(execFn_invalid<wasT>);
-                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 3>);
+                                    return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
+                                return PREFIX_EXEC_FN(execFn_dspmul<memorySystemKind, wasT, 3>);
 
                             default:
                                 __builtin_unreachable();
@@ -2241,18 +2255,19 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
                     case 1:  // BLX/BX/BXJ or CLZ
                     case 3:
                         if (instr & 0x00400000UL) {  // CLZ
-                            return PREFIX_EXEC_FN(execFn_clz<wasT>);
+                            return PREFIX_EXEC_FN(execFn_clz<memorySystemKind, wasT>);
                         } else {
                             if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL)
-                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                                return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
                             return (instr & 0x00000030UL) == 0x00000030UL
-                                       ? PREFIX_EXEC_FN(execFn_bl_reg<wasT, true>)
-                                       : PREFIX_EXEC_FN(execFn_bl_reg<wasT, false>);
+                                       ? PREFIX_EXEC_FN(execFn_bl_reg<memorySystemKind, wasT, true>)
+                                       : PREFIX_EXEC_FN(
+                                             execFn_bl_reg<memorySystemKind, wasT, false>);
                         }
 
                     default:
-                        return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                        return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
                 }
 
                 // fall through to data processing;
@@ -2267,21 +2282,29 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
             const bool srcPc = ((instr >> 16) & 0x0F) == 0x0f;
             const bool destPc = ((instr >> 12) & 0x0F) == 0x0f;
 
-#define EXEC_DPROC(op)                                                                   \
-    if (setFlags) {                                                                      \
-        if (srcPc)                                                                       \
-            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, true, true>)     \
-                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, true, false>);   \
-        else                                                                             \
-            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, false, true>)    \
-                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, false, false>);  \
-    } else {                                                                             \
-        if (srcPc)                                                                       \
-            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, true, true>)    \
-                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, true, false>);  \
-        else                                                                             \
-            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, false, true>)   \
-                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, false, false>); \
+#define EXEC_DPROC(op)                                                                          \
+    if (setFlags) {                                                                             \
+        if (srcPc)                                                                              \
+            return destPc ? PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, true, true, true>)     \
+                          : PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, true, true, false>);   \
+        else                                                                                    \
+            return destPc ? PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, true, false, true>)    \
+                          : PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, true, false, false>);  \
+    } else {                                                                                    \
+        if (srcPc)                                                                              \
+            return destPc ? PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, false, true, true>)    \
+                          : PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, false, true, false>);  \
+        else                                                                                    \
+            return destPc ? PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, false, false, true>)   \
+                          : PREFIX_EXEC_FN(                                                     \
+                                execFn_dproc<memorySystemKind, wasT, op, false, false, false>); \
     }
 
             switch ((instr >> 21) & 0x0F) {
@@ -2310,14 +2333,14 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
                     EXEC_DPROC(7);
 
                 case 8:  // TST
-                    if (!setFlags) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                    if (!setFlags) return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
                     EXEC_DPROC(8);
 
                 case 9:  // TEQ
                     EXEC_DPROC(9);
 
                 case 10:  // CMP
-                    if (!setFlags) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                    if (!setFlags) return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
                     EXEC_DPROC(10);
 
                 case 11:  // CMN
@@ -2350,7 +2373,7 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
         case 6:
         case 7:                        // load/store reg offset
             if (instr & 0x00000010UL)  // media and undefined instrs
-                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
         load_store_mode_2: {
             const uint_fast8_t mode = cpuPrvArmAdrModeDecode_2(instr);
@@ -2394,7 +2417,8 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 #define EXEC_LOAD_STORE_2(mode) \
     return (srcPc ? EXEC_LOAD_STORE_2_SRC_PC(mode, true) : EXEC_LOAD_STORE_2_SRC_PC(mode, false))
 
-            if (mode & ARM_MODE_2_INV) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+            if (mode & ARM_MODE_2_INV)
+                return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 
             if (mode & ARM_MODE_2_LOAD) {
                 if (mode & ARM_MODE_2_WORD) {
@@ -2503,27 +2527,28 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
 
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
-            return (instr & 0x01000000UL) ? PREFIX_EXEC_FN(execFn_bl<wasT, true>)
-                                          : PREFIX_EXEC_FN(execFn_bl<wasT, false>);
+            return (instr & 0x01000000UL)
+                       ? PREFIX_EXEC_FN(execFn_bl<memorySystemKind, wasT, true>)
+                       : PREFIX_EXEC_FN(execFn_bl<memorySystemKind, wasT, false>);
 
         case 12:
         case 13:  // coprocessor load/store and double register transfers
                   // coproc_mem_2reg:
-            return PREFIX_EXEC_FN(execFn_cp_mem2reg<wasT, false>);
+            return PREFIX_EXEC_FN(execFn_cp_mem2reg<memorySystemKind, wasT, false>);
 
         case 14:  // coprocessor data processing and register transfers
             // coproc_dp:
-            return PREFIX_EXEC_FN(execFn_cp_dp<wasT, false>);
+            return PREFIX_EXEC_FN(execFn_cp_dp<memorySystemKind, wasT, false>);
 
         case 15:  // SWI
-            return PREFIX_EXEC_FN(execFn_memop_swi<memorySystemKind, wasT>);
+            return PREFIX_EXEC_FN(execFn_swi<memorySystemKind, wasT>);
     }
 
-    return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+    return PREFIX_EXEC_FN(execFn_invalid<memorySystemKind, wasT>);
 }
 
 template <int memorySystemKind>
-static void execFn_memop_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr) {
+static void execFn_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr) {
     const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
     const uint32_t addr = pc + ((instr & 0xff) << 2);
     uint32_t memVal32;
@@ -2536,7 +2561,7 @@ static void execFn_memop_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr) {
         cpuPrvSetRegNotPC(cpu, (instr >> 8) & 0x07, memVal32);
 }
 
-template <bool pcD, bool pcS>
+template <int memorySystemKind, bool pcD, bool pcS>
 static void execFn_thumb_4_add(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t vD = (instr & 7) | ((instr >> 4) & 0x08);
     uint_fast8_t v8 = (instr >> 3) & 0xF;
@@ -2547,7 +2572,7 @@ static void execFn_thumb_4_add(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetReg<pcD>(cpu, vD, v32);
 }
 
-template <bool pcD, bool pcS>
+template <int memorySystemKind, bool pcD, bool pcS>
 static void execFn_thumb_3_mov(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t vD = (instr & 7) | ((instr >> 4) & 0x08);
     uint_fast8_t v8 = (instr >> 3) & 0xF;
@@ -2558,7 +2583,7 @@ static void execFn_thumb_3_mov(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetReg<pcD>(cpu, vD, v32);
 }
 
-template <bool blx, bool pcS>
+template <int memorySystemKind, bool blx, bool pcS>
 static void execFn_thumb_bl_x(struct ArmCpu *cpu, uint32_t instr) {
     if constexpr (blx) cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + 1;
 
@@ -2568,7 +2593,7 @@ static void execFn_thumb_bl_x(struct ArmCpu *cpu, uint32_t instr) {
         cpuPrvSetPC(cpu, cpu->regs[(instr >> 3) & 0xF]);
 }
 
-template <bool sp>
+template <int memorySystemKind, bool sp>
 static void execFn_thumb_load_addr(struct ArmCpu *cpu, uint32_t instr) {
     cpuPrvSetReg<false>(
         cpu, (instr >> 8) & 0x07,
@@ -2576,6 +2601,7 @@ static void execFn_thumb_load_addr(struct ArmCpu *cpu, uint32_t instr) {
             ((instr & 0xff) << 2));
 }
 
+template <int memorySystemKind>
 static void execFn_thumb_bl_x_prefix(struct ArmCpu *cpu, uint32_t instr) {
     uint32_t offsetHi = instr & 0x7FF;
 
@@ -2583,6 +2609,7 @@ static void execFn_thumb_bl_x_prefix(struct ArmCpu *cpu, uint32_t instr) {
     cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + (offsetHi << 12);
 }
 
+template <int memorySystemKind>
 static void execFn_thumb_bl_suffix(struct ArmCpu *cpu, uint32_t instr) {
     const uint32_t lr = cpu->regs[REG_NO_PC] | 1ul;
     const uint32_t offsetLo = instr & 0x7FF;
@@ -2591,6 +2618,7 @@ static void execFn_thumb_bl_suffix(struct ArmCpu *cpu, uint32_t instr) {
     cpu->regs[REG_NO_LR] = lr;
 }
 
+template <int memorySystemKind>
 static void execFn_thumb_blx_suffix(struct ArmCpu *cpu, uint32_t instr) {
     const uint32_t lr = cpu->regs[REG_NO_PC] | 1ul;
     const uint32_t offsetLo = instr & 0x7FF;
@@ -2609,7 +2637,7 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderThumb(uint32_t instr) {
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instr & 0x0800) {  // LDR(3)
-                return PREFIX_EXEC_FN(execFn_memop_thumb_3_ldr<memorySystemKind>);
+                return PREFIX_EXEC_FN(execFn_thumb_3_ldr<memorySystemKind>);
             } else if (instr & 0x0400) {
                 const bool pcD = ((instr & 7) | ((instr >> 4) & 0x08)) == 15;
                 const bool pcS = ((instr >> 3) & 0xF) == 15;
@@ -2617,42 +2645,57 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderThumb(uint32_t instr) {
 
                 switch ((instr >> 8) & 0x03) {
                     case 0:
-                        return (pcS ? (pcD ? PREFIX_EXEC_FN(execFn_thumb_4_add<true, true>)
-                                           : PREFIX_EXEC_FN(execFn_thumb_4_add<false, true>))
-                                    : (pcD ? PREFIX_EXEC_FN(execFn_thumb_4_add<true, false>)
-                                           : PREFIX_EXEC_FN(execFn_thumb_4_add<false, false>)));
+                        return (
+                            pcS ? (pcD ? PREFIX_EXEC_FN(
+                                             execFn_thumb_4_add<memorySystemKind, true, true>)
+                                       : PREFIX_EXEC_FN(
+                                             execFn_thumb_4_add<memorySystemKind, false, true>))
+                                : (pcD ? PREFIX_EXEC_FN(
+                                             execFn_thumb_4_add<memorySystemKind, true, false>)
+                                       : PREFIX_EXEC_FN(
+                                             execFn_thumb_4_add<memorySystemKind, false, false>)));
 
                     case 2:
-                        return (pcS ? (pcD ? PREFIX_EXEC_FN(execFn_thumb_3_mov<true, true>)
-                                           : PREFIX_EXEC_FN(execFn_thumb_3_mov<false, true>))
-                                    : (pcD ? PREFIX_EXEC_FN(execFn_thumb_3_mov<true, false>)
-                                           : PREFIX_EXEC_FN(execFn_thumb_3_mov<false, false>)));
+                        return (
+                            pcS ? (pcD ? PREFIX_EXEC_FN(
+                                             execFn_thumb_3_mov<memorySystemKind, true, true>)
+                                       : PREFIX_EXEC_FN(
+                                             execFn_thumb_3_mov<memorySystemKind, false, true>))
+                                : (pcD ? PREFIX_EXEC_FN(
+                                             execFn_thumb_3_mov<memorySystemKind, true, false>)
+                                       : PREFIX_EXEC_FN(
+                                             execFn_thumb_3_mov<memorySystemKind, false, false>)));
 
                     case 3:
-                        return blx ? (pcS ? PREFIX_EXEC_FN(execFn_thumb_bl_x<true, true>)
-                                          : PREFIX_EXEC_FN(execFn_thumb_bl_x<true, false>))
-                                   : (pcS ? PREFIX_EXEC_FN(execFn_thumb_bl_x<false, true>)
-                                          : PREFIX_EXEC_FN(execFn_thumb_bl_x<false, false>));
+                        return blx ? (pcS ? PREFIX_EXEC_FN(
+                                                execFn_thumb_bl_x<memorySystemKind, true, true>)
+                                          : PREFIX_EXEC_FN(
+                                                execFn_thumb_bl_x<memorySystemKind, true, false>))
+                                   : (pcS ? PREFIX_EXEC_FN(
+                                                execFn_thumb_bl_x<memorySystemKind, false, true>)
+                                          : PREFIX_EXEC_FN(
+                                                execFn_thumb_bl_x<memorySystemKind, false, false>));
                 }
             }
 
             break;
 
         case 10:
-            return (instr & 0x0800) ? PREFIX_EXEC_FN(execFn_thumb_load_addr<true>)
-                                    : PREFIX_EXEC_FN(execFn_thumb_load_addr<false>);
+            return (instr & 0x0800)
+                       ? PREFIX_EXEC_FN(execFn_thumb_load_addr<memorySystemKind, true>)
+                       : PREFIX_EXEC_FN(execFn_thumb_load_addr<memorySystemKind, false>);
 
         case 14:
         case 15:
             switch ((instr >> 11) & 3) {
                 case 1:
-                    return PREFIX_EXEC_FN(execFn_thumb_blx_suffix);
+                    return PREFIX_EXEC_FN(execFn_thumb_blx_suffix<memorySystemKind>);
 
                 case 2:
-                    return PREFIX_EXEC_FN(execFn_thumb_bl_x_prefix);
+                    return PREFIX_EXEC_FN(execFn_thumb_bl_x_prefix<memorySystemKind>);
 
                 case 3:
-                    return PREFIX_EXEC_FN(execFn_thumb_bl_suffix);
+                    return PREFIX_EXEC_FN(execFn_thumb_bl_suffix<memorySystemKind>);
             }
     }
 
@@ -2664,7 +2707,7 @@ static uint32_t cpuPrvCompressExecFn(ExecFn execFn) {
 #ifdef __EMSCRIPTEN__
     return (uint32_t)execFn;
 #else
-    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop<true>);
+    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop<ARM_MEMORY_SYSTEM_MMU, true>);
 #endif
 }
 
@@ -2672,7 +2715,7 @@ static ExecFn cpuPrvDecompressExecFn(uint32_t compressed) {
 #ifdef __EMSCRIPTEN__
     return (ExecFn)compressed;
 #else
-    return (ExecFn)((uint8_t *)execFn_noop<true> + (int32_t)compressed);
+    return (ExecFn)((uint8_t *)execFn_noop<ARM_MEMORY_SYSTEM_MMU, true> + (int32_t)compressed);
 #endif
 }
 

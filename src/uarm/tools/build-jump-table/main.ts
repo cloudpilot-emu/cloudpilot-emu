@@ -173,21 +173,18 @@ function isThumb(name: string): boolean {
     name = unmangleName(name);
 
     if (name.indexOf('_thumb_') >= 0) return true;
-    if (name.indexOf('_memop_') < 0 && name.indexOf('<true') >= 0) {
-        return true;
-    }
-    if (name.indexOf('_memop_') >= 0 && /<(0|1), true/.test(name)) return true;
+    if (/<(0|1), true/.test(name)) return true;
 
     return false;
 }
 
 function isMemorySystemMMU(name: string): boolean {
-    if (name.indexOf('_memop_') < 0) return true;
+    if (name.indexOf('<') < 0) return true;
     return name.indexOf('<0') >= 0;
 }
 
 function isMemorySystemMPU(name: string): boolean {
-    if (name.indexOf('_memop_') < 0) return true;
+    if (name.indexOf('<') < 0) return true;
     return name.indexOf('<1') >= 0;
 }
 
