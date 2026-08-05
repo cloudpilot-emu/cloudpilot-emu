@@ -175,6 +175,9 @@ struct ArmCP15MPU* cp15MPUInit(struct ArmCpu* cpu, struct ArmMpu* mpu, struct ic
 
     struct ArmCoprocessor cp = {
         .regXfer = cp15prvCoprocRegXferFunc,
+        .dataProcessing = nullptr,
+        .memAccess = nullptr,
+        .twoRegF = nullptr,
         .userData = cp15,
     };
 
