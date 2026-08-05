@@ -131,7 +131,7 @@ uint32_t cpuDecodeArm(uint32_t instr);
 template <int memorySystemKind>
 uint32_t cpuDecodeThumb(uint16_t instr, uint32_t &translatedInstr);
 
-template <bool monitorPC>
+template <int memorySystemKind, bool monitorPC>
 uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles);
 
 uint32_t cpuCyclePure(struct ArmCpu *cpu);

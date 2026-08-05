@@ -708,7 +708,7 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     }
 }
 
-template <int breakReason, bool injected>
+template <int memorySystemKind, int breakReason, bool injected>
 static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t maxCycles,
                                          uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
@@ -721,10 +721,11 @@ static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t 
         uint64_t cyclesAdvanced;
 
         if constexpr (injected) {
-            cyclesAdvanced = cpuCycle<injected>(cpu, cyclesToAdvance);
+            cyclesAdvanced = cpuCycle<memorySystemKind, injected>(cpu, cyclesToAdvance);
         } else {
-            cyclesAdvanced =
-                soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, cyclesToAdvance);
+            cyclesAdvanced = soc->sleeping
+                                 ? cyclesToAdvance
+                                 : cpuCycle<memorySystemKind, injected>(cpu, cyclesToAdvance);
         }
 
         soc->scheduler->Advance(cyclesAdvanced, cyclesPerSecond);
@@ -741,7 +742,7 @@ static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t 
 uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     soc->paceBreakSyscall = 0;
 
-    return socRunUntil<0, false>(soc, soc->cpu, maxCycles, cyclesPerSecond);
+    return socRunUntil<ARM_MEMORY_SYSTEM_MMU, 0, false>(soc, soc->cpu, maxCycles, cyclesPerSecond);
 }
 
 bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
@@ -749,8 +750,9 @@ bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
     if (syscall == soc->paceBreakSyscall) return true;
 
     cpuSetBreakPaceSyscall(soc->cpu, syscall);
-    const uint64_t cycles = socRunUntil<SLOW_PATH_REASON_PACE_SYSCALL_BREAK, false>(
-        soc, soc->cpu, maxCycles, cyclesPerSecond);
+    const uint64_t cycles =
+        socRunUntil<ARM_MEMORY_SYSTEM_MMU, SLOW_PATH_REASON_PACE_SYSCALL_BREAK, false>(
+            soc, soc->cpu, maxCycles, cyclesPerSecond);
     cpuSetBreakPaceSyscall(soc->cpu, 0);
 
     soc->injectedTimeNsec += (cycles * 1000000) / (cyclesPerSecond / 1000);
@@ -764,8 +766,9 @@ bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
 
 bool socExecuteInjected(struct SoC *soc, struct ArmCpu *cpu, uint64_t maxCycles,
                         uint64_t cyclesPerSecond) {
-    const uint64_t cycles = socRunUntil<SLOW_PATH_REASON_INJECTED_CALL_DONE, true>(
-        soc, cpu, maxCycles, cyclesPerSecond);
+    const uint64_t cycles =
+        socRunUntil<ARM_MEMORY_SYSTEM_MMU, SLOW_PATH_REASON_INJECTED_CALL_DONE, true>(
+            soc, cpu, maxCycles, cyclesPerSecond);
 
     soc->injectedTimeNsec += (cycles * 1000000) / (cyclesPerSecond / 1000);
 

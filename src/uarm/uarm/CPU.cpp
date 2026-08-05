@@ -3501,7 +3501,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
     return cycleAcc;
 }
 
-template <bool injected>
+template <int memorySystemKind, bool injected>
 ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->waitingEventsTotal) {
         if (cpu->waitingFiqs && !cpu->F)
@@ -3524,17 +3524,15 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
     else if (cpu->T)
-        return (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU)
-                   ? cpuCycleThumb<ARM_MEMORY_SYSTEM_MMU, injected>(cpu, cycles)
-                   : cpuCycleThumb<ARM_MEMORY_SYSTEM_MPU, injected>(cpu, cycles);
+        return cpuCycleThumb<memorySystemKind, injected>(cpu, cycles);
     else
-        return (cpu->memorySystemKind == ARM_MEMORY_SYSTEM_MMU)
-                   ? cpuCycleArm<ARM_MEMORY_SYSTEM_MMU, injected>(cpu, cycles)
-                   : cpuCycleArm<ARM_MEMORY_SYSTEM_MPU, injected>(cpu, cycles);
+        return cpuCycleArm<memorySystemKind, injected>(cpu, cycles);
 }
 
-template uint32_t cpuCycle<true>(struct ArmCpu *cpu, uint32_t cycles);
-template uint32_t cpuCycle<false>(struct ArmCpu *cpu, uint32_t cycles);
+template uint32_t cpuCycle<ARM_MEMORY_SYSTEM_MMU, true>(struct ArmCpu *cpu, uint32_t cycles);
+template uint32_t cpuCycle<ARM_MEMORY_SYSTEM_MPU, true>(struct ArmCpu *cpu, uint32_t cycles);
+template uint32_t cpuCycle<ARM_MEMORY_SYSTEM_MMU, false>(struct ArmCpu *cpu, uint32_t cycles);
+template uint32_t cpuCycle<ARM_MEMORY_SYSTEM_MPU, false>(struct ArmCpu *cpu, uint32_t cycles);
 
 uint32_t cpuCyclePure(struct ArmCpu *cpu) {
     cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
