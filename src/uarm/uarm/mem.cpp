@@ -115,6 +115,29 @@ bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write,
     return ret;
 }
 
+bool memAccessAlign64(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write, void *buf) {
+    if (mem->regions[REGION_RAM].pa <= addr &&
+        mem->regions[REGION_RAM].pa + mem->regions[REGION_RAM].sz >= addr + size) {
+        return ramAccessF(mem->regions[REGION_RAM].uD, addr, size, write, buf);
+    }
+
+    if (mem->regions[REGION_ROM].pa <= addr &&
+        mem->regions[REGION_ROM].pa + mem->regions[REGION_ROM].sz >= addr + size)
+        return romAccessF(mem->regions[REGION_ROM].uD, addr, size, write, buf);
+
+    bool ret = false;
+    uint_fast8_t i;
+
+    for (i = REGION_BASE; i < NUM_MEM_REGIONS; i++) {
+        if (mem->regions[i].pa <= addr && mem->regions[i].pa + mem->regions[i].sz >= addr + size) {
+            ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, write, buf);
+            break;
+        }
+    }
+
+    return ret;
+}
+
 bool memInstructionFetch(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, void *buf) {
     if (mem->regions[REGION_RAM].pa <= addr &&
         mem->regions[REGION_RAM].pa + mem->regions[REGION_RAM].sz > addr)

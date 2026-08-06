@@ -19,6 +19,10 @@ bool memRegionAddRom(struct ArmMem* mem, uint32_t pa, uint32_t sz, ArmMemAccessF
 
 bool memAccess(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, bool write, void* buf);
 
+// memAccess assumes that the access is size aligned. This version assumes only at most 64bit
+// alignment.
+bool memAccessAlign64(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, bool write, void* buf);
+
 bool memInstructionFetch(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, void* buf);
 
 #endif

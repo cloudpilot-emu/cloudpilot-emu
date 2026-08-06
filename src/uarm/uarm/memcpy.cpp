@@ -6,10 +6,19 @@
 
 namespace {
     template <int size>
+    bool memAccessChecked(struct ArmMem* mem, uint32_t addr, bool write, void* buf) {
+        if constexpr (size > 4) {
+            return memAccessAlign64(mem, addr, size, write, buf);
+        } else {
+            return memAccess(mem, addr, size, write, buf);
+        }
+    }
+
+    template <int size>
     bool transfer_loop_pa(uint8_t*& host, uint32_t& armPa, uint32_t& sizeTotal, bool write,
                           struct ArmMem* mem, MemcpyResult* result) {
         while (sizeTotal >= size) {
-            if (!memAccess(mem, armPa, size, write, host)) {
+            if (!memAccessChecked<size>(mem, armPa, write, host)) {
                 result->ok = false;
                 result->faultAddr = armPa;
 
