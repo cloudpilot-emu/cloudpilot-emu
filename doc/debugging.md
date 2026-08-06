@@ -52,6 +52,18 @@ The GDB stub is only available in the native version of CloudpilotEmu (and not
 in the web version). Please follow the instructions in [the
 README](../README.md) in order to build it from source.
 
+If you want to use cp-uarm --gdb and cloudpilotemu -l, make sure the CLI is actually built
+with the debugging stub enabled. Add the following to src/Makefile.local:
+
+```
+CFLAGS_NATIVE_EXTRA += -DENABLE_DEBUGGER -DGDB_STUB_ENABLED
+CXXFLAGS_NATIVE_EXTRA += -DENABLE_DEBUGGER -DGDB_STUB_ENABLED
+```
+
+Do not override CFLAGS_NATIVE directly for this. Appending through
+CFLAGS_NATIVE_EXTRA and CXXFLAGS_NATIVE_EXTRA keeps the rest of the project
+build flags intact.
+
 ### Building GDB
 
 A version of GDB built for the target `m68k-none-elf` is required for debugging

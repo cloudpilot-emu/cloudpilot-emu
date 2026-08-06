@@ -214,7 +214,8 @@ namespace {
 
         SoC* soc = socInit(romInfo.GetDeviceType(), ramSize, nor.data, nor.size,
                            reinterpret_cast<uint8_t*>(nand.data), nand.size,
-                           options.gdbPort.value_or(0), deviceGetSocRev());
+                           options.gdbPort.has_value() ? static_cast<int>(*options.gdbPort) : -1,
+                           deviceGetSocRev());
 
         if (memory.data && memory.size > socGetMemoryData(soc).size) {
             cerr << "RAM size mismatch" << endl;
@@ -391,6 +392,20 @@ int main(int argc, const char** argv) {
                        .script = program.present("--script"),
                        .ramSize = program.present<unsigned int>("--ram-size"),
                        .smallWindow = program.get<bool>("--small-window")};
+
+    if (options.gdbPort.has_value() && *options.gdbPort == 0) {
+        cerr << "--gdb requires a non-zero port" << endl;
+        exit(1);
+    }
+
+#ifndef GDB_STUB_ENABLED
+    if (options.gdbPort.has_value()) {
+        cerr << "cp-uarm was built without GDB stub support." << endl;
+        cerr << "Rebuild the native CLI with -DGDB_STUB_ENABLED" << endl;
+        cerr << "for both CFLAGS_NATIVE_EXTRA and CXXFLAGS_NATIVE_EXTRA in src/Makefile.local," << endl;
+        exit(1);
+    }
+#endif
 
     logEnable();
 
