@@ -50,7 +50,8 @@ namespace {
     uint32_t statePtr;
     bool priviledged = false;
 
-    uint32_t pace_get_le(uint32_t addr, uint8_t size) {
+    template <int size>
+    uint32_t pace_get_le(uint32_t addr) {
         if (fsr != 0) return 0;
 
         lastAddr = addr;
@@ -79,9 +80,9 @@ namespace {
         uint32_t result = 0;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-        bool ok = memAccess(mem, pa, size, false, reinterpret_cast<uint8_t*>(&result) + 4 - size);
+        bool ok = memAccess<size, false>(mem, pa, reinterpret_cast<uint8_t*>(&result) + 4 - size);
 #else
-        bool ok = memAccess(mem, pa, size, false, &result);
+        bool ok = memAccess<size, false>(mem, pa, &result);
 #endif
 
         if (!ok) {
@@ -110,14 +111,14 @@ namespace {
             const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
             uint32_t val_le;
 
-            if (!memAccess(mem, pa, 2, false, LO_WORD(&val_le))) {
+            if (!memAccess<2, false>(mem, pa, LO_WORD(&val_le))) {
                 fsr = 10;
                 return 0;
             }
 
             lastAddr += 2;
 
-            if (!memAccess(mem, pa + 2, 2, false, HI_WORD(&val_le))) {
+            if (!memAccess<2, false>(mem, pa + 2, HI_WORD(&val_le))) {
                 fsr = 10;
                 return 0;
             }
@@ -134,25 +135,26 @@ namespace {
 
             uint32_t val_le;
 
-            if (!memAccess(mem, addr, 2, false, LO_WORD(&val_le))) {
+            if (!memAccess<2, false>(mem, addr, LO_WORD(&val_le))) {
                 fsr = 1;
                 return 0;
             }
 
             lastAddr += 2;
 
-            if (!memAccess(mem, addr + 2, 2, false, HI_WORD(&val_le))) {
+            if (!memAccess<2, false>(mem, addr + 2, HI_WORD(&val_le))) {
                 fsr = 1;
                 return 0;
             }
 
             return bswap32(val_le);
         } else {
-            return bswap32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
+            return bswap32(pace_get_le<2>(addr) | (pace_get_le<2>(addr + 2) << 16));
         }
     }
 
-    void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
+    template <int size>
+    void pace_put_le(uint32_t addr, uint32_t value) {
         if (fsr != 0) return;
 
         lastAddr = addr;
@@ -179,9 +181,9 @@ namespace {
         }
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-        bool ok = memAccess(mem, pa, size, true, reinterpret_cast<uint8_t*>(&value) + 4 - size);
+        bool ok = memAccess<size, true>(mem, pa, reinterpret_cast<uint8_t*>(&value) + 4 - size);
 #else
-        bool ok = memAccess(mem, pa, size, true, &value);
+        bool ok = memAccess<size, true>(mem, pa, &value);
 #endif
 
         if (!ok) {
@@ -207,14 +209,14 @@ namespace {
 
             const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
-            if (!memAccess(mem, pa, 2, true, LO_WORD(&value))) {
+            if (!memAccess<2, true>(mem, pa, LO_WORD(&value))) {
                 fsr = 10;
                 return;
             }
 
             lastAddr += 2;
 
-            if (!memAccess(mem, pa + 2, 2, true, HI_WORD(&value))) fsr = 10;
+            if (!memAccess<2, true>(mem, pa + 2, HI_WORD(&value))) fsr = 10;
         } else if (memorySystemKind == ARM_MEMORY_SYSTEM_MPU && (addr & 0xfff) <= (0xfff - 4)) {
             lastAddr = addr;
             wasWrite = true;
@@ -224,17 +226,17 @@ namespace {
                 return;
             }
 
-            if (!memAccess(mem, addr, 2, true, LO_WORD(&value))) {
+            if (!memAccess<2, true>(mem, addr, LO_WORD(&value))) {
                 fsr = 10;
                 return;
             }
 
             lastAddr += 2;
 
-            if (!memAccess(mem, addr + 2, 2, true, HI_WORD(&value))) fsr = 10;
+            if (!memAccess<2, true>(mem, addr + 2, HI_WORD(&value))) fsr = 10;
         } else {
-            pace_put_le(addr, value, 2);
-            pace_put_le(addr + 2, value >> 16, 2);
+            pace_put_le<2>(addr, value);
+            pace_put_le<2>(addr + 2, value >> 16);
         }
     }
 
@@ -243,7 +245,7 @@ namespace {
 // The following functions are called by UAE
 extern "C" {
 
-uint8_t uae_get8(uint32_t addr) { return pace_get_le(addr, 1); }
+uint8_t uae_get8(uint32_t addr) { return pace_get_le<1>(addr); }
 
 uint16_t uae_get16(uint32_t addr) {
     if (!fsr && addr & 0x01) {
@@ -251,7 +253,7 @@ uint16_t uae_get16(uint32_t addr) {
         return 0;
     }
 
-    return htobe16(pace_get_le(addr, 2));
+    return htobe16(pace_get_le<2>(addr));
 }
 
 uint32_t uae_get32(uint32_t addr) {
@@ -266,11 +268,11 @@ uint32_t uae_get32(uint32_t addr) {
             return uae_get32_split(addr);
 
         default:
-            return htobe32(pace_get_le(addr, 4));
+            return htobe32(pace_get_le<4>(addr));
     }
 }
 
-void uae_put8(uint32_t addr, uint8_t value) { pace_put_le(addr, value, 1); };
+void uae_put8(uint32_t addr, uint8_t value) { pace_put_le<1>(addr, value); };
 
 void uae_put16(uint32_t addr, uint16_t value) {
     if (!fsr && addr & 0x01) {
@@ -278,7 +280,7 @@ void uae_put16(uint32_t addr, uint16_t value) {
         return;
     }
 
-    pace_put_le(addr, be16toh(value), 2);
+    pace_put_le<2>(addr, be16toh(value));
 }
 
 void uae_put32(uint32_t addr, uint32_t value) {
@@ -294,7 +296,7 @@ void uae_put32(uint32_t addr, uint32_t value) {
             break;
 
         default:
-            pace_put_le(addr, be32toh(value), 4);
+            pace_put_le<4>(addr, be32toh(value));
             break;
     }
 }

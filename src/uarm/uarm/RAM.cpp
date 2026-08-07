@@ -26,12 +26,13 @@ struct ArmRam {
     uint32_t framebufferEnd;
 };
 
-bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP) {
+template <int size, bool write>
+bool ramAccessF(void* userData, uint32_t pa, void* bufP) {
     struct ArmRam* ram = (struct ArmRam*)userData;
     const uint32_t offset = pa - ram->adr;
     const uint8_t* addr = (uint8_t*)ram->buf.buffer + offset;
 
-    if (write) {
+    if constexpr (write) {
         MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset);
 
         switch (size) {
@@ -148,6 +149,74 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
     }
 
     return true;
+}
+
+#define DECLARE_ACCESS_F_SIZE(size)                                                \
+    template bool ramAccessF<size, true>(void* userData, uint32_t pa, void* bufP); \
+    template bool ramAccessF<size, false>(void* userData, uint32_t pa, void* bufP);
+
+DECLARE_ACCESS_F_SIZE(1)
+DECLARE_ACCESS_F_SIZE(2)
+DECLARE_ACCESS_F_SIZE(4)
+DECLARE_ACCESS_F_SIZE(8)
+DECLARE_ACCESS_F_SIZE(16)
+DECLARE_ACCESS_F_SIZE(32)
+DECLARE_ACCESS_F_SIZE(64)
+
+bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP) {
+    if (write) {
+        switch (size) {
+            case 1:
+                return ramAccessF<1, true>(userData, pa, bufP);
+
+            case 2:
+                return ramAccessF<2, true>(userData, pa, bufP);
+
+            case 4:
+                return ramAccessF<4, true>(userData, pa, bufP);
+
+            case 8:
+                return ramAccessF<8, true>(userData, pa, bufP);
+
+            case 16:
+                return ramAccessF<16, true>(userData, pa, bufP);
+
+            case 32:
+                return ramAccessF<32, true>(userData, pa, bufP);
+
+            case 64:
+                return ramAccessF<64, true>(userData, pa, bufP);
+
+            default:
+                return false;
+        }
+    } else {
+        switch (size) {
+            case 1:
+                return ramAccessF<1, false>(userData, pa, bufP);
+
+            case 2:
+                return ramAccessF<2, false>(userData, pa, bufP);
+
+            case 4:
+                return ramAccessF<4, false>(userData, pa, bufP);
+
+            case 8:
+                return ramAccessF<8, false>(userData, pa, bufP);
+
+            case 16:
+                return ramAccessF<16, false>(userData, pa, bufP);
+
+            case 32:
+                return ramAccessF<32, false>(userData, pa, bufP);
+
+            case 64:
+                return ramAccessF<64, false>(userData, pa, bufP);
+
+            default:
+                return false;
+        }
+    }
 }
 
 void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size) {

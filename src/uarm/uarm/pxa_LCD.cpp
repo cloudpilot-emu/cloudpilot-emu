@@ -315,7 +315,7 @@ static bool pxaLcdPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
 static uint32_t pxaLcdPrvGetWord(struct PxaLcd *lcd, uint32_t addr) {
     uint32_t v;
 
-    if (!memAccess(lcd->mem, addr, 4, false, &v)) return 0;
+    if (!memAccess<4, false>(lcd->mem, addr, &v)) return 0;
 
     return v;
 }

@@ -110,10 +110,10 @@ static void socDmaPrvChannelDescrFetch(
     if ((ch->DAR & 2) && (ch->CSR & 0x0400))  // branch mode
         dar += 32;
 
-    if (!memAccess(dma->mem, dar + 0, 4, false, &nextD) ||
-        !memAccess(dma->mem, dar + 4, 4, false, &nextS) ||
-        !memAccess(dma->mem, dar + 8, 4, false, &nextT) ||
-        !memAccess(dma->mem, dar + 12, 4, false, &nextC)) {
+    if (!memAccess<4, false>(dma->mem, dar + 0, &nextD) ||
+        !memAccess<4, false>(dma->mem, dar + 4, &nextS) ||
+        !memAccess<4, false>(dma->mem, dar + 8, &nextT) ||
+        !memAccess<4, false>(dma->mem, dar + 12, &nextC)) {
         // ERROR
         fprintf(stderr, "DMA descriptor fetch error\n");
         ch->CSR |= 1;  // signal bus error, not running

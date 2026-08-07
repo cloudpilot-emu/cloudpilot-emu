@@ -5,20 +5,11 @@
 #include "mem.h"
 
 namespace {
-    template <int size>
-    bool memAccessChecked(struct ArmMem* mem, uint32_t addr, bool write, void* buf) {
-        if constexpr (size > 4) {
-            return memAccessAlign64(mem, addr, size, write, buf);
-        } else {
-            return memAccess(mem, addr, size, write, buf);
-        }
-    }
-
-    template <int size>
-    bool transfer_loop_pa(uint8_t*& host, uint32_t& armPa, uint32_t& sizeTotal, bool write,
-                          struct ArmMem* mem, MemcpyResult* result) {
+    template <int size, bool write>
+    bool transfer_loop_pa(uint8_t*& host, uint32_t& armPa, uint32_t& sizeTotal, struct ArmMem* mem,
+                          MemcpyResult* result) {
         while (sizeTotal >= size) {
-            if (!memAccessChecked<size>(mem, armPa, write, host)) {
+            if (!memAccess<size, write>(mem, armPa, host)) {
                 result->ok = false;
                 result->faultAddr = armPa;
 
@@ -33,33 +24,34 @@ namespace {
         return true;
     }
 
-    template <int align>
-    void transfer_pa(uint8_t* host, uint32_t armPa, uint32_t size, bool write, struct ArmMem* mem,
+    template <int align, bool write>
+    void transfer_pa(uint8_t* host, uint32_t armPa, uint32_t size, struct ArmMem* mem,
                      MemcpyResult* result) {
         switch (align) {
             case 3:
-                if (!transfer_loop_pa<64>(host, armPa, size, write, mem, result)) return;
-                if (!transfer_loop_pa<32>(host, armPa, size, write, mem, result)) return;
-                if (!transfer_loop_pa<16>(host, armPa, size, write, mem, result)) return;
-                if (!transfer_loop_pa<8>(host, armPa, size, write, mem, result)) return;
+                if (!transfer_loop_pa<64, write>(host, armPa, size, mem, result)) return;
+                if (!transfer_loop_pa<32, write>(host, armPa, size, mem, result)) return;
+                if (!transfer_loop_pa<16, write>(host, armPa, size, mem, result)) return;
+                if (!transfer_loop_pa<8, write>(host, armPa, size, mem, result)) return;
                 [[fallthrough]];
 
             case 2:
-                if (!transfer_loop_pa<4>(host, armPa, size, write, mem, result)) return;
+                if (!transfer_loop_pa<4, write>(host, armPa, size, mem, result)) return;
                 [[fallthrough]];
 
             case 1:
-                if (!transfer_loop_pa<2>(host, armPa, size, write, mem, result)) return;
+                if (!transfer_loop_pa<2, write>(host, armPa, size, mem, result)) return;
                 [[fallthrough]];
 
             case 0:
-                if (!transfer_loop_pa<1>(host, armPa, size, write, mem, result)) return;
+                if (!transfer_loop_pa<1, write>(host, armPa, size, mem, result)) return;
                 break;
         }
     }
 
-    void transfer(uint8_t* host, uint32_t arm, uint32_t size, bool write, bool privileged,
-                  struct ArmMem* mem, struct ArmMmu* mmu, MemcpyResult* result) {
+    template <bool write>
+    void transfer(uint8_t* host, uint32_t arm, uint32_t size, bool privileged, struct ArmMem* mem,
+                  struct ArmMmu* mmu, MemcpyResult* result) {
         result->ok = true;
         result->wasWrite = write;
 
@@ -84,19 +76,19 @@ namespace {
 
             switch (align) {
                 case 0:
-                    transfer_pa<0>(host, pa, chunkSize, write, mem, result);
+                    transfer_pa<0, write>(host, pa, chunkSize, mem, result);
                     break;
 
                 case 1:
-                    transfer_pa<1>(host, pa, chunkSize, write, mem, result);
+                    transfer_pa<1, write>(host, pa, chunkSize, mem, result);
                     break;
 
                 case 2:
-                    transfer_pa<2>(host, pa, chunkSize, write, mem, result);
+                    transfer_pa<2, write>(host, pa, chunkSize, mem, result);
                     break;
 
                 case 3:
-                    transfer_pa<3>(host, pa, chunkSize, write, mem, result);
+                    transfer_pa<3, write>(host, pa, chunkSize, mem, result);
                     break;
             }
 
@@ -112,8 +104,9 @@ namespace {
         }
     }
 
-    void transfer(uint8_t* host, uint32_t arm, uint32_t size, bool write, bool privileged,
-                  struct ArmMem* mem, struct ArmMpu* mpu, MemcpyResult* result) {
+    template <bool write>
+    void transfer(uint8_t* host, uint32_t arm, uint32_t size, bool privileged, struct ArmMem* mem,
+                  struct ArmMpu* mpu, MemcpyResult* result) {
         result->ok = true;
         result->wasWrite = write;
 
@@ -136,19 +129,19 @@ namespace {
 
             switch (align) {
                 case 0:
-                    transfer_pa<0>(host, arm, chunkSize, write, mem, result);
+                    transfer_pa<0, write>(host, arm, chunkSize, mem, result);
                     break;
 
                 case 1:
-                    transfer_pa<1>(host, arm, chunkSize, write, mem, result);
+                    transfer_pa<1, write>(host, arm, chunkSize, mem, result);
                     break;
 
                 case 2:
-                    transfer_pa<2>(host, arm, chunkSize, write, mem, result);
+                    transfer_pa<2, write>(host, arm, chunkSize, mem, result);
                     break;
 
                 case 3:
-                    transfer_pa<3>(host, arm, chunkSize, write, mem, result);
+                    transfer_pa<3, write>(host, arm, chunkSize, mem, result);
                     break;
             }
 
@@ -168,13 +161,13 @@ namespace {
 template <typename T>
 void memcpy_armToHost(uint8_t* dest, uint32_t src, uint32_t size, bool privileged,
                       struct ArmMem* mem, T* msys, MemcpyResult* result) {
-    transfer(dest, src, size, false, privileged, mem, msys, result);
+    transfer<false>(dest, src, size, privileged, mem, msys, result);
 }
 
 template <typename T>
 void memcpy_hostToArm(uint32_t dest, const uint8_t* src, uint32_t size, bool privileged,
                       struct ArmMem* mem, T* msys, MemcpyResult* result) {
-    transfer(const_cast<uint8_t*>(src), dest, size, true, privileged, mem, msys, result);
+    transfer<true>(const_cast<uint8_t*>(src), dest, size, privileged, mem, msys, result);
 }
 
 template <typename T>

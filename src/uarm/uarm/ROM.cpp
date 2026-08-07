@@ -16,7 +16,8 @@ struct ArmRom {
     uint32_t *dataPeephole;
 };
 
-static inline bool access(uint8_t *source, uint_fast8_t size, void *bufP) {
+template <int size>
+static bool access(uint8_t *source, void *bufP) {
     switch (size) {
         case 1:
 
@@ -60,19 +61,71 @@ static inline bool access(uint8_t *source, uint_fast8_t size, void *bufP) {
     return true;
 }
 
+template <int size, bool write>
+bool romAccessF(void *userData, uint32_t pa, void *bufP) {
+    if constexpr (write) return false;
+
+    struct ArmRom *rom = (struct ArmRom *)userData;
+
+    return access<size>((uint8_t *)rom->data + (pa - rom->base), bufP);
+}
+
+#define DECLARE_ACCESS_F_SIZE(sz)                                                \
+    template bool romAccessF<sz, true>(void *userData, uint32_t pa, void *bufP); \
+    template bool romAccessF<sz, false>(void *userData, uint32_t pa, void *bufP);
+
+DECLARE_ACCESS_F_SIZE(1)
+DECLARE_ACCESS_F_SIZE(2)
+DECLARE_ACCESS_F_SIZE(4)
+DECLARE_ACCESS_F_SIZE(8)
+DECLARE_ACCESS_F_SIZE(16)
+DECLARE_ACCESS_F_SIZE(32)
+DECLARE_ACCESS_F_SIZE(64)
+
 bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP) {
     if (write) return false;
 
-    struct ArmRom *rom = (struct ArmRom *)userData;
+    switch (size) {
+        case 1:
+            return romAccessF<1, false>(userData, pa, bufP);
 
-    return access((uint8_t *)rom->data + (pa - rom->base), size, bufP);
+        case 2:
+            return romAccessF<2, false>(userData, pa, bufP);
+
+        case 4:
+            return romAccessF<4, false>(userData, pa, bufP);
+
+        case 8:
+            return romAccessF<8, false>(userData, pa, bufP);
+
+        case 16:
+            return romAccessF<16, false>(userData, pa, bufP);
+
+        case 32:
+            return romAccessF<32, false>(userData, pa, bufP);
+
+        case 64:
+            return romAccessF<64, false>(userData, pa, bufP);
+
+        default:
+            return false;
+    }
 }
 
-bool romInstructionFetch(void *userData, uint32_t pa, uint_fast8_t size, void *bufP) {
+template <int size>
+bool romInstructionFetch(void *userData, uint32_t pa, void *bufP) {
     struct ArmRom *rom = (struct ArmRom *)userData;
 
-    return access((uint8_t *)rom->dataPeephole + (pa - rom->base), size, bufP);
+    return access<size>((uint8_t *)rom->dataPeephole + (pa - rom->base), bufP);
 }
+
+template bool romInstructionFetch<1>(void *userData, uint32_t pa, void *bufP);
+template bool romInstructionFetch<2>(void *userData, uint32_t pa, void *bufP);
+template bool romInstructionFetch<4>(void *userData, uint32_t pa, void *bufP);
+template bool romInstructionFetch<8>(void *userData, uint32_t pa, void *bufP);
+template bool romInstructionFetch<16>(void *userData, uint32_t pa, void *bufP);
+template bool romInstructionFetch<32>(void *userData, uint32_t pa, void *bufP);
+template bool romInstructionFetch<64>(void *userData, uint32_t pa, void *bufP);
 
 uint32_t romGetSize(struct ArmRom *rom) { return rom->size; }
 

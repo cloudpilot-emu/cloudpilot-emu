@@ -13,9 +13,13 @@ struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void *data, const uint3
 
 void *romGetPeepholeBuffer(struct ArmRom *rom);
 
+template <int size, bool write>
+bool romAccessF(void *userData, uint32_t pa, void *bufP);
+
 bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP);
 
-bool romInstructionFetch(void *userData, uint32_t pa, uint_fast8_t size, void *bufP);
+template <int size>
+bool romInstructionFetch(void *userData, uint32_t pa, void *bufP);
 
 uint32_t romGetSize(struct ArmRom *rom);
 

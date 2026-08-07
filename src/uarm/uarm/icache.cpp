@@ -152,7 +152,7 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
         }
 
         if (!cacheable) {
-            bool ok = memInstructionFetch(ic->mem, pa, sz, &instr);
+            bool ok = memInstructionFetch<sz>(ic->mem, pa, &instr);
 
             if (!ok) {
                 *fsrP = 0x0d;  // perm error
@@ -171,8 +171,8 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, uint32_t& i
             return true;
         }
 
-        bool ok = memInstructionFetch(ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)),
-                                      sizeof(data), data);
+        bool ok = memInstructionFetch<sizeof(data)>(
+            ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)), data);
         if (!ok) {
             if (fsrP) *fsrP = 0x0d;  // perm error
             return false;

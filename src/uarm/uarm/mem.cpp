@@ -17,7 +17,7 @@
 
 struct ArmMemRegion {
     uint32_t pa;
-    uint32_t sz;
+    uint32_t ub;
     ArmMemAccessF aF;
     void *uD;
 };
@@ -42,8 +42,8 @@ static bool checkForIntersection(struct ArmMem *mem, uint32_t pa, uint32_t sz) {
     uint_fast8_t i;
 
     for (i = 0; i < NUM_MEM_REGIONS; i++) {
-        if (!mem->regions[i].sz) continue;
-        if ((mem->regions[i].pa <= pa && mem->regions[i].pa + mem->regions[i].sz > pa) ||
+        if (!mem->regions[i].ub) continue;
+        if ((mem->regions[i].pa <= pa && mem->regions[i].ub > pa) ||
             (pa <= mem->regions[i].pa && pa + sz > mem->regions[i].pa))
             return true;  // intersection -> fail
     }
@@ -54,9 +54,9 @@ static bool checkForIntersection(struct ArmMem *mem, uint32_t pa, uint32_t sz) {
 static bool memRegionAddFixed(struct ArmMem *mem, uint8_t region, uint32_t pa, uint32_t sz,
                               ArmMemAccessF af, void *uD) {
     mem->regions[region].pa = pa;
-    mem->regions[region].sz = sz;
     mem->regions[region].aF = af;
     mem->regions[region].uD = uD;
+    mem->regions[region].ub = pa + sz;
 
     return true;
 }
@@ -69,11 +69,11 @@ bool memRegionAdd(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF aF
     // find a free region and put it there
 
     for (i = REGION_BASE; i < NUM_MEM_REGIONS; i++) {
-        if (mem->regions[i].sz == 0) {
+        if (mem->regions[i].ub == 0) {
             mem->regions[i].pa = pa;
-            mem->regions[i].sz = sz;
             mem->regions[i].aF = aF;
             mem->regions[i].uD = uD;
+            mem->regions[i].ub = pa + sz;
 
             return true;
         }
@@ -92,21 +92,57 @@ bool memRegionAddRom(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF
     return memRegionAddFixed(mem, REGION_ROM, pa, sz, af, uD);
 }
 
+template <int size, bool write>
+bool memAccess(struct ArmMem *mem, uint32_t addr, void *buf) {
+    const uint32_t ub = addr + size;
+
+    if (mem->regions[REGION_RAM].pa <= addr && mem->regions[REGION_RAM].ub >= ub) {
+        return ramAccessF<size, write>(mem->regions[REGION_RAM].uD, addr, buf);
+    }
+
+    if (mem->regions[REGION_ROM].pa <= addr && mem->regions[REGION_ROM].ub >= ub)
+        return romAccessF<size, write>(mem->regions[REGION_ROM].uD, addr, buf);
+
+    bool ret = false;
+    uint_fast8_t i;
+
+    for (i = REGION_BASE; i < NUM_MEM_REGIONS; i++) {
+        if (mem->regions[i].pa <= addr && mem->regions[i].ub >= ub) {
+            ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, write, buf);
+            break;
+        }
+    }
+
+    return ret;
+}
+
+#define DECLARE_MEM_ACCESS_SIZE(sz)                                                   \
+    template bool memAccess<sz, true>(struct ArmMem * mem, uint32_t addr, void *buf); \
+    template bool memAccess<sz, false>(struct ArmMem * mem, uint32_t addr, void *buf);
+
+DECLARE_MEM_ACCESS_SIZE(1)
+DECLARE_MEM_ACCESS_SIZE(2)
+DECLARE_MEM_ACCESS_SIZE(4)
+DECLARE_MEM_ACCESS_SIZE(8)
+DECLARE_MEM_ACCESS_SIZE(16)
+DECLARE_MEM_ACCESS_SIZE(32)
+DECLARE_MEM_ACCESS_SIZE(64)
+
 bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write, void *buf) {
-    if (mem->regions[REGION_RAM].pa <= addr &&
-        mem->regions[REGION_RAM].pa + mem->regions[REGION_RAM].sz > addr) {
+    const uint32_t ub = addr + size;
+
+    if (mem->regions[REGION_RAM].pa <= addr && mem->regions[REGION_RAM].ub >= ub) {
         return ramAccessF(mem->regions[REGION_RAM].uD, addr, size, write, buf);
     }
 
-    if (mem->regions[REGION_ROM].pa <= addr &&
-        mem->regions[REGION_ROM].pa + mem->regions[REGION_ROM].sz > addr)
+    if (mem->regions[REGION_ROM].pa <= addr && mem->regions[REGION_ROM].ub >= ub)
         return romAccessF(mem->regions[REGION_ROM].uD, addr, size, write, buf);
 
     bool ret = false;
     uint_fast8_t i;
 
     for (i = REGION_BASE; i < NUM_MEM_REGIONS; i++) {
-        if (mem->regions[i].pa <= addr && mem->regions[i].pa + mem->regions[i].sz > addr) {
+        if (mem->regions[i].pa <= addr && mem->regions[i].ub >= ub) {
             ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, write, buf);
             break;
         }
@@ -115,43 +151,21 @@ bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write,
     return ret;
 }
 
-bool memAccessAlign64(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write, void *buf) {
-    if (mem->regions[REGION_RAM].pa <= addr &&
-        mem->regions[REGION_RAM].pa + mem->regions[REGION_RAM].sz >= addr + size) {
-        return ramAccessF(mem->regions[REGION_RAM].uD, addr, size, write, buf);
-    }
+template <int size>
+bool memInstructionFetch(struct ArmMem *mem, uint32_t addr, void *buf) {
+    const uint32_t ub = addr + size;
 
-    if (mem->regions[REGION_ROM].pa <= addr &&
-        mem->regions[REGION_ROM].pa + mem->regions[REGION_ROM].sz >= addr + size)
-        return romAccessF(mem->regions[REGION_ROM].uD, addr, size, write, buf);
+    if (mem->regions[REGION_RAM].pa <= addr && mem->regions[REGION_RAM].ub >= ub)
+        return ramAccessF<size, false>(mem->regions[REGION_RAM].uD, addr, buf);
 
-    bool ret = false;
-    uint_fast8_t i;
-
-    for (i = REGION_BASE; i < NUM_MEM_REGIONS; i++) {
-        if (mem->regions[i].pa <= addr && mem->regions[i].pa + mem->regions[i].sz >= addr + size) {
-            ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, write, buf);
-            break;
-        }
-    }
-
-    return ret;
-}
-
-bool memInstructionFetch(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, void *buf) {
-    if (mem->regions[REGION_RAM].pa <= addr &&
-        mem->regions[REGION_RAM].pa + mem->regions[REGION_RAM].sz > addr)
-        return ramAccessF(mem->regions[REGION_RAM].uD, addr, size, false, buf);
-
-    if (mem->regions[REGION_ROM].pa <= addr &&
-        mem->regions[REGION_ROM].pa + mem->regions[REGION_ROM].sz > addr)
-        return romInstructionFetch(mem->regions[REGION_ROM].uD, addr, size, buf);
+    if (mem->regions[REGION_ROM].pa <= addr && mem->regions[REGION_ROM].ub >= ub)
+        return romInstructionFetch<size>(mem->regions[REGION_ROM].uD, addr, buf);
 
     bool ret = false;
     uint_fast8_t i;
 
     for (i = REGION_BASE; i < NUM_MEM_REGIONS; i++) {
-        if (mem->regions[i].pa <= addr && mem->regions[i].pa + mem->regions[i].sz > addr) {
+        if (mem->regions[i].pa <= addr && mem->regions[i].ub >= ub) {
             ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, false, buf);
             break;
         }
@@ -159,3 +173,11 @@ bool memInstructionFetch(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, v
 
     return ret;
 }
+
+template bool memInstructionFetch<1>(struct ArmMem *mem, uint32_t addr, void *buf);
+template bool memInstructionFetch<2>(struct ArmMem *mem, uint32_t addr, void *buf);
+template bool memInstructionFetch<4>(struct ArmMem *mem, uint32_t addr, void *buf);
+template bool memInstructionFetch<8>(struct ArmMem *mem, uint32_t addr, void *buf);
+template bool memInstructionFetch<16>(struct ArmMem *mem, uint32_t addr, void *buf);
+template bool memInstructionFetch<32>(struct ArmMem *mem, uint32_t addr, void *buf);
+template bool memInstructionFetch<64>(struct ArmMem *mem, uint32_t addr, void *buf);
