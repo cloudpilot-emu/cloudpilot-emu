@@ -9,9 +9,9 @@
 
 struct MemoryBuffer;
 struct PxaLcd;
-struct SoC;
+class SoC;
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic,
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, class SoC *soc, struct SocIc *ic,
                           struct MemoryBuffer *buffer, uint16_t width, uint16_t heigh);
 
 void pxaLcdResetPaletteBuffer(struct PxaLcd *lcd);

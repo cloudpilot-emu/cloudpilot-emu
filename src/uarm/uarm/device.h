@@ -45,7 +45,7 @@ struct SocPeriphs {
     struct SocSsp *ssp2;  // assp for xscale
     struct SocSsp *ssp3;  // nssp for scale
     struct ArmMem *mem;
-    struct SoC *soc;
+    class SoC *soc;
 
     // PXA order: ffUart, hwUart, stUart, btUart
     struct SocUart *uarts[4];

@@ -4,15 +4,14 @@
 #include <cstdint>
 #include <functional>
 
-#include "SoC.h"
-
 #define SC_EXECUTE_PURE 0
 #define SC_EXECUTE_FULL 1
 
 struct SyscallDispatch;
 struct ArmCpu;
+class SoC;
 
-struct SyscallDispatch* initSyscallDispatch(struct SoC* cpu);
+struct SyscallDispatch* initSyscallDispatch(class SoC* cpu);
 
 bool syscallDispatchInProgress(struct SyscallDispatch* sd);
 

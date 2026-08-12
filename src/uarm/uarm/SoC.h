@@ -1,96 +1,183 @@
-//(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
-
 #ifndef _SOC_H_
 #define _SOC_H_
 
-#include <cstdint>
-#include <cstdio>
+#include <memory.h>
 
-#include "SoC_type.h"
+#include <cstdint>
+
 #include "buffer.h"
+#include "cputil.h"
 #include "device_type5.h"
 #include "keys.h"
+#include "memory_buffer.h"
+#include "queue.h"
+#include "savestate/ChunkTypeUarm.h"
+#include "savestate/Savestate.h"
+#include "sdcard.h"
 
-#define CHAR_CTL_C -1L
-#define CHAR_NONE -2L
-
-struct SoC;
-struct AudioQueue;
-struct ArmCpu;
-struct SyscallDispatch;
+struct VSD;
+struct ArmRam;
+struct ArmRom;
+struct ArmMem;
 struct NAND;
+struct ArmCpu;
 struct SystemState;
+struct SyscallDispatch;
+struct PacePatch;
+struct PatchDispatch;
+struct AudioQueue;
+struct PatchContext;
 
-struct SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData,
-                    const uint32_t romSize, uint8_t *nandContent, size_t nandSize, int gdbPort,
-                    uint_fast8_t socRev);
+class SoC {
+   public:
+    virtual void Reset();
 
-void socReset(struct SoC *soc);
+    virtual uint64_t Run(uint64_t maxCycles, uint64_t cyclesPerSecond) = 0;
+    virtual bool RunToPaceSyscall(uint16_t syscall, uint64_t maxCycles,
+                                  uint64_t cyclesPerSecond) = 0;
+    virtual bool ExecuteInjected(uint64_t maxCycles, uint64_t cyclesPerSecond) = 0;
 
-uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond);
-bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
-                         uint64_t cyclesPerSecond);
-bool socExecuteInjected(struct SoC *soc, struct ArmCpu *cpu, uint64_t maxCycles,
-                        uint64_t cyclesPerSecond);
-uint64_t socGetInjectedTimeNsec(struct SoC *soc);
-void socResetInjectedTimeNsec(struct SoC *soc);
+    uint64_t GetInjectedTimeNsec() { return injectedTimeNsec; }
+    void ResetInjectedTimeNsec() { injectedTimeNsec = 0; }
 
-uint32_t *socGetPendingFrame(struct SoC *soc);
-void socResetPendingFrame(struct SoC *soc);
+    virtual uint32_t *GetPendingFrame() = 0;
+    virtual void ResetPendingFrame() = 0;
 
-void socKeyDown(struct SoC *soc, enum KeyId key);
-void socKeyUp(struct SoC *soc, enum KeyId key);
-void socPenDown(struct SoC *soc, int x, int y);
-void socPenUp(struct SoC *soc);
+    void KeyDown(enum KeyId key);
+    void KeyUp(enum KeyId key);
+    void PenDown(int x, int y);
+    void PenUp();
 
-void socSleep(struct SoC *soc);
-void socWakeup(struct SoC *soc, uint8_t wakeupSource);
+    void SetFramebufferDirty();
+    bool SetFramebuffer(uint32_t start, uint32_t size);
+    void ClearFramebufferDirty();
 
-void socSetFramebufferDirty(struct SoC *soc);
-bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size);
+    void Sleep();
+    void Wakeup(uint8_t wakeupSource);
 
-void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue);
-void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended);
+    void SetAudioQueue(struct AudioQueue *audioQueue);
+    void SetPcmOutputEnabled(bool pcmOutputEnabled);
+    void SetPcmSuspended(bool pcmSuspended);
 
-void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled);
+    Buffer GetRomData();
 
-struct Buffer socGetRomData(struct SoC *soc);
+    struct Buffer GetNandData();
+    struct Buffer GetNandDirtyPages();
+    bool IsNandDirty();
+    void SetNandDirty(bool isDirty);
 
-struct Buffer socGetNandData(struct SoC *soc);
-struct Buffer socGetNandDirtyPages(struct SoC *soc);
-bool socIsNandDirty(struct SoC *soc);
-void socSetNandDirty(struct SoC *soc, bool isDirty);
+    Buffer GetMemoryData();
+    Buffer GetMemoryDirtyPages();
 
-struct Buffer socGetMemoryData(struct SoC *soc);
-struct Buffer socGetMemoryDirtyPages(struct SoC *soc);
+    virtual bool Save() = 0;
+    virtual bool Load(size_t savestateSize, void *savestateData) = 0;
+    struct Buffer GetSavestate();
 
-bool socSave(struct SoC *soc);
-bool socLoad(struct SoC *soc, size_t savestateSize, void *savestateData);
-struct Buffer socGetSavestate(struct SoC *soc);
+    void SdInsert();
+    bool SdRemount();
+    void SdEject();
+    bool SdInserted();
 
-void socSdInsert(struct SoC *soc);
-bool socSdRemount(struct SoC *soc);
-void socSdEject(struct SoC *soc);
-bool socSdInserted(struct SoC *soc);
+    virtual void DumpMMU() = 0;
 
-void socDumpMMU(struct SoC *soc);
+    struct ArmCpu *GetCpu();
+    struct SyscallDispatch *GetSyscallDispatch();
+    uint32_t GetRamSize();
+    struct NAND *GetNand();
+    struct SystemState *GetSystemState();
+    virtual enum DeviceType5 GetDeviceType() = 0;
 
-enum DeviceType5 socGetDeviceType(struct SoC *soc);
+    void JamKey(enum KeyId key, uint32_t durationMsec);
+    virtual void SuspendTimerInterrupts(bool suspendInterrupts) = 0;
 
-struct ArmCpu *socGetCpu(struct SoC *soc);
-struct SyscallDispatch *socGetSyscallDispatch(struct SoC *soc);
-bool socIsPacePatched(struct SoC *soc);
+    bool IsPacePatched();
+    virtual bool LcdEnabled() = 0;
 
-uint32_t socGetRamSize(struct SoC *soc);
+   protected:
+    virtual void OnSetFramebufferDirty() = 0;
+    virtual void OnSleep() = 0;
+    virtual void OnWakeup() = 0;
+    virtual void OnSetAudioQueue(struct AudioQueue *audioQueue) = 0;
+    virtual void OnSetPcmOutputEnabled() = 0;
+    virtual void OnSetPcmSuspended() = 0;
+    virtual void OnTouch(int x, int y) = 0;
+    virtual void OnEngageKey(KeyId key, bool down) = 0;
 
-void socJamKey(struct SoC *soc, enum KeyId key, uint32_t durationMsec);
+    virtual uint64_t GetTime() = 0;
 
-struct NAND *socGetNand(struct SoC *soc);
+   protected:
+    struct PenEvent {
+        bool penDown;
+        int x, y;
 
-void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts);
+        static PenEvent PenDown(int x, int y);
+        static PenEvent PenUp();
+    };
 
-struct SystemState *socGetSystemState(struct SoC *soc);
+    struct KeyEvent {
+        bool keyDown;
+        enum KeyId key;
 
-bool socLcdEnabled(struct SoC *soc);
+        static KeyEvent KeyDown(enum KeyId key);
+        static KeyEvent KeyUp(enum KeyId key);
+    };
 
-#endif
+   protected:
+    SoC();
+
+    void PumpEventQueues();
+
+   protected:
+    ArmRom *rom{nullptr};
+    ArmRam *ram{nullptr};
+    ArmCpu *cpu{nullptr};
+    ArmMem *mem{nullptr};
+
+    NAND *nand{nullptr};
+    VSD *vSD{nullptr};
+
+    SystemState *systemState{nullptr};
+    SyscallDispatch *syscallDispatch{nullptr};
+    PacePatch *pacePatch{nullptr};
+    PatchDispatch *patchDispatch{nullptr};
+    PatchContext *patchContext{nullptr};
+
+    MemoryBuffer bufferMemory;
+
+    std::unique_ptr<Savestate<ChunkType>> savestate;
+    std::unique_ptr<Savestate<ChunkType>> powerOnState;
+
+    std::unique_ptr<Queue<PenEvent>> penEventQueue;
+    std::unique_ptr<Queue<KeyEvent>> keyEventQueue;
+    struct AudioQueue *audioQueue;
+
+    bool sleeping{false};
+    bool framebufferDirty{true};
+    bool pcmEnabled{false};
+    bool pcmSuspended{false};
+    uint64_t injectedTimeNsec{0};
+
+    uint64_t eventQueueTicks{0};
+    uint64_t eventQueueTicksAtPenDown{0};
+    KeyId jammedKey{keyInvalid};
+    uint64_t releaseJammedKeyAt{0};
+    bool penDown{false};
+
+    bool cardInserted{false};
+    char cardId[SD_CARD_ID_MAX_LEN + 1]{};
+
+    uint32_t ramBase{0};
+    uint32_t ramSize{0};
+
+   private:
+    void PumpPenEventQueue();
+    void PumpKeyEventQueue();
+
+   private:
+    SoC(const SoC &) = delete;
+    SoC(SoC &&) = delete;
+    SoC &operator=(const SoC &) = delete;
+    SoC &operator=(SoC &&) = delete;
+};
+
+#endif  // _SOC_H_

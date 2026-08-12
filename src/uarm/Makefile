@@ -45,6 +45,8 @@ SOURCE_C = 								\
 	uarm/uae/newcpu.c
 
 SOURCE_CXX =		 					\
+	uarm/SoC.cpp 						\
+	uarm/soc_PXA.cpp					\
 	uarm/patch68k.cpp 					\
 	uarm/peephole.cpp					\
 	uarm/pace_patch.cpp					\
@@ -59,7 +61,6 @@ SOURCE_CXX =		 					\
 	uarm/syscall.cpp					\
 	uarm/sdcard.cpp						\
 	uarm/patches.cpp					\
-	uarm/socPXA.cpp						\
 	MainLoop.cpp						\
 	uarm/patch_dispatch.cpp				\
 	uarm/icache.cpp						\

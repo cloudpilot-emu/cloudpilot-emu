@@ -14,7 +14,7 @@ struct ArmRam {
     uint32_t adr;
     uint32_t sz;
     struct MemoryBuffer buf;
-    struct SoC* soc;
+    class SoC* soc;
 
     uint32_t framebufferStart;
     uint32_t framebufferStart_2;
@@ -241,7 +241,7 @@ void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size) {
     }
 }
 
-struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
+struct ArmRam* ramInit(struct ArmMem* mem, class SoC* soc, uint32_t adr, uint32_t sz,
                        const struct MemoryBuffer* buf, bool primary) {
     struct ArmRam* ram = (struct ArmRam*)malloc(sizeof(*ram));
 

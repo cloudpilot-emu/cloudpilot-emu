@@ -29,7 +29,7 @@
 struct PxaLcd {
     struct SocIc *ic;
     struct ArmMem *mem;
-    struct SoC *soc;
+    class SoC *soc;
 
     // registers
     uint32_t lccr0, lccr1, lccr2, lccr3, lccr4, lccr5, liicr, trgbr, tcr;
@@ -350,7 +350,7 @@ static void pxaLcdUpdatePalette(struct PxaLcd *lcd, int32_t len) {
         if (dirty) *entry_mapped = unpack_rgb16(*entry);
     }
 
-    if (dirty) socSetFramebufferDirty(lcd->soc);
+    if (dirty) lcd->soc->SetFramebufferDirty();
 }
 
 static void pxaLcdPrvScreenDataPixel(struct PxaLcd *lcd, uint32_t color) {
@@ -381,14 +381,14 @@ static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uin
             //         (int)(1 << bpp));
 
             lcd->framebufferDirty = true;
-            lcd->framebufferTrackingActive = socSetFramebuffer(lcd->soc, addr, len);
+            lcd->framebufferTrackingActive = lcd->soc->SetFramebuffer(addr, len);
         } else {
             // fprintf(stderr,
             //         "framebuffer size %u bytes does not match depth %d bpp, assuming segmented "
             //         "framebuffer\n",
             //         len, (int)(1 << bpp));
 
-            socSetFramebuffer(lcd->soc, 0, 0);
+            lcd->soc->SetFramebuffer(0, 0);
             lcd->framebufferDirty = true;
             lcd->framebufferTrackingActive = false;
         }
@@ -445,6 +445,7 @@ static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uin
     }
 
     lcd->framebufferDirty = false;
+    lcd->soc->ClearFramebufferDirty();
 }
 
 void pxaLcdTick(struct PxaLcd *lcd) {
@@ -535,7 +536,7 @@ void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd) { lcd->framebufferDirty = tru
 
 bool pxaLcdIsEnabled(struct PxaLcd *lcd) { return lcd->lccr0 & 0x0001; }
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic,
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, class SoC *soc, struct SocIc *ic,
                           struct MemoryBuffer *buffer, uint16_t width, uint16_t height) {
     struct PxaLcd *lcd = (struct PxaLcd *)malloc(sizeof(*lcd));
 

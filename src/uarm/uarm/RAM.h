@@ -8,10 +8,10 @@
 #include "mem.h"
 
 struct ArmRam;
-struct SoC;
+class SoC;
 struct MemoryBuffer;
 
-struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
+struct ArmRam* ramInit(struct ArmMem* mem, class SoC* soc, uint32_t adr, uint32_t sz,
                        const struct MemoryBuffer* buf, bool primary);
 
 template <int size, bool write>

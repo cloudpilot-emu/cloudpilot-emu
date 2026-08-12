@@ -122,7 +122,7 @@ struct SoC {
     uint64_t eventQueueTicks;
     uint64_t eventQueueTicksAtPenDown;
 
-    bool enablePcmOutput;
+    bool pcmEnabled;
     bool pcmSuspended;
     bool sleeping;
     uint64_t sleepAtTime;
@@ -249,7 +249,7 @@ static void socSetupScheduler(Scheduler<SoC> *scheduler) {
 
 static void schedulePcmTask(SoC *soc) {
     soc->scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
-                                 1_sec / (soc->enablePcmOutput ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
+                                 1_sec / (soc->pcmEnabled ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
                                  soc->pcmSuspended ? 0 : 1);
 }
 
@@ -528,7 +528,7 @@ static void socEngageKey(SoC *soc, KeyId key, bool down) {
 }
 
 void socReset(struct SoC *soc) {
-    const bool pcmOutputEnabled = soc->enablePcmOutput;
+    const bool pcmOutputEnabled = soc->pcmEnabled;
     const bool cardInserted = soc->cardInserted;
     const uint64_t accumulatedTime = soc->scheduler->GetTime();
 
@@ -693,7 +693,7 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
 
         case SCHEDULER_TASK_PCM:
             if (!syscallDispatchInProgress(syscallDispatch)) devicePcmPeriodic(dev);
-            return (pcmSuspended && enablePcmOutput) ? 0 : 1;
+            return (pcmSuspended && pcmEnabled) ? 0 : 1;
 
         case SCHEDULER_TASK_AUX_1:
             socCycleBatch0(this);
@@ -806,7 +806,7 @@ void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended) {
     if (soc->pcmSuspended == pcmSuspended) return;
 
     soc->pcmSuspended = pcmSuspended;
-    if (soc->enablePcmOutput) {
+    if (soc->pcmEnabled) {
         soc->scheduler->RescheduleTask(SCHEDULER_TASK_PCM, pcmSuspended ? 0 : 1);
 
         if (!pcmSuspended) cpuSetSlowPath(soc->cpu, SLOW_PATH_REASON_RESCHEDULE);
@@ -815,9 +815,9 @@ void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended) {
 
 void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
     if (soc->audioQueue && pcmOutputEnabled) audioQueueClear(soc->audioQueue);
-    if (pcmOutputEnabled == soc->enablePcmOutput) return;
+    if (pcmOutputEnabled == soc->pcmEnabled) return;
 
-    soc->enablePcmOutput = pcmOutputEnabled;
+    soc->pcmEnabled = pcmOutputEnabled;
     schedulePcmTask(soc);
 }
 
@@ -968,7 +968,8 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     systemStateLoad(systemState, loader);
 
     uint32_t version;
-    Chunk *chunk = loader.GetChunkOrFail(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA", version);
+    Chunk *chunk =
+        loader.GetChunkOrFail(ChunkType::socGeneric, SAVESTATE_VERSION, "socPXA", version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
@@ -1025,7 +1026,7 @@ void SoC::Save(T &savestate) {
     vsdSave(vSD, savestate);
     systemStateSave(systemState, savestate);
 
-    auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
+    auto *chunk = savestate.GetChunk(ChunkType::socGeneric, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
     strncpy(cardId, sdCardGetId(), sizeof(cardId));
@@ -1037,7 +1038,7 @@ void SoC::Save(T &savestate) {
 
 template <typename T>
 void SoC::DoSaveLoad(T &chunkHelper, uint32_t version) {
-    chunkHelper.Do(typename T::BoolPack() << cardInserted << enablePcmOutput << sleeping)
+    chunkHelper.Do(typename T::BoolPack() << cardInserted << pcmEnabled << sleeping)
         .DoBuffer(cardId, sizeof(cardId));
 
     uint64_t cyclesTotal = 0;

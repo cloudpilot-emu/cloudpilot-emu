@@ -4,12 +4,12 @@
 #define _PXA_PWR_CLK_H_
 
 #include "CPU.h"
-#include "SoC_type.h"
 #include "mem.h"
 
+class SoC;
 struct PxaPwrClk;
 
-struct PxaPwrClk* pxaPwrClkInit(struct ArmCpu* cpu, struct ArmMem* physMem, struct SoC* soc,
+struct PxaPwrClk* pxaPwrClkInit(struct ArmCpu* cpu, struct ArmMem* physMem, class SoC* soc,
                                 bool isPXA270);
 
 void pxaPwrClkReset(struct PxaPwrClk* pc);

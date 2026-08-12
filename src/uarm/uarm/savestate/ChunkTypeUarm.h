@@ -4,7 +4,7 @@
 #include <cstdint>
 
 enum class ChunkType : uint32_t {
-    pxaSoc = 0x0010,
+    socGeneric = 0x0010,
     pxaUart = 0x0030,
     pxaSsp = 0x0040,
     pxaGpio = 0x0050,

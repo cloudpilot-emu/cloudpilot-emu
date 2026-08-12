@@ -19,7 +19,7 @@
 
 struct PxaPwrClk {
     struct ArmCpu *cpu;
-    struct SoC *soc;
+    class SoC *soc;
     uint32_t CCCR, CKEN, OSCR;  // clocks manager regs
     // power mgr common between 255 and 270
     uint32_t PMCR, PSSR, PSPR, PWER, PRER, PFER, PEDR, PCFR, PGSR[4], RCSR, PMFW;
@@ -88,7 +88,7 @@ static bool pxaPwrClkPrvCoproc14regXferFunc(struct ArmCpu *cpu, void *userData, 
                 if (read)
                     val = 0;
                 else if (val == 1 && op2 == 0) {
-                    socSleep(pc->soc);
+                    pc->soc->Sleep();
                 } else if (val == 3 && op2 == 0) {
                     // pretend we woke up
                     pc->RCSR |= 4;
@@ -314,7 +314,7 @@ static bool pxaPwrClkPrvPowerMgrMemAccessF(void *userData, uint32_t pa, uint_fas
     return true;
 }
 
-struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *soc,
+struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, class SoC *soc,
                                 bool isPXA270) {
     struct PxaPwrClk *pc = (struct PxaPwrClk *)malloc(sizeof(*pc));
     struct ArmCoprocessor cp14 = {

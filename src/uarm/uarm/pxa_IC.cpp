@@ -18,7 +18,7 @@
 
 struct SocIc {
     struct ArmCpu *cpu;
-    struct SoC *soc;
+    class SoC *soc;
 
     uint32_t ICMR[2];  // Mask Registers
     uint32_t ICLR[2];  // Level Registers
@@ -297,7 +297,7 @@ bool pxa270icPrvCoprocAccess(struct ArmCpu *cpu, void *userData, bool two /* MCR
     return true;
 }
 
-struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *soc,
+struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, class SoC *soc,
                         uint_fast8_t socRev) {
     struct SocIc *ic = (struct SocIc *)malloc(sizeof(*ic));
     struct ArmCoprocessor cp = {
@@ -335,7 +335,7 @@ void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
     if (raise) {
         ic->ICPR[i] |= mask;
 
-        if ((ic->ICCR & 0x01) == 0 || (ic->ICMR[i] & mask)) socWakeup(ic->soc, intNum);
+        if ((ic->ICCR & 0x01) == 0 || (ic->ICMR[i] & mask)) ic->soc->Wakeup(intNum);
     } else
         ic->ICPR[i] &= ~mask;
 

@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "CPU.h"
+#include "SoC.h"
 #include "cputil.h"
 #include "memcpy.h"
 #include "nand.h"
@@ -85,38 +86,38 @@ struct ScratchState {
 };
 
 struct SyscallDispatch {
-    struct SoC* soc;
+    class SoC* soc;
 
     ScratchState scratchStates[MAX_NEST_LEVEL];
     size_t nestLevel{0};
     bool deadMansSwitch{false};
 };
 
-struct SyscallDispatch* initSyscallDispatch(struct SoC* soc) {
+struct SyscallDispatch* initSyscallDispatch(SoC* soc) {
     struct SyscallDispatch* sd = new SyscallDispatch();
 
     sd->soc = soc;
-    for (auto& scratchState : sd->scratchStates) scratchState.cpu = socGetCpu(soc);
+    for (auto& scratchState : sd->scratchStates) scratchState.cpu = soc->GetCpu();
 
     return sd;
 }
 
 bool syscallDispatchInProgress(struct SyscallDispatch* sd) { return sd->nestLevel > 0; }
 
-bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return socIsPacePatched(sd->soc); }
+bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return sd->soc->IsPacePatched(); }
 
 bool syscallDispatchPrepare(struct SyscallDispatch* sd) {
     if (!syscallDispatchM68kSupport(sd)) return false;
     if (sd->nestLevel > 0) ERR("syscallDispatchPrepare is only allowed on top level\n");
 
-    return socRunToPaceSyscall(sd->soc, SYSCALL_68K_EVT_GET_EVENT,
-                               PREPARE_INJECTED_CALL_TIMEOUT_SEC * PREPARE_INJECTED_CALL_IPS,
-                               PREPARE_INJECTED_CALL_IPS);
+    return sd->soc->RunToPaceSyscall(SYSCALL_68K_EVT_GET_EVENT,
+                                     PREPARE_INJECTED_CALL_TIMEOUT_SEC * PREPARE_INJECTED_CALL_IPS,
+                                     PREPARE_INJECTED_CALL_IPS);
 }
 
 bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
                                     size_t maxLen) {
-    struct ArmCpu* cpu = socGetCpu(sd->soc);
+    struct ArmCpu* cpu = sd->soc->GetCpu();
     memset(dest, 0, maxLen);
 
     for (size_t i = 0; i < maxLen; i++) {
@@ -132,7 +133,7 @@ bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint
 
 bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, const void* src,
                                      size_t size) {
-    struct ArmCpu* cpu = socGetCpu(sd->soc);
+    struct ArmCpu* cpu = sd->soc->GetCpu();
     MemcpyResult memcpyResult;
     memcpy_hostToArm(dest, reinterpret_cast<const uint8_t*>(src), size, true, cpuGetMem(cpu),
                      cpuGetMMU(cpu), &memcpyResult);
@@ -142,7 +143,7 @@ bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, 
 
 bool syscallDispatch_memcpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
                                    size_t size) {
-    struct ArmCpu* cpu = socGetCpu(sd->soc);
+    struct ArmCpu* cpu = sd->soc->GetCpu();
     MemcpyResult memcpyResult;
     memcpy_armToHost(reinterpret_cast<uint8_t*>(dest), src, size, true, cpuGetMem(cpu),
                      cpuGetMMU(cpu), &memcpyResult);
@@ -182,19 +183,19 @@ void syscallDispatchRegisterM68kStub(struct SyscallDispatch* sd, uint32_t trampo
     };
 
     paceSet16(trampoline, INSTRUCTION_M68K_TRAP0);
-    cpuAddM68kTrap0Handler(socGetCpu(sd->soc), trampoline, trapHandler);
+    cpuAddM68kTrap0Handler(sd->soc->GetCpu(), trampoline, trapHandler);
 }
 
 void syscallDispatchUnregisterM68kStub(struct SyscallDispatch* sd, uint32_t trampoline) {
-    cpuRemoveM68kTrap0Handler(socGetCpu(sd->soc), trampoline);
+    cpuRemoveM68kTrap0Handler(sd->soc->GetCpu(), trampoline);
 }
 
-static bool executeInjectedCall(struct SoC* soc, uint32_t flags) {
-    struct ArmCpu* cpu = socGetCpu(soc);
+static bool executeInjectedCall(class SoC* soc, uint32_t flags) {
+    struct ArmCpu* cpu = soc->GetCpu();
 
     if (flags & SC_EXECUTE_FULL) {
-        if (socExecuteInjected(soc, cpu, INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_IPS,
-                               INJECTED_CALL_IPS)) {
+        if (soc->ExecuteInjected(INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_IPS,
+                                 INJECTED_CALL_IPS)) {
             return true;
         }
     } else {
@@ -210,7 +211,7 @@ static bool executeInjectedCall(struct SoC* soc, uint32_t flags) {
 }
 
 static void executeInjectedSyscall(struct SyscallDispatch* sd, uint32_t flags, uint16_t syscall) {
-    cpuStartInjectedSyscall(socGetCpu(sd->soc), syscall);
+    cpuStartInjectedSyscall(sd->soc->GetCpu(), syscall);
 
     if (!executeInjectedCall(sd->soc, flags)) {
         ERR("failed to execute injected call within time limit\n");
@@ -219,18 +220,18 @@ static void executeInjectedSyscall(struct SyscallDispatch* sd, uint32_t flags, u
 
 static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint32_t flags,
                                       uint16_t syscall) {
-    struct ArmCpu* cpu = socGetCpu(sd->soc);
-    struct NAND* nand = socGetNand(sd->soc);
+    struct ArmCpu* cpu = sd->soc->GetCpu();
+    struct NAND* nand = sd->soc->GetNand();
     bool deadMansSwitchSaved = sd->deadMansSwitch;
 
     cpuStartInjectedSyscall68k(cpu, syscall);
 
     while (true) {
-        const uint32_t nandWriteCnt = nandGetWriteCnt(nand);
+        const uint32_t nandWriteCnt = nand ? nandGetWriteCnt(nand) : 0;
         sd->deadMansSwitch = false;
 
         if (executeInjectedCall(sd->soc, flags)) break;
-        if (sd->deadMansSwitch || nandGetWriteCnt(nand) != nandWriteCnt) continue;
+        if (sd->deadMansSwitch || (nand && nandGetWriteCnt(nand) != nandWriteCnt)) continue;
 
         ERR("failed to execute injected call within time limit\n");
     }
@@ -246,7 +247,7 @@ static ScratchState::Type nativeCallPushType(uint32_t flags) {
 
 uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, uint32_t timeout) {
     const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
-    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+    uint32_t* registers = cpuGetRegisters(sd->soc->GetCpu());
 
     registers[0] = timeout;
     executeInjectedSyscall(sd, flags, SYSCALL_SYS_SET_AUTO_OFF_TIME);
@@ -260,7 +261,7 @@ uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, u
 
 uint16_t syscall_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t size) {
     const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
-    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+    uint32_t* registers = cpuGetRegisters(sd->soc->GetCpu());
 
     registers[0] = size;
     executeInjectedSyscall(sd, flags, SYSCALL_MEM_PTR_NEW);
@@ -274,7 +275,7 @@ uint16_t syscall_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t 
 
 uint16_t syscall_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t ptr) {
     const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
-    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+    uint32_t* registers = cpuGetRegisters(sd->soc->GetCpu());
 
     registers[0] = ptr;
     executeInjectedSyscall(sd, flags, SYSCALL_MEM_CHUNK_FREE);
@@ -289,7 +290,7 @@ uint16_t syscall_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t
 uint16_t syscall_FtrGet(struct SyscallDispatch* sd, uint32_t flags, uint32_t creator,
                         uint16_t ftrNum, uint32_t valueP) {
     const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
-    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
+    uint32_t* registers = cpuGetRegisters(sd->soc->GetCpu());
 
     registers[0] = creator;
     registers[1] = ftrNum;
@@ -308,13 +309,13 @@ static uint32_t syscall68k(struct SyscallDispatch* sd, uint32_t flags, uint16_t 
     const size_t nestLevel = pushState(
         sd, (flags & SC_EXECUTE_FULL) ? ScratchState::Type::pace : ScratchState::Type::full);
 
-    if (flags & SC_EXECUTE_FULL) socSuspendTimerInterrupts(sd->soc, true);
+    if (flags & SC_EXECUTE_FULL) sd->soc->SuspendTimerInterrupts(true);
 
     setupStack();
     executeInjectedSyscall68k(sd, flags, syscall);
     const uint32_t result = returnPtr ? paceGetAreg(0) : paceGetDreg(0);
 
-    if (flags & SC_EXECUTE_FULL) socSuspendTimerInterrupts(sd->soc, false);
+    if (flags & SC_EXECUTE_FULL) sd->soc->SuspendTimerInterrupts(false);
 
     popState(sd, nestLevel);
 
