@@ -106,9 +106,9 @@ class SocPXA : public SocGeneric<SocPXA> {
     Device *dev{nullptr};
     Keypad *kp{nullptr};
 
-    MemoryBuffer bufferNand;
-    MemoryBuffer bufferLcd;
-    MemoryBuffer bufferSram;
+    MemoryBuffer bufferNand{};
+    MemoryBuffer bufferLcd{};
+    MemoryBuffer bufferSram{};
 
     union {
         // 25x/26x

@@ -142,7 +142,7 @@ class SoC {
     PatchDispatch *patchDispatch{nullptr};
     PatchContext *patchContext{nullptr};
 
-    MemoryBuffer bufferMemory;
+    MemoryBuffer bufferMemory{};
 
     std::unique_ptr<Savestate<ChunkType>> savestate;
     std::unique_ptr<Savestate<ChunkType>> powerOnState;

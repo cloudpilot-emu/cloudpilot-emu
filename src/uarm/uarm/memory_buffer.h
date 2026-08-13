@@ -11,13 +11,13 @@
     ((buf).dirtyPages[(addr) >> 15] |= (1u << (((addr) >> 10) & 0x1f)))
 
 struct MemoryBuffer {
-    size_t size{0};
-    size_t dirtyPagesSize{0};
+    size_t size;
+    size_t dirtyPagesSize;
 
-    uint8_t* buffer{nullptr};
-    uint32_t* dirtyPages{nullptr};
+    uint8_t* buffer;
+    uint32_t* dirtyPages;
 
-    bool isSubBuffer{false};
+    bool isSubBuffer;
 };
 
 bool memoryBufferValid(struct MemoryBuffer* memoryBuffer);
