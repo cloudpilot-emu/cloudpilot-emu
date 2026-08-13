@@ -2,11 +2,11 @@
 #define _SOC_GENERIC_IMPL_H_
 
 // clang-format off
-#include "MMU.h"
 #include "soc_generic.h"
 // clang-format on
 
 #include "CPU.h"
+#include "MMU.h"
 #include "SoC.h"
 #include "cputil.h"
 #include "savestate/savestateAll.h"
