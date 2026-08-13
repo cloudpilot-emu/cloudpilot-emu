@@ -9,16 +9,16 @@
 #include "soc_generic.h"
 
 struct SocUart;
-struct SocSsp;
+struct PxaSsp;
 struct SocGpio;
 struct SocAC97;
-struct SocDma;
-struct SocI2s;
-struct SocI2c;
-struct SocIc;
+struct PxaDma;
+struct PxaI2s;
+struct PxaI2c;
+struct PxaIc;
 struct PxaMemCtrlr;
 struct PxaPwrClk;
-struct SocI2c;
+struct PxaI2c;
 struct PxaPwm;
 struct PxaTimr;
 struct PxaMmc;
@@ -85,17 +85,17 @@ class SocPXA : public SocGeneric<SocPXA> {
     uint8_t socRev{0};
 
     SocUart *ffUart{nullptr}, *hwUart{nullptr}, *stUart{nullptr}, *btUart{nullptr};
-    SocSsp *ssp[3]{nullptr, nullptr, nullptr};
+    PxaSsp *ssp[3]{nullptr, nullptr, nullptr};
     SocGpio *gpio{nullptr};
     SocAC97 *ac97{nullptr};
-    SocDma *dma{nullptr};
-    SocI2s *i2s{nullptr};
-    SocI2c *i2c{nullptr};
-    SocIc *ic{nullptr};
+    PxaDma *dma{nullptr};
+    PxaI2s *i2s{nullptr};
+    PxaI2c *i2c{nullptr};
+    PxaIc *ic{nullptr};
 
     PxaMemCtrlr *memCtrl{nullptr};
     PxaPwrClk *pwrClk{nullptr};
-    SocI2c *pwrI2c{nullptr};
+    PxaI2c *pwrI2c{nullptr};
     PxaPwm *pwm[4]{nullptr, nullptr, nullptr, nullptr};
     PxaTimr *tmr{nullptr};
     PxaMmc *mmc{nullptr};

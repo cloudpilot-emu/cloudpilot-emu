@@ -17,7 +17,7 @@
 #define SAVESTATE_VERSION 0
 
 struct PxaTimr {
-    struct SocIc *ic;
+    struct PxaIc *ic;
 
     uint32_t OSMR[4];  // Match Register 0-3
     uint32_t OSCR;     // Counter Register
@@ -33,15 +33,15 @@ struct PxaTimr {
 
 static void pxaTimrPrvRaiseLowerInts(struct PxaTimr *timr) {
     if (timr->interruptsSuspendCount > 0) {
-        socIcInt(timr->ic, PXA_I_TIMR0, false);
-        socIcInt(timr->ic, PXA_I_TIMR1, false);
-        socIcInt(timr->ic, PXA_I_TIMR2, false);
-        socIcInt(timr->ic, PXA_I_TIMR3, false);
+        pxaIcInt(timr->ic, PXA_I_TIMR0, false);
+        pxaIcInt(timr->ic, PXA_I_TIMR1, false);
+        pxaIcInt(timr->ic, PXA_I_TIMR2, false);
+        pxaIcInt(timr->ic, PXA_I_TIMR3, false);
     } else {
-        socIcInt(timr->ic, PXA_I_TIMR0, (timr->OSSR & 1) != 0);
-        socIcInt(timr->ic, PXA_I_TIMR1, (timr->OSSR & 2) != 0);
-        socIcInt(timr->ic, PXA_I_TIMR2, (timr->OSSR & 4) != 0);
-        socIcInt(timr->ic, PXA_I_TIMR3, (timr->OSSR & 8) != 0);
+        pxaIcInt(timr->ic, PXA_I_TIMR0, (timr->OSSR & 1) != 0);
+        pxaIcInt(timr->ic, PXA_I_TIMR1, (timr->OSSR & 2) != 0);
+        pxaIcInt(timr->ic, PXA_I_TIMR2, (timr->OSSR & 4) != 0);
+        pxaIcInt(timr->ic, PXA_I_TIMR3, (timr->OSSR & 8) != 0);
     }
 }
 
@@ -157,7 +157,7 @@ static bool pxaTimrPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
     return true;
 }
 
-struct PxaTimr *pxaTimrInit(struct ArmMem *physMem, struct SocIc *ic) {
+struct PxaTimr *pxaTimrInit(struct ArmMem *physMem, struct PxaIc *ic) {
     struct PxaTimr *timr = (struct PxaTimr *)malloc(sizeof(*timr));
 
     if (!timr) ERR("cannot alloc OSTIMER");

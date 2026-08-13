@@ -1,5 +1,7 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include "pxa_SSP.h"
+
 #include <cstdlib>
 #include <cstring>
 
@@ -8,7 +10,6 @@
 #include "pxa_DMA.h"
 #include "pxa_IC.h"
 #include "savestate/savestateAll.h"
-#include "soc_SSP.h"
 
 #define PXA_SSP_SIZE 0x00010000UL
 
@@ -17,9 +18,9 @@
 
 #define SAVESTATE_VERSION 0
 
-struct SocSsp {
-    struct SocDma *dma;
-    struct SocIc *ic;
+struct PxaSsp {
+    struct PxaDma *dma;
+    struct PxaIc *ic;
     struct Reschedule reschedule;
     uint32_t base;
     uint8_t irqNo;
@@ -44,40 +45,40 @@ struct SocSsp {
     }
 };
 
-static void socSspPrvIrqsUpdate(struct SocSsp *ssp) {
+static void pxaSspPrvIrqsUpdate(struct PxaSsp *ssp) {
     bool irq = false;
 
     if ((ssp->sr & 0x40) && (ssp->cr1 & 0x01)) irq = true;
     if ((ssp->sr & 0x20) && (ssp->cr1 & 0x02)) irq = true;
 
-    socIcInt(ssp->ic, ssp->irqNo, irq);
+    pxaIcInt(ssp->ic, ssp->irqNo, irq);
 }
 
-static void socSspPrvRecalcRxFifoSta(struct SocSsp *ssp) {
+static void pxaSspPrvRecalcRxFifoSta(struct PxaSsp *ssp) {
     ssp->sr &= ~0xf048;
 
     if (ssp->rxFifoUsed) ssp->sr |= 0x08;
     ssp->sr |= (((ssp->rxFifoUsed - 1) & 0x0f) << 12);
     if (ssp->rxFifoUsed > ((ssp->cr1 >> 10) & 0x0f)) ssp->sr |= 0x40;
 
-    socDmaExternalReq(ssp->dma, ssp->dmaReqNoBase + DMA_OFST_RX, !!(ssp->sr & 0x40));
+    pxaDmaExternalReq(ssp->dma, ssp->dmaReqNoBase + DMA_OFST_RX, !!(ssp->sr & 0x40));
 
-    socSspPrvIrqsUpdate(ssp);
+    pxaSspPrvIrqsUpdate(ssp);
 }
 
-static void socSspPrvRecalcTxFifoSta(struct SocSsp *ssp) {
+static void pxaSspPrvRecalcTxFifoSta(struct PxaSsp *ssp) {
     ssp->sr &= ~0x0f24;
 
     if (ssp->txFifoUsed != sizeof(ssp->txFifo) / sizeof(*ssp->txFifo)) ssp->sr |= 0x04;
     ssp->sr |= ((ssp->txFifoUsed & 0x0f) << 8);
     if (ssp->txFifoUsed <= ((ssp->cr1 >> 6) & 0x0f)) ssp->sr |= 0x20;
 
-    socDmaExternalReq(ssp->dma, ssp->dmaReqNoBase + DMA_OFST_RX, !!(ssp->sr & 0x20));
+    pxaDmaExternalReq(ssp->dma, ssp->dmaReqNoBase + DMA_OFST_RX, !!(ssp->sr & 0x20));
 
-    socSspPrvIrqsUpdate(ssp);
+    pxaSspPrvIrqsUpdate(ssp);
 }
 
-static bool socSspPrvFifoR(struct SocSsp *ssp, uint16_t *valP) {
+static bool pxaSspPrvFifoR(struct PxaSsp *ssp, uint16_t *valP) {
     if (!ssp->rxFifoUsed) {
         fprintf(stderr, "SSP RX FIFO UNDERFLOW\n");
         *valP = 0;
@@ -87,12 +88,12 @@ static bool socSspPrvFifoR(struct SocSsp *ssp, uint16_t *valP) {
     *valP = ssp->rxFifo[0];
     memmove(ssp->rxFifo + 0, ssp->rxFifo + 1, sizeof(uint16_t) * --ssp->rxFifoUsed);
 
-    socSspPrvRecalcRxFifoSta(ssp);
+    pxaSspPrvRecalcRxFifoSta(ssp);
 
     return true;
 }
 
-static bool socSspPrvFifoW(struct SocSsp *ssp, uint16_t val) {
+static bool pxaSspPrvFifoW(struct PxaSsp *ssp, uint16_t val) {
     if (ssp->txFifoUsed == sizeof(ssp->txFifo) / sizeof(*ssp->txFifo)) {
         fprintf(stderr, "SSP TX FIFO OVERFLOW\n");
         return true;
@@ -100,16 +101,16 @@ static bool socSspPrvFifoW(struct SocSsp *ssp, uint16_t val) {
 
     ssp->sr |= 0x10;  // busy
     ssp->txFifo[ssp->txFifoUsed++] = val;
-    socSspPrvRecalcTxFifoSta(ssp);
+    pxaSspPrvRecalcTxFifoSta(ssp);
 
     ssp->reschedule.rescheduleCb(ssp->reschedule.ctx, RESCHEDULE_TASK_SSP);
 
     return true;
 }
 
-static bool socSspPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaSspPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
                                 void *buf) {
-    struct SocSsp *ssp = (struct SocSsp *)userData;
+    struct PxaSsp *ssp = (struct PxaSsp *)userData;
     uint32_t val;
 
     if (size != 4) {
@@ -146,9 +147,9 @@ static bool socSspPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
 
         case 4:
             if (write)
-                return socSspPrvFifoW(ssp, val);
+                return pxaSspPrvFifoW(ssp, val);
             else
-                return socSspPrvFifoR(ssp, (uint16_t *)buf);
+                return pxaSspPrvFifoR(ssp, (uint16_t *)buf);
 
         default:
             return false;
@@ -159,14 +160,14 @@ static bool socSspPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-void socSspPeriodic(struct SocSsp *ssp) {
+void pxaSspPeriodic(struct PxaSsp *ssp) {
     if (!ssp->txFifoUsed)
         ssp->sr &= ~0x10;
     else {
         uint32_t val = ssp->txFifo[0], ret = 0, i;
 
         memmove(ssp->txFifo + 0, ssp->txFifo + 1, sizeof(uint16_t) * --ssp->txFifoUsed);
-        socSspPrvRecalcTxFifoSta(ssp);
+        pxaSspPrvRecalcTxFifoSta(ssp);
 
         if (ssp->cr1 & 4)  // loopback
             ret = val;
@@ -183,15 +184,15 @@ void socSspPeriodic(struct SocSsp *ssp) {
             ssp->sr |= 0x80;
         } else {
             ssp->rxFifo[ssp->rxFifoUsed++] = ret;
-            socSspPrvRecalcRxFifoSta(ssp);
+            pxaSspPrvRecalcRxFifoSta(ssp);
         }
     }
 }
 
-struct SocSsp *socSspInit(struct ArmMem *physMem, struct Reschedule reschedule, struct SocIc *ic,
-                          struct SocDma *dma, uint32_t base, uint_fast8_t irqNo,
+struct PxaSsp *pxaSspInit(struct ArmMem *physMem, struct Reschedule reschedule, struct PxaIc *ic,
+                          struct PxaDma *dma, uint32_t base, uint_fast8_t irqNo,
                           uint_fast8_t dmaReqNoBase) {
-    struct SocSsp *ssp = (struct SocSsp *)malloc(sizeof(*ssp));
+    struct PxaSsp *ssp = (struct PxaSsp *)malloc(sizeof(*ssp));
 
     if (!ssp) ERR("cannot alloc SSP");
 
@@ -203,15 +204,15 @@ struct SocSsp *socSspInit(struct ArmMem *physMem, struct Reschedule reschedule, 
     ssp->base = base;
     ssp->irqNo = irqNo;
     ssp->dmaReqNoBase = dmaReqNoBase;
-    socSspPrvRecalcTxFifoSta(ssp);
+    pxaSspPrvRecalcTxFifoSta(ssp);
 
-    if (!memRegionAdd(physMem, base, PXA_SSP_SIZE, socSspPrvMemAccessF, ssp))
+    if (!memRegionAdd(physMem, base, PXA_SSP_SIZE, pxaSspPrvMemAccessF, ssp))
         ERR("cannot add SSP to MEM\n");
 
     return ssp;
 }
 
-bool socSspAddClient(struct SocSsp *ssp, SspClientProcF procF, void *userData) {
+bool pxaSspAddClient(struct PxaSsp *ssp, SspClientProcF procF, void *userData) {
     uint32_t i;
 
     for (i = 0; i < sizeof(ssp->procF) / sizeof(*ssp->procF); i++) {
@@ -225,10 +226,10 @@ bool socSspAddClient(struct SocSsp *ssp, SspClientProcF procF, void *userData) {
     return false;
 }
 
-bool socSspTaskRequired(struct SocSsp *ssp) { return ssp->sr & 0x10; }
+bool pxaSspTaskRequired(struct PxaSsp *ssp) { return ssp->sr & 0x10; }
 
 template <typename T>
-void pxaSspSave(struct SocSsp *ssp, T &savestate, uint32_t index = 0) {
+void pxaSspSave(struct PxaSsp *ssp, T &savestate, uint32_t index) {
     auto chunk = savestate.GetChunk(ChunkType::pxaSsp + index, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -237,7 +238,7 @@ void pxaSspSave(struct SocSsp *ssp, T &savestate, uint32_t index = 0) {
 }
 
 template <typename T>
-void pxaSspLoad(struct SocSsp *ssp, T &loader, uint32_t index = 0) {
+void pxaSspLoad(struct PxaSsp *ssp, T &loader, uint32_t index) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaSsp + index, SAVESTATE_VERSION, "pxa ssp");
     if (!chunk) return;
 
@@ -245,11 +246,11 @@ void pxaSspLoad(struct SocSsp *ssp, T &loader, uint32_t index = 0) {
     ssp->DoSaveLoad(helper);
 }
 
-template void pxaSspSave<Savestate<ChunkType>>(SocSsp *ssp, Savestate<ChunkType> &savestate,
+template void pxaSspSave<Savestate<ChunkType>>(PxaSsp *ssp, Savestate<ChunkType> &savestate,
                                                uint32_t index);
-template void pxaSspSave<SavestateProbe<ChunkType>>(SocSsp *ssp,
+template void pxaSspSave<SavestateProbe<ChunkType>>(PxaSsp *ssp,
                                                     SavestateProbe<ChunkType> &savestate,
                                                     uint32_t index);
-template void pxaSspLoad<SavestateLoader<ChunkType>>(SocSsp *ssp,
+template void pxaSspLoad<SavestateLoader<ChunkType>>(PxaSsp *ssp,
                                                      SavestateLoader<ChunkType> &loader,
                                                      uint32_t index);

@@ -5,8 +5,8 @@
 
 #include "CPU.h"
 #include "mem.h"
+#include "pxa_IC.h"
 #include "reschedule.h"
-#include "soc_IC.h"
 
 struct SocUart;
 
@@ -20,7 +20,7 @@ typedef void (*SocUartWriteF)(uint_fast16_t chr, void *userData);
 typedef bool (*SocUartClientIsActive)(void *userData);
 typedef void (*SocUartClientTick)(void *userData);
 
-struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct SocIc *ic,
+struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct PxaIc *ic,
                             uint32_t baseAddr, uint8_t irq);
 void socUartProcess(struct SocUart *uart);  // write out data in TX fifo and read data into RX fifo
 

@@ -8,10 +8,10 @@
 #include "CPU.h"
 #include "mem.h"
 #include "pxa_DMA.h"
-#include "soc_IC.h"
+#include "pxa_IC.h"
 
 struct Pxa270Udc;
 
-struct Pxa270Udc *pxa270UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma);
+struct Pxa270Udc *pxa270UdcInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma);
 
 #endif

@@ -7,11 +7,11 @@
 
 #include "CPU.h"
 #include "mem.h"
-#include "soc_IC.h"
+#include "pxa_IC.h"
 
 struct PxaTimr;
 
-struct PxaTimr* pxaTimrInit(struct ArmMem* physMem, struct SocIc* ic);
+struct PxaTimr* pxaTimrInit(struct ArmMem* physMem, struct PxaIc* ic);
 
 void pxaTimrTick(struct PxaTimr* timr, uint32_t batchedClocks);
 

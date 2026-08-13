@@ -13,12 +13,12 @@
 #include "keys.h"
 #include "mem.h"
 #include "nand.h"
+#include "pxa_I2C.h"
+#include "pxa_I2S.h"
+#include "pxa_SSP.h"
 #include "reschedule.h"
 #include "soc_AC97.h"
 #include "soc_GPIO.h"
-#include "soc_I2C.h"
-#include "soc_I2S.h"
-#include "soc_SSP.h"
 #include "soc_UART.h"
 #include "soc_uWire.h"
 #include "vSD.h"
@@ -39,11 +39,11 @@ struct SocPeriphs {
     struct SocAC97 *ac97;
     struct SocGpio *gpio;
     struct SocUwire *uw;
-    struct SocI2c *i2c;
-    struct SocI2s *i2s;
-    struct SocSsp *ssp;
-    struct SocSsp *ssp2;  // assp for xscale
-    struct SocSsp *ssp3;  // nssp for scale
+    struct PxaI2c *i2c;
+    struct PxaI2s *i2s;
+    struct PxaSsp *ssp;
+    struct PxaSsp *ssp2;  // assp for xscale
+    struct PxaSsp *ssp3;  // nssp for scale
     struct ArmMem *mem;
     class SoC *soc;
 

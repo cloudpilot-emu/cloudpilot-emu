@@ -5,8 +5,8 @@
 #include <cstdint>
 
 #include "mem.h"
-#include "soc_DMA.h"
-#include "soc_IC.h"
+#include "pxa_DMA.h"
+#include "pxa_IC.h"
 
 struct SocUwire;
 
@@ -18,7 +18,7 @@ typedef uint_fast16_t (*UWireClientProcF)(
     void *userData, int_fast8_t bitsToDev, int_fast8_t bitsFromDev,
     uint_fast16_t sent);  // return result byte. 0 if nothing to say (so that replies can be ORRed)
 
-struct SocUwire *socUwireInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma);
+struct SocUwire *socUwireInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma);
 void socUwirePeriodic(struct SocUwire *uw);
 bool socUwireAddClient(struct SocUwire *uw, uint_fast8_t cs, UWireClientProcF procF,
                        void *userData);

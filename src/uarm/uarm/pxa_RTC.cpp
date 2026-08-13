@@ -18,7 +18,7 @@
 #define SAVESTATE_VERSION 1
 
 struct PxaRtc {
-    struct SocIc *ic;
+    struct PxaIc *ic;
 
     uint64_t lastAlarmCheck;
 
@@ -38,8 +38,8 @@ struct PxaRtc {
 };
 
 static void pxaRtcPrvUpdateInterrupts(struct PxaRtc *rtc) {
-    socIcInt(rtc->ic, PXA_I_RTC_ALM, !!(rtc->RTSR & 1));
-    socIcInt(rtc->ic, PXA_I_RTC_HZ, !!(rtc->RTSR & 2));
+    pxaIcInt(rtc->ic, PXA_I_RTC_ALM, !!(rtc->RTSR & 1));
+    pxaIcInt(rtc->ic, PXA_I_RTC_HZ, !!(rtc->RTSR & 2));
 }
 
 static void pxaRtcPrvUpdateAlarm(struct PxaRtc *rtc) {
@@ -51,14 +51,14 @@ static void pxaRtcPrvUpdateAlarm(struct PxaRtc *rtc) {
         rtc->lastAlarmCheck = now;
     }
 
-    socIcInt(rtc->ic, PXA_I_RTC_ALM, !!(rtc->RTSR & 1));
+    pxaIcInt(rtc->ic, PXA_I_RTC_ALM, !!(rtc->RTSR & 1));
 }
 
 static void pxaRtcTickHz(struct PxaRtc *rtc) {
     if (rtc->RTSR & 0x8)  // send HZ interrupt
         rtc->RTSR |= 2;
 
-    socIcInt(rtc->ic, PXA_I_RTC_HZ, !!(rtc->RTSR & 2));
+    pxaIcInt(rtc->ic, PXA_I_RTC_HZ, !!(rtc->RTSR & 2));
 }
 
 static bool pxaRtcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
@@ -122,7 +122,7 @@ static bool pxaRtcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-struct PxaRtc *pxaRtcInit(struct ArmMem *physMem, struct SocIc *ic) {
+struct PxaRtc *pxaRtcInit(struct ArmMem *physMem, struct PxaIc *ic) {
     struct PxaRtc *rtc = (struct PxaRtc *)malloc(sizeof(*rtc));
 
     if (!rtc) ERR("cannot alloc RTC");

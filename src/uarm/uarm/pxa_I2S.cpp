@@ -15,9 +15,9 @@
 
 #define SAVESTATE_VERSION 0
 
-struct SocI2s {
-    struct SocDma *dma;
-    struct SocIc *ic;
+struct PxaI2s {
+    struct PxaDma *dma;
+    struct PxaIc *ic;
 
     uint16_t sacr0;
     uint16_t sasr0;
@@ -40,11 +40,11 @@ struct SocI2s {
     }
 };
 
-static void socI2sPrvIrqUpdate(struct SocI2s *i2s) {
-    socIcInt(i2s->ic, PXA_I_I2S, !!(i2s->sasr0 & i2s->saimr & 0x78));
+static void pxaI2sPrvIrqUpdate(struct PxaI2s *i2s) {
+    pxaIcInt(i2s->ic, PXA_I_I2S, !!(i2s->sasr0 & i2s->saimr & 0x78));
 }
 
-static void socI2sPrvTxFifoRecalc(struct SocI2s *i2s) {
+static void pxaI2sPrvTxFifoRecalc(struct PxaI2s *i2s) {
     i2s->sasr0 &= ~0x0f09;
 
     i2s->sasr0 |= (i2s->txFifoEnts & 0x0f) << 8;
@@ -52,11 +52,11 @@ static void socI2sPrvTxFifoRecalc(struct SocI2s *i2s) {
 
     if (i2s->txFifoEnts < ((i2s->sacr0 >> 8) & 0x0f)) i2s->sasr0 |= 0x08;
 
-    socI2sPrvIrqUpdate(i2s);
-    socDmaExternalReq(i2s->dma, DMA_CMR_I2S_TX, !!(i2s->sasr0 & 0x08));
+    pxaI2sPrvIrqUpdate(i2s);
+    pxaDmaExternalReq(i2s->dma, DMA_CMR_I2S_TX, !!(i2s->sasr0 & 0x08));
 }
 
-static void socI2sPrvRxFifoRecalc(struct SocI2s *i2s) {
+static void pxaI2sPrvRxFifoRecalc(struct PxaI2s *i2s) {
     i2s->sasr0 &= ~0xf012;
 
     i2s->sasr0 |= (i2s->rxFifoEnts & 0x0f) << 12;
@@ -64,37 +64,37 @@ static void socI2sPrvRxFifoRecalc(struct SocI2s *i2s) {
 
     if (i2s->rxFifoEnts >= ((i2s->sacr0 >> 12) & 0x0f) + 1) i2s->sasr0 |= 0x10;
 
-    socI2sPrvIrqUpdate(i2s);
+    pxaI2sPrvIrqUpdate(i2s);
 
-    socDmaExternalReq(i2s->dma, DMA_CMR_I2S_RX, !!(i2s->sasr0 & 0x10));
+    pxaDmaExternalReq(i2s->dma, DMA_CMR_I2S_RX, !!(i2s->sasr0 & 0x10));
 }
 
-static bool socI2sPrvFifoW(struct SocI2s *i2s, uint32_t val) {
+static bool pxaI2sPrvFifoW(struct PxaI2s *i2s, uint32_t val) {
     if (i2s->txFifoEnts == sizeof(i2s->txFifo) / sizeof(*i2s->txFifo)) {
         fprintf(stderr, "TX fifo overrun\n");
         return true;
     }
     i2s->txFifo[i2s->txFifoEnts++] = val;
-    socI2sPrvTxFifoRecalc(i2s);
+    pxaI2sPrvTxFifoRecalc(i2s);
 
     return true;
 }
 
-static bool socI2sPrvFifoR(struct SocI2s *i2s, uint32_t *valP) {
+static bool pxaI2sPrvFifoR(struct PxaI2s *i2s, uint32_t *valP) {
     if (!i2s->rxFifoEnts) {
         fprintf(stderr, "RX fifo underrun\n");
         return false;
     }
     *valP = i2s->rxFifo[0];
     memmove(i2s->rxFifo + 0, i2s->rxFifo + 1, sizeof(*i2s->rxFifo) * --i2s->rxFifoEnts);
-    socI2sPrvRxFifoRecalc(i2s);
+    pxaI2sPrvRxFifoRecalc(i2s);
 
     return true;
 }
 
-static bool socI2sPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaI2sPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
                                 void *buf) {
-    struct SocI2s *i2s = (struct SocI2s *)userData;
+    struct PxaI2s *i2s = (struct PxaI2s *)userData;
     uint32_t val = 0;
 
     if (size != 4) {
@@ -152,9 +152,9 @@ static bool socI2sPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
 
         case 32:
             if (write)
-                return socI2sPrvFifoW(i2s, val);
+                return pxaI2sPrvFifoW(i2s, val);
             else
-                return socI2sPrvFifoR(i2s, (uint32_t *)buf);
+                return pxaI2sPrvFifoR(i2s, (uint32_t *)buf);
             break;
 
         default:
@@ -166,8 +166,8 @@ static bool socI2sPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-struct SocI2s *socI2sInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma) {
-    struct SocI2s *i2s = (struct SocI2s *)malloc(sizeof(*i2s));
+struct PxaI2s *pxaI2sInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma) {
+    struct PxaI2s *i2s = (struct PxaI2s *)malloc(sizeof(*i2s));
 
     if (!i2s) ERR("cannot alloc I2C");
 
@@ -178,13 +178,13 @@ struct SocI2s *socI2sInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDm
     i2s->sasr0 = 0x0001;
     i2s->sadiv = 0x001a;
 
-    if (!memRegionAdd(physMem, PXA_I2S_BASE, PXA_I2S_SIZE, socI2sPrvMemAccessF, i2s))
+    if (!memRegionAdd(physMem, PXA_I2S_BASE, PXA_I2S_SIZE, pxaI2sPrvMemAccessF, i2s))
         ERR("cannot add I2S to MEM\n");
 
     return i2s;
 }
 
-void socI2sPeriodic(struct SocI2s *i2s) {
+void pxaI2sPeriodic(struct PxaI2s *i2s) {
     uint32_t val = 0;
 
     // consume a sample if tx is allowed
@@ -204,12 +204,12 @@ void socI2sPeriodic(struct SocI2s *i2s) {
             i2s->sasr0 |= 0x40;
     }
 
-    socI2sPrvTxFifoRecalc(i2s);
-    socI2sPrvRxFifoRecalc(i2s);
+    pxaI2sPrvTxFifoRecalc(i2s);
+    pxaI2sPrvRxFifoRecalc(i2s);
 }
 
 template <typename T>
-void pxaI2sSave(struct SocI2s *i2s, T &savestate) {
+void pxaI2sSave(struct PxaI2s *i2s, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaI2s, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -218,7 +218,7 @@ void pxaI2sSave(struct SocI2s *i2s, T &savestate) {
 }
 
 template <typename T>
-void pxaI2sLoad(struct SocI2s *i2s, T &loader) {
+void pxaI2sLoad(struct PxaI2s *i2s, T &loader) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaI2s, SAVESTATE_VERSION, "pxa i2s");
     if (!chunk) return;
 
@@ -226,8 +226,8 @@ void pxaI2sLoad(struct SocI2s *i2s, T &loader) {
     i2s->DoSaveLoad(helper);
 }
 
-template void pxaI2sSave<Savestate<ChunkType>>(SocI2s *i2s, Savestate<ChunkType> &savestate);
-template void pxaI2sSave<SavestateProbe<ChunkType>>(SocI2s *i2s,
+template void pxaI2sSave<Savestate<ChunkType>>(PxaI2s *i2s, Savestate<ChunkType> &savestate);
+template void pxaI2sSave<SavestateProbe<ChunkType>>(PxaI2s *i2s,
                                                     SavestateProbe<ChunkType> &savestate);
-template void pxaI2sLoad<SavestateLoader<ChunkType>>(SocI2s *i2s,
+template void pxaI2sLoad<SavestateLoader<ChunkType>>(PxaI2s *i2s,
                                                      SavestateLoader<ChunkType> &loader);

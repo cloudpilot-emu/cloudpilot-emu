@@ -16,7 +16,7 @@
 #define SAVESTATE_VERSION 0
 
 struct SocGpio {
-    struct SocIc *ic;
+    struct PxaIc *ic;
     uint8_t socRev, nGpios;
 
     uint32_t latches[4];    // what pxa wants to be outputting
@@ -108,11 +108,11 @@ static void socGpioPrvRecalcValues(struct SocGpio *gpio, uint_fast8_t which) {
 }
 
 static void socGpioPrvRecalcIntrs(struct SocGpio *gpio) {
-    socIcInt(gpio->ic, PXA_I_GPIO_all,
+    pxaIcInt(gpio->ic, PXA_I_GPIO_all,
              gpio->detStatus[3] || gpio->detStatus[2] || gpio->detStatus[1] ||
                  (gpio->detStatus[0] & ~3));
-    socIcInt(gpio->ic, PXA_I_GPIO_1, (gpio->detStatus[0] & 2) != 0);
-    socIcInt(gpio->ic, PXA_I_GPIO_0, (gpio->detStatus[0] & 1) != 0);
+    pxaIcInt(gpio->ic, PXA_I_GPIO_1, (gpio->detStatus[0] & 2) != 0);
+    pxaIcInt(gpio->ic, PXA_I_GPIO_0, (gpio->detStatus[0] & 1) != 0);
 }
 
 static bool socGpioPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
@@ -312,7 +312,7 @@ done:
     return true;
 }
 
-struct SocGpio *socGpioInit(struct ArmMem *physMem, struct SocIc *ic, uint_fast8_t socRev) {
+struct SocGpio *socGpioInit(struct ArmMem *physMem, struct PxaIc *ic, uint_fast8_t socRev) {
     struct SocGpio *gpio = (struct SocGpio *)malloc(sizeof(*gpio));
 
     if (!gpio) ERR("cannot alloc GPIO");

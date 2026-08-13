@@ -5,11 +5,11 @@
 
 #include "CPU.h"
 #include "mem.h"
-#include "soc_IC.h"
+#include "pxa_IC.h"
 
 struct PxaRtc;
 
-struct PxaRtc* pxaRtcInit(struct ArmMem* physMem, struct SocIc* ic);
+struct PxaRtc* pxaRtcInit(struct ArmMem* physMem, struct PxaIc* ic);
 
 void pxaRtcTick(struct PxaRtc* rtc);
 

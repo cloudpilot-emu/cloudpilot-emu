@@ -54,8 +54,8 @@ struct Ac97CodecStruct {
 };
 
 struct SocAC97 {
-    struct SocDma *dma;
-    struct SocIc *ic;
+    struct PxaDma *dma;
+    struct PxaIc *ic;
 
     uint8_t pocr, picr, mccr, posr, pisr, mcsr, car, mocr, mosr, micr, misr;
     uint32_t gcr, gsr, pcdr;
@@ -93,7 +93,7 @@ static void socAC97prvIrqUpdate(struct SocAC97 *ac97) {
     irq = irq || (ac97->gcr & ac97->gsr & 0x300);
     irq = irq || (ac97->gsr & 0x000c0000ul);
 
-    socIcInt(ac97->ic, PXA_I_AC97, irq);
+    pxaIcInt(ac97->ic, PXA_I_AC97, irq);
 }
 
 static void socAC97PrvFifoDmaUpdate(struct SocAC97 *ac97, struct AC97Fifo *fifo) {
@@ -104,7 +104,7 @@ static void socAC97PrvFifoDmaUpdate(struct SocAC97 *ac97, struct AC97Fifo *fifo)
     else
         *fifo->isr &= ~4;
 
-    if (fifo->dmaChannelNum) socDmaExternalReq(ac97->dma, fifo->dmaChannelNum, fifoReadyForRead);
+    if (fifo->dmaChannelNum) pxaDmaExternalReq(ac97->dma, fifo->dmaChannelNum, fifoReadyForRead);
 }
 
 static bool socAC97PrvFifoAdd(struct SocAC97 *ac97, struct AC97Fifo *fifo, uint32_t val) {
@@ -360,7 +360,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
     return true;
 }
 
-struct SocAC97 *socAC97Init(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma) {
+struct SocAC97 *socAC97Init(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma) {
     struct SocAC97 *ac97 = (struct SocAC97 *)malloc(sizeof(*ac97));
 
     if (!ac97) ERR("cannot alloc AC97");

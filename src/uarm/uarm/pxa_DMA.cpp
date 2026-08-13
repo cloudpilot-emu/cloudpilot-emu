@@ -39,8 +39,8 @@ struct PxaDmaChannel {
     }
 };
 
-struct SocDma {
-    struct SocIc* ic;
+struct PxaDma {
+    struct PxaIc* ic;
     struct ArmMem* mem;
     struct Reschedule reschedule;
 
@@ -57,7 +57,7 @@ struct SocDma {
     }
 };
 
-static void socDmaPrvChannelIrqRecalc(struct SocDma* dma, uint_fast8_t channel) {
+static void pxaDmaPrvChannelIrqRecalc(struct PxaDma* dma, uint_fast8_t channel) {
     dma->DINT &= ~(1 << channel);
 
     if (dma->channels[channel].CSR & 0x20000000ul) {  // stop irq enabled?
@@ -80,10 +80,10 @@ static void socDmaPrvChannelIrqRecalc(struct SocDma* dma, uint_fast8_t channel) 
         dma->DINT |= 1 << channel;
     }
 
-    socIcInt(dma->ic, PXA_I_DMA, !!dma->DINT);
+    pxaIcInt(dma->ic, PXA_I_DMA, !!dma->DINT);
 }
 
-static void socDmaPrvChannelStop(struct SocDma* dma, struct PxaDmaChannel* ch) {
+static void pxaDmaPrvChannelStop(struct PxaDma* dma, struct PxaDmaChannel* ch) {
     ch->dsAddrWriten = false;
     ch->dtAddrWriten = false;
     ch->dcmdAddrWritten = false;
@@ -91,19 +91,19 @@ static void socDmaPrvChannelStop(struct SocDma* dma, struct PxaDmaChannel* ch) {
     ch->CSR |= 0x08;
 }
 
-static bool socDmaPrvChannelRunningByCsrVal(uint32_t csr) {
+static bool pxaDmaPrvChannelRunningByCsrVal(uint32_t csr) {
     // previously was !(ch->CSR & 8)
 
     return (csr & 0x80000008ul) == 0x80000000ul;
 }
 
-static bool socDmaPrvChannelRunning(struct SocDma* dma, struct PxaDmaChannel* ch) {
-    return socDmaPrvChannelRunningByCsrVal(ch->CSR);
+static bool pxaDmaPrvChannelRunning(struct PxaDma* dma, struct PxaDmaChannel* ch) {
+    return pxaDmaPrvChannelRunningByCsrVal(ch->CSR);
 }
 
-static void socDmaPrvChannelDescrFetch(
-    struct SocDma* dma,
-    struct PxaDmaChannel* ch)  // you must call socDmaPrvChannelIrqRecalc() after this func
+static void pxaDmaPrvChannelDescrFetch(
+    struct PxaDma* dma,
+    struct PxaDmaChannel* ch)  // you must call pxaDmaPrvChannelIrqRecalc() after this func
 {
     uint32_t nextD, nextS, nextT, nextC, dar = ch->DAR & ~0x0f;
 
@@ -118,7 +118,7 @@ static void socDmaPrvChannelDescrFetch(
         fprintf(stderr, "DMA descriptor fetch error\n");
         ch->CSR |= 1;  // signal bus error, not running
 
-        socDmaPrvChannelStop(dma, ch);
+        pxaDmaPrvChannelStop(dma, ch);
     } else {
         ch->DAR = nextD;
         ch->SAR = nextS & ~0x03;
@@ -133,13 +133,13 @@ static void socDmaPrvChannelDescrFetch(
     // nextS, nextT, nextC);
 }
 
-static bool socDmaPrvChannelCheckForEnd(
-    struct SocDma* dma, uint_fast8_t channel)  // return true if irq need updating after what we did
+static bool pxaDmaPrvChannelCheckForEnd(
+    struct PxaDma* dma, uint_fast8_t channel)  // return true if irq need updating after what we did
 {
     struct PxaDmaChannel* ch = &dma->channels[channel];
     bool irqUpdate = false;
 
-    if (!socDmaPrvChannelRunning(dma, ch))  // stopped? not much to do...
+    if (!pxaDmaPrvChannelRunning(dma, ch))  // stopped? not much to do...
         return false;
 
     if (!(ch->CR & 0x1fff)) {
@@ -154,17 +154,17 @@ static bool socDmaPrvChannelCheckForEnd(
         if (ch->CSR & 0x40000000ul) {  // no descr fetch mode?	same as no descriptors
 
             // fprintf(stderr, "end cause no descr\n");
-            socDmaPrvChannelStop(dma, ch);
+            pxaDmaPrvChannelStop(dma, ch);
             irqUpdate = true;
         } else if (ch->DAR & 1) {  // no more descriptors?
 
             // fprintf(stderr, "end cause DAR\n");
-            socDmaPrvChannelStop(dma, ch);
+            pxaDmaPrvChannelStop(dma, ch);
             irqUpdate = true;
         } else {  // fetch next descriptor
 
             // fprintf(stderr, "fetching descriptor\n");
-            socDmaPrvChannelDescrFetch(dma, ch);
+            pxaDmaPrvChannelDescrFetch(dma, ch);
             irqUpdate = true;
         }
     }
@@ -172,8 +172,8 @@ static bool socDmaPrvChannelCheckForEnd(
     return irqUpdate;
 }
 
-static bool socDmaPrvChannelDoBurst(
-    struct SocDma* dma, uint_fast8_t channel)  // return true if irq need updating after what we did
+static bool pxaDmaPrvChannelDoBurst(
+    struct PxaDma* dma, uint_fast8_t channel)  // return true if irq need updating after what we did
 {
     struct PxaDmaChannel* ch = &dma->channels[channel];
     uint32_t each = 1 << (((ch->CR >> 14) & 3) - 1);
@@ -207,7 +207,7 @@ static bool socDmaPrvChannelDoBurst(
             !memAccess(dma->mem, dst, each, true, &t)) {
             fprintf(stderr, "DMA xfer bus error\n");
             dma->channels[channel].CSR |= 1;  // signl bus error, not running
-            socDmaPrvChannelStop(dma, ch);
+            pxaDmaPrvChannelStop(dma, ch);
             return true;
         }
 
@@ -217,22 +217,22 @@ static bool socDmaPrvChannelDoBurst(
     }
 
     // check for end
-    return socDmaPrvChannelCheckForEnd(dma, channel);
+    return pxaDmaPrvChannelCheckForEnd(dma, channel);
 }
 
-static void socDmaPrvChannelActIfNeeded(struct SocDma* dma, uint_fast8_t channel) {
+static void pxaDmaPrvChannelActIfNeeded(struct PxaDma* dma, uint_fast8_t channel) {
     bool irqUpdate = false, doWork = false, justOne = true;
     struct PxaDmaChannel* ch = &dma->channels[channel];
 
-    if (!socDmaPrvChannelRunning(dma, ch))  // stopped? not much to do...
+    if (!pxaDmaPrvChannelRunning(dma, ch))  // stopped? not much to do...
         return;
 
     // check for end
-    if (socDmaPrvChannelCheckForEnd(dma, channel)) irqUpdate = true;
+    if (pxaDmaPrvChannelCheckForEnd(dma, channel)) irqUpdate = true;
 
     // CSR.8 might change from above call, so this cannot be removed despite the earlier check
 
-    if (socDmaPrvChannelRunning(dma, ch)) {  // if we are running, get working...
+    if (pxaDmaPrvChannelRunning(dma, ch)) {  // if we are running, get working...
 
         // check for work
         if (ch->CSR & 0x100)  // request?
@@ -246,18 +246,18 @@ static void socDmaPrvChannelActIfNeeded(struct SocDma* dma, uint_fast8_t channel
 
         if (doWork) {
             do {
-                if (socDmaPrvChannelDoBurst(dma, channel)) irqUpdate = true;
+                if (pxaDmaPrvChannelDoBurst(dma, channel)) irqUpdate = true;
 
             } while ((ch->CR & 0x1fff) && !justOne);
         }
     }
 
-    if (irqUpdate) socDmaPrvChannelIrqRecalc(dma, channel);
+    if (irqUpdate) pxaDmaPrvChannelIrqRecalc(dma, channel);
 }
 
-static void socDmaPrvChannelMaybeStart(struct SocDma* dma, struct PxaDmaChannel* ch,
+static void pxaDmaPrvChannelMaybeStart(struct PxaDma* dma, struct PxaDmaChannel* ch,
                                        uint32_t prevCsrVal) {
-    if (socDmaPrvChannelRunning(dma, ch) && !socDmaPrvChannelRunningByCsrVal(prevCsrVal)) {
+    if (pxaDmaPrvChannelRunning(dma, ch) && !pxaDmaPrvChannelRunningByCsrVal(prevCsrVal)) {
         // fprintf(stderr, "channel %u started\n", (unsigned)(ch - dma->channels));
 
         dma->reschedule.rescheduleCb(dma->reschedule.ctx, RESCHEDULE_TASK_DMA);
@@ -268,12 +268,12 @@ static void socDmaPrvChannelMaybeStart(struct SocDma* dma, struct PxaDmaChannel*
 
             ch->CR &= ~0x1fff;  // so we fatch descr on first request
 
-            socDmaPrvChannelDescrFetch(dma, ch);
+            pxaDmaPrvChannelDescrFetch(dma, ch);
         }
     }
 }
 
-static bool socDmaPrvChannelRegWrite(struct SocDma* dma, uint_fast8_t channel, uint_fast8_t reg,
+static bool pxaDmaPrvChannelRegWrite(struct PxaDma* dma, uint_fast8_t channel, uint_fast8_t reg,
                                      uint32_t val) {
     struct PxaDmaChannel* ch = &dma->channels[channel];
     bool checkForStart = false, maybeStart = false;
@@ -314,15 +314,15 @@ static bool socDmaPrvChannelRegWrite(struct SocDma* dma, uint_fast8_t channel, u
 
         ch->CSR = newVal;
 
-        socDmaPrvChannelMaybeStart(dma, &dma->channels[channel], prevCsr);
+        pxaDmaPrvChannelMaybeStart(dma, &dma->channels[channel], prevCsr);
 
         if (!(newVal & 0x80000000ul) && (prevCsr & 0x80000000ul)) {  // just stopped
 
             // fprintf(stderr, "channel %u stopped\n", channel);
-            socDmaPrvChannelStop(dma, ch);
+            pxaDmaPrvChannelStop(dma, ch);
         }
 
-        socDmaPrvChannelIrqRecalc(dma, channel);
+        pxaDmaPrvChannelIrqRecalc(dma, channel);
 
         // fprintf(stderr, "dma->DINT is now 0x%08x\n", dma->DINT);
     }
@@ -333,13 +333,13 @@ static bool socDmaPrvChannelRegWrite(struct SocDma* dma, uint_fast8_t channel, u
     if (maybeStart) {
         ch->CSR &= ~0x08;
         // fprintf(stderr, "maybe start 0x%08x -> 0x%08x\n", prevCsr, ch->CSR);
-        socDmaPrvChannelMaybeStart(dma, ch, prevCsr);
+        pxaDmaPrvChannelMaybeStart(dma, ch, prevCsr);
     }
 
     return true;
 }
 
-static bool socDmaPrvChannelRegRead(struct SocDma* dma, uint_fast8_t channel, uint_fast8_t reg,
+static bool pxaDmaPrvChannelRegRead(struct PxaDma* dma, uint_fast8_t channel, uint_fast8_t reg,
                                     uint32_t* retP) {
     switch (reg) {
         case REG_DAR:
@@ -369,7 +369,7 @@ static bool socDmaPrvChannelRegRead(struct SocDma* dma, uint_fast8_t channel, ui
     return true;
 }
 
-void socDmaExternalReq(struct SocDma* dma, uint_fast8_t chNum, bool requested) {
+void pxaDmaExternalReq(struct PxaDma* dma, uint_fast8_t chNum, bool requested) {
     uint32_t cfg = dma->CMR[chNum];
 
     if (cfg & 0x80) {  // is it mapped to a channel at all?
@@ -385,15 +385,15 @@ void socDmaExternalReq(struct SocDma* dma, uint_fast8_t chNum, bool requested) {
     }
 }
 
-void socDmaPeriodic(struct SocDma* dma) {
+void pxaDmaPeriodic(struct PxaDma* dma) {
     uint32_t i;
 
-    for (i = 0; i < 32; i++) socDmaPrvChannelActIfNeeded(dma, i);
+    for (i = 0; i < 32; i++) pxaDmaPrvChannelActIfNeeded(dma, i);
 }
 
-static bool socDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
                                 void* buf) {
-    struct SocDma* dma = (struct SocDma*)userData;
+    struct PxaDma* dma = (struct PxaDma*)userData;
     uint_fast8_t reg, set;
     uint32_t val = 0;
 
@@ -425,7 +425,7 @@ static bool socDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, 
 
                 reg = REG_CSR;
                 set = pa;
-                if (!socDmaPrvChannelRegWrite(dma, set, reg, val)) return false;
+                if (!pxaDmaPrvChannelRegWrite(dma, set, reg, val)) return false;
                 break;
 
             case 17:
@@ -444,7 +444,7 @@ static bool socDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, 
                 set = pa >> 2;
                 reg = pa & 3;
                 if (set >= 32) return false;
-                if (!socDmaPrvChannelRegWrite(dma, set, reg, val)) return false;
+                if (!pxaDmaPrvChannelRegWrite(dma, set, reg, val)) return false;
                 break;
 
             default:
@@ -468,7 +468,7 @@ static bool socDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, 
 
                 reg = REG_CSR;
                 set = pa;
-                if (!socDmaPrvChannelRegRead(dma, set, reg, &val)) return false;
+                if (!pxaDmaPrvChannelRegRead(dma, set, reg, &val)) return false;
                 break;
 
             case 17:
@@ -488,7 +488,7 @@ static bool socDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, 
                 set = pa >> 2;
                 reg = pa & 3;
                 if (set >= 32) return false;
-                if (!socDmaPrvChannelRegRead(dma, set, reg, &val)) return false;
+                if (!pxaDmaPrvChannelRegRead(dma, set, reg, &val)) return false;
                 break;
 
             default:
@@ -501,8 +501,8 @@ static bool socDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-struct SocDma* socDmaInit(struct ArmMem* physMem, struct Reschedule reschedule, struct SocIc* ic) {
-    struct SocDma* dma = (struct SocDma*)malloc(sizeof(*dma));
+struct PxaDma* pxaDmaInit(struct ArmMem* physMem, struct Reschedule reschedule, struct PxaIc* ic) {
+    struct PxaDma* dma = (struct PxaDma*)malloc(sizeof(*dma));
     uint_fast8_t i;
 
     if (!dma) ERR("cannot alloc DMA");
@@ -514,22 +514,22 @@ struct SocDma* socDmaInit(struct ArmMem* physMem, struct Reschedule reschedule, 
 
     for (i = 0; i < 32; i++) dma->channels[i].CSR = 8;  // stopped or uninitialized
 
-    if (!memRegionAdd(physMem, PXA_DMA_BASE, PXA_DMA_SIZE, socDmaPrvMemAccessF, dma))
+    if (!memRegionAdd(physMem, PXA_DMA_BASE, PXA_DMA_SIZE, pxaDmaPrvMemAccessF, dma))
         ERR("cannot add DMA to MEM\n");
 
     return dma;
 }
 
-bool socDmaTaskRequired(struct SocDma* dma) {
+bool pxaDmaTaskRequired(struct PxaDma* dma) {
     for (int i = 0; i < 32; i++) {
-        if (socDmaPrvChannelRunning(dma, dma->channels + i)) return true;
+        if (pxaDmaPrvChannelRunning(dma, dma->channels + i)) return true;
     }
 
     return false;
 }
 
 template <typename T>
-void pxaDmaSave(SocDma* dma, T& savestate) {
+void pxaDmaSave(PxaDma* dma, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaDma, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -538,7 +538,7 @@ void pxaDmaSave(SocDma* dma, T& savestate) {
 }
 
 template <typename T>
-void pxaDmaLoad(SocDma* dma, T& loader) {
+void pxaDmaLoad(PxaDma* dma, T& loader) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaDma, SAVESTATE_VERSION, "pxaDma");
     if (!chunk) return;
 
@@ -546,8 +546,8 @@ void pxaDmaLoad(SocDma* dma, T& loader) {
     dma->DoSaveLoad(helper);
 }
 
-template void pxaDmaSave<Savestate<ChunkType>>(SocDma* dma, Savestate<ChunkType>& savestate);
-template void pxaDmaSave<SavestateProbe<ChunkType>>(SocDma* dma,
+template void pxaDmaSave<Savestate<ChunkType>>(PxaDma* dma, Savestate<ChunkType>& savestate);
+template void pxaDmaSave<SavestateProbe<ChunkType>>(PxaDma* dma,
                                                     SavestateProbe<ChunkType>& savestate);
-template void pxaDmaLoad<SavestateLoader<ChunkType>>(SocDma* dma,
+template void pxaDmaLoad<SavestateLoader<ChunkType>>(PxaDma* dma,
                                                      SavestateLoader<ChunkType>& loader);

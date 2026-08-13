@@ -16,7 +16,7 @@
 
 #define SAVESTATE_VERSION 0
 
-struct SocIc {
+struct PxaIc {
     struct ArmCpu *cpu;
     class SoC *soc;
 
@@ -39,7 +39,7 @@ struct SocIc {
     }
 };
 
-static void socIcPrvHandleChanges(struct SocIc *ic) {
+static void pxaIcPrvHandleChanges(struct PxaIc *ic) {
     bool nowIrq = false, nowFiq = false;
     uint_fast8_t i;
 
@@ -57,7 +57,7 @@ static void socIcPrvHandleChanges(struct SocIc *ic) {
     ic->wasIrq = nowIrq;
 }
 
-static uint32_t socIcPrvCalcHighestPrio(struct SocIc *ic) {
+static uint32_t pxaIcPrvCalcHighestPrio(struct PxaIc *ic) {
     uint32_t activeIrq[2], activeFiq[2], ret = 0x001f001ful;
     uint_fast8_t i;
 
@@ -87,17 +87,17 @@ static uint32_t socIcPrvCalcHighestPrio(struct SocIc *ic) {
     return ret;
 }
 
-static uint32_t socIcPrvGetIcip(struct SocIc *ic, uint_fast8_t idx) {
+static uint32_t pxaIcPrvGetIcip(struct PxaIc *ic, uint_fast8_t idx) {
     return ic->ICPR[idx] & ic->ICMR[idx] & ~ic->ICLR[idx];
 }
 
-static uint32_t socIcPrvGetIcfp(struct SocIc *ic, uint_fast8_t idx) {
+static uint32_t pxaIcPrvGetIcfp(struct PxaIc *ic, uint_fast8_t idx) {
     return ic->ICPR[idx] & ic->ICMR[idx] & ic->ICLR[idx];
 }
 
-static bool socIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
                                void *buf) {
-    struct SocIc *ic = (struct SocIc *)userData;
+    struct PxaIc *ic = (struct PxaIc *)userData;
     uint32_t val = 0;
 
     if (size != 4) {
@@ -121,7 +121,7 @@ static bool socIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, b
             if (write)
                 ;  // ignored
             else
-                val = socIcPrvGetIcip(ic, pa - 0x00 / 4);
+                val = pxaIcPrvGetIcip(ic, pa - 0x00 / 4);
             break;
 
         case 0xA0 / 4:
@@ -160,7 +160,7 @@ static bool socIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, b
             if (write)
                 ;  // ignored
             else
-                val = socIcPrvGetIcfp(ic, pa - 0x0C / 4);
+                val = pxaIcPrvGetIcfp(ic, pa - 0x0C / 4);
             break;
 
         case 0xAC / 4:
@@ -188,7 +188,7 @@ static bool socIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, b
             if (write)
                 ;  // ignored
             else
-                val = socIcPrvCalcHighestPrio(ic);
+                val = pxaIcPrvCalcHighestPrio(ic);
             break;
 
         case 0xb0 / 4 ... 0xcc / 4:
@@ -209,7 +209,7 @@ static bool socIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, b
     }
 
     if (write)
-        socIcPrvHandleChanges(ic);
+        pxaIcPrvHandleChanges(ic);
     else
         *(uint32_t *)buf = val;
 
@@ -219,7 +219,7 @@ static bool socIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, b
 bool pxa270icPrvCoprocAccess(struct ArmCpu *cpu, void *userData, bool two /* MCR2/MRC2 ? */,
                              bool MRC, uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
                              uint8_t op2) {
-    struct SocIc *ic = (struct SocIc *)userData;
+    struct PxaIc *ic = (struct PxaIc *)userData;
     bool write = !MRC;
     uint32_t val = 0;
 
@@ -235,7 +235,7 @@ bool pxa270icPrvCoprocAccess(struct ArmCpu *cpu, void *userData, bool two /* MCR
             if (write)
                 return false;
             else
-                val = socIcPrvGetIcip(ic, CRn - 0);
+                val = pxaIcPrvGetIcip(ic, CRn - 0);
             break;
 
         case 7:
@@ -265,7 +265,7 @@ bool pxa270icPrvCoprocAccess(struct ArmCpu *cpu, void *userData, bool two /* MCR
             if (write)
                 return false;
             else
-                val = socIcPrvGetIcfp(ic, CRn - 3);
+                val = pxaIcPrvGetIcfp(ic, CRn - 3);
             break;
 
         case 10:
@@ -282,7 +282,7 @@ bool pxa270icPrvCoprocAccess(struct ArmCpu *cpu, void *userData, bool two /* MCR
             if (write)
                 return false;
             else
-                val = socIcPrvCalcHighestPrio(ic);
+                val = pxaIcPrvCalcHighestPrio(ic);
             break;
 
         default:
@@ -290,16 +290,16 @@ bool pxa270icPrvCoprocAccess(struct ArmCpu *cpu, void *userData, bool two /* MCR
     }
 
     if (write)
-        socIcPrvHandleChanges(ic);
+        pxaIcPrvHandleChanges(ic);
     else
         cpuSetReg(cpu, Rx, val);
 
     return true;
 }
 
-struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, class SoC *soc,
+struct PxaIc *pxaIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, class SoC *soc,
                         uint_fast8_t socRev) {
-    struct SocIc *ic = (struct SocIc *)malloc(sizeof(*ic));
+    struct PxaIc *ic = (struct PxaIc *)malloc(sizeof(*ic));
     struct ArmCoprocessor cp = {
         .regXfer = pxa270icPrvCoprocAccess,
         .dataProcessing = nullptr,
@@ -316,7 +316,7 @@ struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, class SoC *s
     ic->soc = soc;
     ic->gen2 = socRev == 2;
 
-    if (!memRegionAdd(physMem, PXA_IC_BASE, PXA_IC_SIZE, socIcPrvMemAccessF, ic))
+    if (!memRegionAdd(physMem, PXA_IC_BASE, PXA_IC_SIZE, pxaIcPrvMemAccessF, ic))
         ERR("cannot add IC to MEM\n");
 
     if (ic->gen2) cpuCoprocessorRegister(cpu, 6, &cp);
@@ -324,7 +324,7 @@ struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, class SoC *s
     return ic;
 }
 
-void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
+void pxaIcInt(struct PxaIc *ic, uint_fast8_t intNum,
               bool raise)  // interrupt caused by emulated hardware
 {
     const uint_fast8_t i = intNum / 32;
@@ -339,11 +339,11 @@ void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
     } else
         ic->ICPR[i] &= ~mask;
 
-    if (ic->ICPR[intNum / 32] != old) socIcPrvHandleChanges(ic);
+    if (ic->ICPR[intNum / 32] != old) pxaIcPrvHandleChanges(ic);
 }
 
 template <typename T>
-void pxaIcSave(SocIc *ic, T &savestate) {
+void pxaIcSave(PxaIc *ic, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaIc, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -352,7 +352,7 @@ void pxaIcSave(SocIc *ic, T &savestate) {
 }
 
 template <typename T>
-void pxaIcLoad(SocIc *ic, T &loader) {
+void pxaIcLoad(PxaIc *ic, T &loader) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaIc, SAVESTATE_VERSION, "pxaIc");
     if (!chunk) return;
 
@@ -360,6 +360,6 @@ void pxaIcLoad(SocIc *ic, T &loader) {
     ic->DoSaveLoad(helper);
 }
 
-template void pxaIcSave<Savestate<ChunkType>>(SocIc *ic, Savestate<ChunkType> &savestate);
-template void pxaIcSave<SavestateProbe<ChunkType>>(SocIc *ic, SavestateProbe<ChunkType> &savestate);
-template void pxaIcLoad<SavestateLoader<ChunkType>>(SocIc *ic, SavestateLoader<ChunkType> &loader);
+template void pxaIcSave<Savestate<ChunkType>>(PxaIc *ic, Savestate<ChunkType> &savestate);
+template void pxaIcSave<SavestateProbe<ChunkType>>(PxaIc *ic, SavestateProbe<ChunkType> &savestate);
+template void pxaIcLoad<SavestateLoader<ChunkType>>(PxaIc *ic, SavestateLoader<ChunkType> &loader);

@@ -3,7 +3,10 @@
 #ifndef _PXA_DMA_H_
 #define _PXA_DMA_H_
 
-#include "soc_DMA.h"
+#include "CPU.h"
+#include "mem.h"
+#include "pxa_IC.h"
+#include "reschedule.h"
 
 // common
 #define DMA_CMR_DREQ_0 0
@@ -100,10 +103,19 @@
 #define DMA_CMR_QCIF_RX_2 70
 #define DMA_CMR_DREQ_2 74
 
-template <typename T>
-void pxaDmaSave(struct SocDma* dma, T& savestate);
+struct PxaDma;
+
+struct PxaDma* pxaDmaInit(struct ArmMem* physMem, struct Reschedule reschedule, struct PxaIc* ic);
+void pxaDmaPeriodic(struct PxaDma* dma);
+void pxaDmaExternalReq(struct PxaDma* dma, uint_fast8_t chNum,
+                       bool requested);  // request a transfer burst
+
+bool pxaDmaTaskRequired(struct PxaDma* dma);
 
 template <typename T>
-void pxaDmaLoad(struct SocDma* dma, T& loader);
+void pxaDmaSave(struct PxaDma* dma, T& savestate);
+
+template <typename T>
+void pxaDmaLoad(struct PxaDma* dma, T& loader);
 
 #endif

@@ -8,11 +8,11 @@
 #include "CPU.h"
 #include "mem.h"
 #include "pxa_DMA.h"
-#include "soc_IC.h"
+#include "pxa_IC.h"
 
 struct Pxa255Udc;
 
-struct Pxa255Udc *pxa255UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma);
+struct Pxa255Udc *pxa255UdcInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma);
 
 template <typename T>
 void pxa255UdcSave(struct Pxa255Udc *udc, T &savestate);

@@ -1,5 +1,7 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include "pxa_I2C.h"
+
 #include <cstdlib>
 #include <cstring>
 
@@ -7,7 +9,6 @@
 #include "mem.h"
 #include "pxa_IC.h"
 #include "savestate/savestateAll.h"
-#include "soc_I2C.h"
 
 #define PXA_I2C_SIZE 0x00000024UL
 
@@ -19,9 +20,9 @@
 #define REG_IDX_ISR 3
 #define REG_IDX_ISAR 4
 
-struct SocI2c {
-    struct SocDma *dma;
-    struct SocIc *ic;
+struct PxaI2c {
+    struct PxaDma *dma;
+    struct PxaIc *ic;
     uint32_t base;
     uint32_t irqNo;
     uint16_t icr;
@@ -45,7 +46,7 @@ struct SocI2c {
     }
 };
 
-bool socI2cDeviceAdd(struct SocI2c *i2c, I2cDeviceActionF actF, void *userData) {
+bool pxaI2cDeviceAdd(struct PxaI2c *i2c, I2cDeviceActionF actF, void *userData) {
     uint_fast8_t i;
 
     for (i = 0; i < sizeof(i2c->devs) / sizeof(*i2c->devs); i++) {
@@ -60,7 +61,7 @@ bool socI2cDeviceAdd(struct SocI2c *i2c, I2cDeviceActionF actF, void *userData) 
     return false;
 }
 
-static void socI2cPrvRecalcIrq(struct SocI2c *i2c) {
+static void pxaI2cPrvRecalcIrq(struct PxaI2c *i2c) {
     uint32_t effectiveIsr = i2c->isr & 0x6f0;
 
     if (!(i2c->icr & 0x2000))  // SADIE
@@ -76,10 +77,10 @@ static void socI2cPrvRecalcIrq(struct SocI2c *i2c) {
     if (!(i2c->icr & 0x0100))  // ITEIE
         effectiveIsr &= ~(1 << 6);
 
-    socIcInt(i2c->ic, i2c->irqNo, !!effectiveIsr);
+    pxaIcInt(i2c->ic, i2c->irqNo, !!effectiveIsr);
 }
 
-static uint_fast8_t socI2cPrvAction(struct SocI2c *i2c, enum ActionI2C action, uint8_t param) {
+static uint_fast8_t pxaI2cPrvAction(struct PxaI2c *i2c, enum ActionI2C action, uint8_t param) {
     uint_fast8_t ret = 0, i;
 
     for (i = 0; i < sizeof(i2c->devs) / sizeof(*i2c->devs); i++) {
@@ -93,7 +94,7 @@ static uint_fast8_t socI2cPrvAction(struct SocI2c *i2c, enum ActionI2C action, u
     return ret;
 };
 
-static void socI2cPrvCrW(struct SocI2c *i2c, uint32_t val) {
+static void pxaI2cPrvCrW(struct PxaI2c *i2c, uint32_t val) {
     uint32_t diffBits = i2c->icr ^ val;
 
     // irq masking & nonactionable bits update
@@ -102,7 +103,7 @@ static void socI2cPrvCrW(struct SocI2c *i2c, uint32_t val) {
     if (!(val & 0x40)) return;
 
     if (val & diffBits & 0x01) {
-        socI2cPrvAction(i2c, (i2c->isr & 4) ? i2cRestart : i2cStart, 0);
+        pxaI2cPrvAction(i2c, (i2c->isr & 4) ? i2cRestart : i2cStart, 0);
         i2c->waitForAddr = true;
         i2c->isr |= 0x4;
     }
@@ -111,44 +112,44 @@ static void socI2cPrvCrW(struct SocI2c *i2c, uint32_t val) {
             if (i2c->isr & 0x40) fprintf(stderr, "i2c: sending from empty buffer\n");
 
             i2c->isr = (i2c->isr & ~1) | (i2c->db & 1);
-            i2c->isr = (i2c->isr & ~2) | (socI2cPrvAction(i2c, i2cTx, i2c->db) ? 0 : 2);
+            i2c->isr = (i2c->isr & ~2) | (pxaI2cPrvAction(i2c, i2cTx, i2c->db) ? 0 : 2);
             i2c->waitForAddr = false;
             i2c->isr |= 0x40;
         } else if (!(i2c->isr & 1)) {  // TXing
 
             if (i2c->isr & 0x40) fprintf(stderr, "i2c: sending from empty buffer\n");
 
-            i2c->isr = (i2c->isr & ~2) | (socI2cPrvAction(i2c, i2cTx, i2c->db) ? 0 : 2);
+            i2c->isr = (i2c->isr & ~2) | (pxaI2cPrvAction(i2c, i2cTx, i2c->db) ? 0 : 2);
             i2c->isr |= 0x40;
         } else {  // RXing
 
             if (i2c->isr & 0x80) fprintf(stderr, "i2c: recving into full buffer\n");
 
-            i2c->db = socI2cPrvAction(i2c, i2cRx, !(i2c->icr & 4));
+            i2c->db = pxaI2cPrvAction(i2c, i2cRx, !(i2c->icr & 4));
             i2c->isr |= 0x80;
             // record ack/nak we sent
             i2c->isr &= ~2;
             if (i2c->icr & 4) i2c->isr |= 2;
         }
         if (val & 2) {
-            socI2cPrvAction(i2c, i2cStop, 0);
+            pxaI2cPrvAction(i2c, i2cStop, 0);
             i2c->isr &= ~0x1;
             i2c->latentBusy = true;
         }
         i2c->icr &= ~8;
     }
     if (val & 0x10) {
-        socI2cPrvAction(i2c, i2cStop, 0);
+        pxaI2cPrvAction(i2c, i2cStop, 0);
         i2c->isr &= ~0x1;
         i2c->latentBusy = true;
     }
 
-    socI2cPrvRecalcIrq(i2c);
+    pxaI2cPrvRecalcIrq(i2c);
 }
 
-static bool socI2cPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaI2cPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
                                 void *buf) {
-    struct SocI2c *i2c = (struct SocI2c *)userData;
+    struct PxaI2c *i2c = (struct PxaI2c *)userData;
     uint32_t val;
 
     if (size != 4) {
@@ -180,13 +181,13 @@ static bool socI2cPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
                 i2c->db = val;
             } else
                 val = i2c->db;
-            socI2cPrvRecalcIrq(i2c);
+            pxaI2cPrvRecalcIrq(i2c);
             break;
 
         case REG_IDX_ICR:
             if (write) {
-                socI2cPrvCrW(i2c, val);
-                socI2cPrvRecalcIrq(i2c);
+                pxaI2cPrvCrW(i2c, val);
+                pxaI2cPrvRecalcIrq(i2c);
             } else
                 val = i2c->icr;
             break;
@@ -194,7 +195,7 @@ static bool socI2cPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
         case REG_IDX_ISR:
             if (write) {
                 i2c->isr &= ~(val & 0x6f0);
-                socI2cPrvRecalcIrq(i2c);
+                pxaI2cPrvRecalcIrq(i2c);
             } else
                 val = i2c->isr;
             break;
@@ -215,9 +216,9 @@ static bool socI2cPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-struct SocI2c *socI2cInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma,
+struct PxaI2c *pxaI2cInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma,
                           uint32_t base, uint32_t irqNo) {
-    struct SocI2c *i2c = (struct SocI2c *)malloc(sizeof(*i2c));
+    struct PxaI2c *i2c = (struct PxaI2c *)malloc(sizeof(*i2c));
 
     if (!i2c) ERR("cannot alloc I2C");
 
@@ -228,14 +229,14 @@ struct SocI2c *socI2cInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDm
     i2c->irqNo = irqNo;
     i2c->isr |= 0x40;  // tx empty
 
-    if (!memRegionAdd(physMem, base, PXA_I2C_SIZE, socI2cPrvMemAccessF, i2c))
+    if (!memRegionAdd(physMem, base, PXA_I2C_SIZE, pxaI2cPrvMemAccessF, i2c))
         ERR("cannot add I2C to MEM at 0x%08x\n", base);
 
     return i2c;
 }
 
 template <typename T>
-void pxaI2cSave(struct SocI2c *i2c, T &savestate, uint32_t index) {
+void pxaI2cSave(struct PxaI2c *i2c, T &savestate, uint32_t index) {
     auto chunk = savestate.GetChunk(ChunkType::pxaI2c + index, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -244,7 +245,7 @@ void pxaI2cSave(struct SocI2c *i2c, T &savestate, uint32_t index) {
 }
 
 template <typename T>
-void pxaI2cLoad(struct SocI2c *i2c, T &loader, uint32_t index) {
+void pxaI2cLoad(struct PxaI2c *i2c, T &loader, uint32_t index) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaI2c + index, SAVESTATE_VERSION, "pxa i2c");
     if (!chunk) return;
 
@@ -252,11 +253,11 @@ void pxaI2cLoad(struct SocI2c *i2c, T &loader, uint32_t index) {
     i2c->DoSaveLoad(helper);
 }
 
-template void pxaI2cSave<Savestate<ChunkType>>(SocI2c *i2c, Savestate<ChunkType> &savestate,
+template void pxaI2cSave<Savestate<ChunkType>>(PxaI2c *i2c, Savestate<ChunkType> &savestate,
                                                uint32_t index);
-template void pxaI2cSave<SavestateProbe<ChunkType>>(SocI2c *i2c,
+template void pxaI2cSave<SavestateProbe<ChunkType>>(PxaI2c *i2c,
                                                     SavestateProbe<ChunkType> &savestate,
                                                     uint32_t index);
-template void pxaI2cLoad<SavestateLoader<ChunkType>>(SocI2c *i2c,
+template void pxaI2cLoad<SavestateLoader<ChunkType>>(PxaI2c *i2c,
                                                      SavestateLoader<ChunkType> &loader,
                                                      uint32_t index);

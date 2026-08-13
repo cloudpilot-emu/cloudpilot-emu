@@ -27,7 +27,7 @@
 #define SAVESTATE_VERSION 0
 
 struct PxaLcd {
-    struct SocIc *ic;
+    struct PxaIc *ic;
     struct ArmMem *mem;
     class SoC *soc;
 
@@ -104,7 +104,7 @@ static void pxaLcdPrvUpdateInts(struct PxaLcd *lcd) {
 
     if ((ints && !lcd->intWasPending) || (!ints && lcd->intWasPending)) {
         lcd->intWasPending = !!ints;
-        socIcInt(lcd->ic, PXA_I_LCD, !!ints);
+        pxaIcInt(lcd->ic, PXA_I_LCD, !!ints);
     }
 }
 
@@ -536,7 +536,7 @@ void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd) { lcd->framebufferDirty = tru
 
 bool pxaLcdIsEnabled(struct PxaLcd *lcd) { return lcd->lccr0 & 0x0001; }
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, class SoC *soc, struct SocIc *ic,
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, class SoC *soc, struct PxaIc *ic,
                           struct MemoryBuffer *buffer, uint16_t width, uint16_t height) {
     struct PxaLcd *lcd = (struct PxaLcd *)malloc(sizeof(*lcd));
 

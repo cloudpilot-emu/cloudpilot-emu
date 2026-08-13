@@ -116,8 +116,8 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
             break;
     }
 
-    ic = socIcInit(cpu, mem, this, socRev);
-    dma = socDmaInit(mem, rescheduleCb, ic);
+    ic = pxaIcInit(cpu, mem, this, socRev);
+    dma = pxaDmaInit(mem, rescheduleCb, ic);
 
     if (socRev == 0 || socRev == 1) {
         dsp = pxa255dspInit(cpu);
@@ -142,38 +142,38 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
     pwrClk = pxaPwrClkInit(cpu, mem, this, socRev == 2);
 
     if (socRev == 2) {
-        pwrI2c = socI2cInit(mem, ic, dma, PXA_PWR_I2C_BASE, PXA_I_PWR_I2C);
+        pwrI2c = pxaI2cInit(mem, ic, dma, PXA_PWR_I2C_BASE, PXA_I_PWR_I2C);
     }
 
-    i2c = socI2cInit(mem, ic, dma, PXA_I2C_BASE, PXA_I_I2C);
+    i2c = pxaI2cInit(mem, ic, dma, PXA_I2C_BASE, PXA_I_I2C);
     memCtrl = pxaMemCtrlrInit(mem, socRev);
     ac97 = socAC97Init(mem, ic, dma);
 
     // SSP/SSP1
-    ssp[0] = socSspInit(mem, rescheduleCb, ic, dma, PXA_SSP1_BASE, PXA_I_SSP, DMA_CMR_SSP_RX);
+    ssp[0] = pxaSspInit(mem, rescheduleCb, ic, dma, PXA_SSP1_BASE, PXA_I_SSP, DMA_CMR_SSP_RX);
 
     if (socRev == 0 || socRev == 1) {
         // NSSP
-        ssp[1] = socSspInit(mem, rescheduleCb, ic, dma, PXA_NSSP_BASE, PXA_I_NSSP, DMA_CMR_NSSP_RX);
+        ssp[1] = pxaSspInit(mem, rescheduleCb, ic, dma, PXA_NSSP_BASE, PXA_I_NSSP, DMA_CMR_NSSP_RX);
         udc1 = pxa255UdcInit(mem, ic, dma);
     }
 
     if (socRev == 1) {
         // ASSP
-        ssp[2] = socSspInit(mem, rescheduleCb, ic, dma, PXA_ASSP_BASE, PXA_I_ASSP, DMA_CMR_ASSP_RX);
+        ssp[2] = pxaSspInit(mem, rescheduleCb, ic, dma, PXA_ASSP_BASE, PXA_I_ASSP, DMA_CMR_ASSP_RX);
     }
 
     if (socRev == 2) {
         // SSP2
-        ssp[1] = socSspInit(mem, rescheduleCb, ic, dma, PXA_SSP2_BASE, PXA_I_SSP2, DMA_CMR_SSP2_RX);
+        ssp[1] = pxaSspInit(mem, rescheduleCb, ic, dma, PXA_SSP2_BASE, PXA_I_SSP2, DMA_CMR_SSP2_RX);
 
         // SSP3
-        ssp[2] = socSspInit(mem, rescheduleCb, ic, dma, PXA_SSP3_BASE, PXA_I_SSP3, DMA_CMR_SSP3_RX);
+        ssp[2] = pxaSspInit(mem, rescheduleCb, ic, dma, PXA_SSP3_BASE, PXA_I_SSP3, DMA_CMR_SSP3_RX);
 
         udc2 = pxa270UdcInit(mem, ic, dma);
     }
 
-    i2s = socI2sInit(mem, ic, dma);
+    i2s = pxaI2sInit(mem, ic, dma);
 
     pwm[0] = pxaPwmInit(mem, PXA_PWM0_BASE);
     pwm[1] = pxaPwmInit(mem, PXA_PWM1_BASE);
@@ -245,7 +245,7 @@ uint32_t SocPXA::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
             return 1;
 
         case SCHEDULER_TASK_I2S:
-            socI2sPeriodic(i2s);
+            pxaI2sPeriodic(i2s);
             return 1;
 
         case SCHEDULER_TASK_PCM:
@@ -454,13 +454,13 @@ void SocPXA::SchedulePcmTask() {
 }
 
 void SocPXA::CycleBatch0() {
-    socDmaPeriodic(dma);
+    pxaDmaPeriodic(dma);
     socUartProcess(ffUart);
     if (hwUart) socUartProcess(hwUart);
     socUartProcess(stUart);
     socUartProcess(btUart);
     for (int i = 0; i < 3; i++) {
-        if (ssp[i]) socSspPeriodic(ssp[i]);
+        if (ssp[i]) pxaSspPeriodic(ssp[i]);
     }
     devicePeriodic(dev, DEVICE_PERIODIC_TIER0);
 }
@@ -468,10 +468,10 @@ void SocPXA::CycleBatch0() {
 bool SocPXA::Batch0Required() {
     if (!dev) return true;
 
-    if (socDmaTaskRequired(dma)) return true;
+    if (pxaDmaTaskRequired(dma)) return true;
 
     for (int i = 0; i < 3; i++) {
-        if (ssp[i] && socSspTaskRequired(ssp[i])) return true;
+        if (ssp[i] && pxaSspTaskRequired(ssp[i])) return true;
     }
 
     if (deviceTaskRequired(dev, DEVICE_PERIODIC_TIER0)) return true;

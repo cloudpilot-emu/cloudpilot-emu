@@ -30,7 +30,7 @@ struct UartFifo {
 };
 
 struct SocUart {
-    struct SocIc *ic;
+    struct PxaIc *ic;
     uint32_t baseAddr;
 
     struct Reschedule reschedule;
@@ -146,7 +146,7 @@ struct SocUart {
 static void socUartPrvRecalc(struct SocUart *uart);
 
 static void socUartPrvIrq(struct SocUart *uart, bool raise) {
-    socIcInt(uart->ic, uart->irq,
+    pxaIcInt(uart->ic, uart->irq,
              !(uart->MCR & UART_MCR_LOOP) && (uart->MCR & UART_MCR_OUT2) &&
                  raise /* only raise if ints are enabled */);
 }
@@ -461,7 +461,7 @@ void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF wri
     uart->callbackData = userData;
 }
 
-struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct SocIc *ic,
+struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct PxaIc *ic,
                             uint32_t baseAddr, uint8_t irq) {
     struct SocUart *uart = (struct SocUart *)malloc(sizeof(*uart));
 

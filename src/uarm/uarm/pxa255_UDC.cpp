@@ -15,8 +15,8 @@
 #define SAVESTATE_VERSION 0
 
 struct Pxa255Udc {
-    struct SocDma *dma;
-    struct SocIc *ic;
+    struct PxaDma *dma;
+    struct PxaIc *ic;
 
     uint32_t reg4;
 
@@ -91,7 +91,7 @@ static bool pxa255UdcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t siz
     return true;
 }
 
-struct Pxa255Udc *pxa255UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma) {
+struct Pxa255Udc *pxa255UdcInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma) {
     struct Pxa255Udc *udc = (struct Pxa255Udc *)malloc(sizeof(*udc));
 
     if (!udc) ERR("cannot alloc UDC");

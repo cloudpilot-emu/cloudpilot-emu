@@ -12,7 +12,7 @@
 #define PXA270_KPC_SIZE 0x4c
 
 struct PxaKpc {
-    struct SocIc *ic;
+    struct PxaIc *ic;
 
     // regs
     uint32_t kpc, kpmk, kpas, kpasmkp[4];
@@ -74,7 +74,7 @@ static void pxaKpcPrvIrqRecals(struct PxaKpc *kpc) {
     irq = irq || ((kpc->kpc & 0x00401800ul) == 0x00401800ul);
     irq = irq || ((kpc->kpc & 0x00000023ul) == 0x00000023ul);
 
-    socIcInt(kpc->ic, PXA_I_KEYPAD, irq);
+    pxaIcInt(kpc->ic, PXA_I_KEYPAD, irq);
 }
 
 static void pxaKpcPrvMatrixRecalc(struct PxaKpc *kpc, bool lastKeyChangeWasDown) {
@@ -231,7 +231,7 @@ static bool pxaKpcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-struct PxaKpc *pxaKpcInit(struct ArmMem *physMem, struct SocIc *ic) {
+struct PxaKpc *pxaKpcInit(struct ArmMem *physMem, struct PxaIc *ic) {
     struct PxaKpc *kpc = (struct PxaKpc *)malloc(sizeof(*kpc));
 
     if (!kpc) ERR("cannot alloc KPC");

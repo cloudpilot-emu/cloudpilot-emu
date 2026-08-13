@@ -11,7 +11,7 @@
 
 struct PxaMmc;
 
-struct PxaMmc* pxaMmcInit(struct ArmMem* physMem, struct SocIc* ic, struct SocDma* dma);
+struct PxaMmc* pxaMmcInit(struct ArmMem* physMem, struct PxaIc* ic, struct PxaDma* dma);
 
 void pxaMmcInsert(struct PxaMmc* mmc, struct VSD* vsd);  // NULL also acceptable
 

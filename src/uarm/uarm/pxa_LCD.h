@@ -5,13 +5,13 @@
 
 #include "CPU.h"
 #include "mem.h"
-#include "soc_IC.h"
+#include "pxa_IC.h"
 
 struct MemoryBuffer;
 struct PxaLcd;
 class SoC;
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, class SoC *soc, struct SocIc *ic,
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, class SoC *soc, struct PxaIc *ic,
                           struct MemoryBuffer *buffer, uint16_t width, uint16_t heigh);
 
 void pxaLcdResetPaletteBuffer(struct PxaLcd *lcd);

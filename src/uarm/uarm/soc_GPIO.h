@@ -5,7 +5,7 @@
 
 #include "CPU.h"
 #include "mem.h"
-#include "soc_IC.h"
+#include "pxa_IC.h"
 
 struct SocGpio;
 
@@ -25,7 +25,7 @@ enum SocGpioState {  // these values make it look like all HiZ, AFR, and nonexis
     SocGpioStateNoSuchGpio,
 };
 
-struct SocGpio* socGpioInit(struct ArmMem* physMem, struct SocIc* ic, uint_fast8_t socRev);
+struct SocGpio* socGpioInit(struct ArmMem* physMem, struct PxaIc* ic, uint_fast8_t socRev);
 
 // for external use :)
 enum SocGpioState socGpioGetState(struct SocGpio* gpio, uint_fast8_t gpioNum);

@@ -3,7 +3,10 @@
 #ifndef _PXA_IC_H_
 #define _PXA_IC_H_
 
-#include "soc_IC.h"
+#include <cstdint>
+
+#include "CPU.h"
+#include "mem.h"
 
 #define PXA_I_CIF 33  // PXA27x
 
@@ -43,10 +46,18 @@
 #define PXA_I_MSL 1       // PXA27x
 #define PXA_I_SSP3 0      // PXA27x
 
-template <typename T>
-void pxaIcSave(struct SocIc* ic, T& savestate);
+class SoC;
+struct PxaIc;
+
+struct PxaIc *pxaIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, class SoC *soc,
+                        uint_fast8_t socRev);
+
+void pxaIcInt(struct PxaIc *ic, uint_fast8_t intNum, bool raise);
 
 template <typename T>
-void pxaIcLoad(struct SocIc* ic, T& loader);
+void pxaIcSave(struct PxaIc *ic, T &savestate);
+
+template <typename T>
+void pxaIcLoad(struct PxaIc *ic, T &loader);
 
 #endif

@@ -16,8 +16,8 @@
 #define SAVESTATE_VERSION 0
 
 struct PxaMmc {
-    struct SocDma *dma;
-    struct SocIc *ic;
+    struct PxaDma *dma;
+    struct PxaIc *ic;
 
     uint32_t arg;
     uint16_t stat, readTo, blkLen, numBlks;
@@ -55,7 +55,7 @@ static void pxaMmcPrvIrqUpdate(struct PxaMmc *mmc) {
     // dma masks fifo irqs
     if (mmc->cmdat & 0x80) irqs &= ~0x60;
 
-    socIcInt(mmc->ic, PXA_I_MMC, !!irqs);
+    pxaIcInt(mmc->ic, PXA_I_MMC, !!irqs);
 }
 
 static void pxaMmcPrvRecalcIregAndFifo(struct PxaMmc *mmc) {
@@ -78,8 +78,8 @@ static void pxaMmcPrvRecalcIregAndFifo(struct PxaMmc *mmc) {
     }
 
     if (mmc->cmdat & 0x80) {
-        socDmaExternalReq(mmc->dma, DMA_CMR_MMC_RX, !!(mmc->iReg & 0x20));
-        socDmaExternalReq(mmc->dma, DMA_CMR_MMC_TX, !!(mmc->iReg & 0x40));
+        pxaDmaExternalReq(mmc->dma, DMA_CMR_MMC_RX, !!(mmc->iReg & 0x20));
+        pxaDmaExternalReq(mmc->dma, DMA_CMR_MMC_TX, !!(mmc->iReg & 0x40));
     }
 
     pxaMmcPrvIrqUpdate(mmc);
@@ -475,7 +475,7 @@ static bool pxaMmcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     return ret;
 }
 
-struct PxaMmc *pxaMmcInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma) {
+struct PxaMmc *pxaMmcInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma) {
     struct PxaMmc *mmc = (struct PxaMmc *)malloc(sizeof(*mmc));
 
     if (!mmc) ERR("cannot alloc MMC");

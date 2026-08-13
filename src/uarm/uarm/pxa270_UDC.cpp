@@ -18,8 +18,8 @@ struct Ep {
 };
 
 struct Pxa270Udc {
-    struct SocDma *dma;
-    struct SocIc *ic;
+    struct PxaDma *dma;
+    struct PxaIc *ic;
 
     struct Ep ep[24];
     uint32_t udccr, udcicr[2], udcisr[2], udcotgicr, udcotgisr, up2ocr;
@@ -151,7 +151,7 @@ static bool pxa270UdcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t siz
     return true;
 }
 
-struct Pxa270Udc *pxa270UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma) {
+struct Pxa270Udc *pxa270UdcInit(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma) {
     struct Pxa270Udc *udc = (struct Pxa270Udc *)malloc(sizeof(*udc));
 
     if (!udc) ERR("cannot alloc UDC");

@@ -6,11 +6,11 @@
 #include <cstdint>
 
 #include "mem.h"
-#include "soc_IC.h"
+#include "pxa_IC.h"
 
 struct PxaKpc;
 
-struct PxaKpc *pxaKpcInit(struct ArmMem *physMem, struct SocIc *ic);
+struct PxaKpc *pxaKpcInit(struct ArmMem *physMem, struct PxaIc *ic);
 
 // keep in mind that colums are out and rows are in
 void pxaKpcMatrixKeyChange(struct PxaKpc *kpc, uint_fast8_t row, uint_fast8_t col, bool isDown);

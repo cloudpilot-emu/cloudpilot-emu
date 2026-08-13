@@ -8,8 +8,8 @@
 
 #include "CPU.h"
 #include "mem.h"
-#include "soc_DMA.h"
-#include "soc_IC.h"
+#include "pxa_DMA.h"
+#include "pxa_IC.h"
 
 struct SocAC97;
 
@@ -26,7 +26,7 @@ typedef bool (*Ac97CodecRegW)(void *userData, uint32_t regAddr, uint16_t val);
 typedef bool (*Ac97CodecFifoR)(void *userData, uint32_t *regValP);
 typedef bool (*Ac97CodecFifoW)(void *userData, uint32_t val);
 
-struct SocAC97 *socAC97Init(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma);
+struct SocAC97 *socAC97Init(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma);
 void socAC97Periodic(struct SocAC97 *ac97);
 
 // client api
