@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "Defer.h"
-#include "SoC.h"
 #include "app_launcher.h"
 #include "audio_queue.h"
 #include "buffer.h"
@@ -16,6 +15,7 @@
 #include "encoding.h"
 #include "rom_info5.h"
 #include "sdcard.h"
+#include "soc_PXA.h"
 #include "system_state.h"
 
 using namespace std;
@@ -97,13 +97,13 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
         memset(nandStub.get(), 0xff, NAND_SIZE);
     }
 
-    soc = socInit(deviceType, ramSize, romData, romSize, nandData ? nandData : nandStub.get(),
-                  nandData ? nandSize : NAND_SIZE, 0, deviceGetSocRev());
+    soc = new SocPXA(deviceType, ramSize, romData, romSize, nandData ? nandData : nandStub.get(),
+                     nandData ? nandSize : NAND_SIZE, 0, deviceGetSocRev());
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
-    socSetAudioQueue(soc, audioQueue);
+    soc->SetAudioQueue(audioQueue);
 
-    Buffer memory = socGetMemoryData(soc);
+    Buffer memory = soc->GetMemoryData();
     if (memorySize > memory.size) {
         cerr << "ignoring invalid RAM snapshot" << endl;
 
@@ -112,20 +112,20 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
     }
     if (memoryData) memcpy(memory.data, memoryData, memorySize);
 
-    if (memoryData && !socLoad(soc, savestateSize, savestateData)) {
+    if (memoryData && !soc->Load(savestateSize, savestateData)) {
         cerr << "failed to restore savestate" << endl;
 
         savestateData = nullptr;
         savestateSize = 0;
     }
 
-    if (socSdInserted(soc)) {
-        if (!socSdRemount(soc)) {
+    if (soc->SdInserted()) {
+        if (!soc->SdRemount()) {
             cerr << "failed to remount SD card" << endl;
             sdCardReset();
         }
     } else if (!savestateData && sdCardInitialized())
-        socSdInsert(soc);
+        soc->SdInsert();
 
     mainLoop = make_unique<MainLoop>(soc);
     if (defaultMips > 0) mainLoop->SetCyclesPerSecondLimit(defaultMips * 1000000);
@@ -135,15 +135,15 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
 
 double Uarm::Cycle(uint64_t now) { return mainLoop->Cycle(now); }
 
-void* Uarm::GetFrame() { return socGetPendingFrame(soc); }
+void* Uarm::GetFrame() { return soc->GetPendingFrame(); }
 
-void Uarm::ResetFrame() { socResetPendingFrame(soc); }
+void Uarm::ResetFrame() { soc->ResetPendingFrame(); }
 
 uint32_t Uarm::GetTimesliceSizeUsec() { return mainLoop->GetTimesliceSizeUsec(); }
 
-void Uarm::PenDown(int x, int y) { socPenDown(soc, x, y); }
+void Uarm::PenDown(int x, int y) { soc->PenDown(x, y); }
 
-void Uarm::PenUp() { socPenUp(soc); }
+void Uarm::PenUp() { soc->PenUp(); }
 
 uint32_t Uarm::CurrentIps() { return mainLoop->GetCurrentIps(); }
 
@@ -157,9 +157,9 @@ void Uarm::SetCyclesPerSecondLimit(unsigned int cyclesPerSecondLimit) {
 
 uint64_t Uarm::GetTimestampUsec() { return timestampUsec(); }
 
-void Uarm::KeyDown(int key) { socKeyDown(soc, (enum KeyId)key); }
+void Uarm::KeyDown(int key) { soc->KeyDown((enum KeyId)key); }
 
-void Uarm::KeyUp(int key) { socKeyUp(soc, (enum KeyId)key); }
+void Uarm::KeyUp(int key) { soc->KeyUp((enum KeyId)key); }
 
 uint32_t Uarm::PendingSamples() { return audioQueuePendingSamples(audioQueue); }
 
@@ -172,23 +172,23 @@ uint32_t* Uarm::PopQueuedSamples() {
 
 uint32_t Uarm::GetSampleQueueSize() { return AUDIO_QUEUE_SIZE; }
 
-void Uarm::SetPcmOutputEnabled(bool enabled) { socSetPcmOutputEnabled(soc, enabled); }
+void Uarm::SetPcmOutputEnabled(bool enabled) { soc->SetPcmOutputEnabled(enabled); }
 
-void Uarm::SetPcmSuspended(bool suspended) { socSetPcmSuspended(soc, suspended); }
+void Uarm::SetPcmSuspended(bool suspended) { soc->SetPcmSuspended(suspended); }
 
-uint32_t Uarm::GetRomDataSize() { return socGetRomData(soc).size; }
+uint32_t Uarm::GetRomDataSize() { return soc->GetRomData().size; }
 
-void* Uarm::GetRomData() { return socGetRomData(soc).data; }
+void* Uarm::GetRomData() { return soc->GetRomData().data; }
 
-uint32_t Uarm::GetNandDataSize() { return socGetNandData(soc).size; }
+uint32_t Uarm::GetNandDataSize() { return soc->GetNandData().size; }
 
-void* Uarm::GetNandData() { return socGetNandData(soc).data; }
+void* Uarm::GetNandData() { return soc->GetNandData().data; }
 
-void* Uarm::GetNandDirtyPages() { return socGetNandDirtyPages(soc).data; }
+void* Uarm::GetNandDirtyPages() { return soc->GetNandDirtyPages().data; }
 
-bool Uarm::IsNandDirty() { return socIsNandDirty(soc); }
+bool Uarm::IsNandDirty() { return soc->IsNandDirty(); }
 
-void Uarm::SetNandDirty(bool isDirty) { socSetNandDirty(soc, isDirty); }
+void Uarm::SetNandDirty(bool isDirty) { soc->SetNandDirty(isDirty); }
 
 uint32_t Uarm::GetSdCardDataSize() { return sdCardData().size; }
 
@@ -200,25 +200,25 @@ bool Uarm::IsSdCardDirty() { return sdCardIsDirty(); }
 
 void Uarm::SetSdCardDirty(bool isDirty) { sdCardSetDirty(isDirty); }
 
-uint32_t Uarm::GetMemoryDataSize() { return socGetMemoryData(soc).size; }
+uint32_t Uarm::GetMemoryDataSize() { return soc->GetMemoryData().size; }
 
-void* Uarm::GetMemoryData() { return socGetMemoryData(soc).data; }
+void* Uarm::GetMemoryData() { return soc->GetMemoryData().data; }
 
-void* Uarm::GetMemoryDirtyPages() { return socGetMemoryDirtyPages(soc).data; }
+void* Uarm::GetMemoryDirtyPages() { return soc->GetMemoryDirtyPages().data; }
 
 uint32_t Uarm::GetDeviceType() { return static_cast<uint32_t>(deviceType); }
 
 bool Uarm::SdCardInsert(void* data, int length, const char* id) {
-    if (socSdInserted(soc)) return false;
+    if (soc->SdInserted()) return false;
 
     sdCardInitializeWithData(length / SD_SECTOR_SIZE, data, id);
-    socSdInsert(soc);
+    soc->SdInsert();
 
     return true;
 }
 
 void Uarm::SdCardEject() {
-    socSdEject(soc);
+    soc->SdEject();
     sdCardReset();
 }
 
@@ -226,47 +226,47 @@ bool Uarm::SdCardInitialized() { return ::sdCardInitialized(); }
 
 const char* Uarm::GetSdCardId() { return sdCardGetId(); }
 
-void Uarm::Reset() { socReset(soc); }
+void Uarm::Reset() { soc->Reset(); }
 
-void Uarm::Save() { socSave(soc); }
+void Uarm::Save() { soc->Save(); }
 
-uint32_t Uarm::GetSavestateSize() { return socGetSavestate(soc).size; }
+uint32_t Uarm::GetSavestateSize() { return soc->GetSavestate().size; }
 
-void* Uarm::GetSavestateData() { return socGetSavestate(soc).data; }
+void* Uarm::GetSavestateData() { return soc->GetSavestate().data; }
 
-bool Uarm::IsSdInserted() { return socSdInserted(soc); }
+bool Uarm::IsSdInserted() { return soc->SdInserted(); }
 
-uint32_t Uarm::GetRamSize() { return socGetRamSize(soc); }
+uint32_t Uarm::GetRamSize() { return soc->GetRamSize(); }
 
 void Uarm::JamKey(int key, uint32_t durationMsec) {
-    socJamKey(soc, static_cast<KeyId>(key), durationMsec);
+    soc->JamKey(static_cast<KeyId>(key), durationMsec);
 }
 
 uint32_t Uarm::InstallDatabase(uint32_t len, void* data) {
-    return dbInstallerInstall(socGetSyscallDispatch(soc), len, data);
+    return dbInstallerInstall(soc->GetSyscallDispatch(), len, data);
 }
 
-DbBackup* Uarm::NewDbBackup(int type) { return new DbBackup(socGetSyscallDispatch(soc), type); }
+DbBackup* Uarm::NewDbBackup(int type) { return new DbBackup(soc->GetSyscallDispatch(), type); }
 
-bool Uarm::IsUiInitialized() { return systemStateIsUiInitialized(socGetSystemState(soc)); }
+bool Uarm::IsUiInitialized() { return systemStateIsUiInitialized(soc->GetSystemState()); }
 
 bool Uarm::IsOsVersionSet() {
-    return systemStateGetOsVersion(socGetSystemState(soc)) != SYSTEM_STATE_OS_VERSION_UNDEFINED;
+    return systemStateGetOsVersion(soc->GetSystemState()) != SYSTEM_STATE_OS_VERSION_UNDEFINED;
 }
 
-uint32_t Uarm::GetOsVersion() { return systemStateGetOsVersion(socGetSystemState(soc)); }
+uint32_t Uarm::GetOsVersion() { return systemStateGetOsVersion(soc->GetSystemState()); }
 
-bool Uarm::IsLcdEnabled() { return socLcdEnabled(soc); }
+bool Uarm::IsLcdEnabled() { return soc->LcdEnabled(); }
 
 bool Uarm::LaunchAppByName(const char* name) {
     string encodedName = Utf8ToIsolatin1(name);
     if (encodedName.length() > 31) return false;
 
-    return launchAppByName(socGetSyscallDispatch(soc), encodedName.c_str());
+    return launchAppByName(soc->GetSyscallDispatch(), encodedName.c_str());
 }
 
 bool Uarm::LaunchAppByDbHeader(void* header, int len) {
     if (len < 32 || strnlen(static_cast<const char*>(header), 32) == 32) return false;
 
-    return launchAppByName(socGetSyscallDispatch(soc), static_cast<const char*>(header));
+    return launchAppByName(soc->GetSyscallDispatch(), static_cast<const char*>(header));
 }

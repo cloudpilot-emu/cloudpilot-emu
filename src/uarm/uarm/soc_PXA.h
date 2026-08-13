@@ -43,10 +43,11 @@ class SocPXA : public SocGeneric<SocPXA> {
     SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const uint32_t romSize,
            uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev);
 
-    void Reset() override;
-
     uint32_t *GetPendingFrame() override;
     void ResetPendingFrame() override;
+    enum DeviceType5 GetDeviceType() override;
+    void SuspendTimerInterrupts(bool suspendInterrupts) override;
+    bool LcdEnabled() override;
 
     uint32_t DispatchTicks(uint32_t clientType, uint32_t batchedTicks);
 
@@ -57,8 +58,12 @@ class SocPXA : public SocGeneric<SocPXA> {
     void OnSetAudioQueue(struct AudioQueue *audioQueue) override;
     void OnSetPcmOutputEnabled() override;
     void OnSetPcmSuspended() override;
-    void OnTouch(int x, int y) override;
-    void OnEngageKey(KeyId key, bool down) override;
+    void OnSdInsert() override;
+    void OnSdEject() override;
+
+    void OnTouch(int x, int y);
+    void OnEngageKey(KeyId key, bool down);
+    void OnReset();
 
     void OnLoad(SavestateLoader<ChunkType> &loader);
 

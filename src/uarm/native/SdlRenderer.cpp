@@ -19,7 +19,7 @@ namespace {
 
 SdlRenderer::SdlRenderer(SDL_Window* window, SoC* soc, int scale, Rotation rotation)
     : window(window), soc(soc), scale(scale), rotation(rotation) {
-    deviceGetDisplayConfiguration(socGetDeviceType(soc), &displayConfiguration);
+    deviceGetDisplayConfiguration(soc->GetDeviceType(), &displayConfiguration);
 
     int windowHeight, windowWidth;
     SDL_GetWindowSize(window, &windowWidth, &windowHeight);
@@ -59,9 +59,9 @@ SdlRenderer::~SdlRenderer() {
 
 void SdlRenderer::Draw(bool forceRedraw) {
     const bool wasLcdEnabled = lcdEnabled;
-    lcdEnabled = socLcdEnabled(soc);
+    lcdEnabled = soc->LcdEnabled();
 
-    const uint32_t* frame = socGetPendingFrame(soc);
+    const uint32_t* frame = soc->GetPendingFrame();
     if (!frame && !forceRedraw && lcdEnabled == wasLcdEnabled) return;
 
     if (frame) {
@@ -134,7 +134,7 @@ void SdlRenderer::Draw(bool forceRedraw) {
 
     SDL_RenderPresent(renderer);
 
-    socResetPendingFrame(soc);
+    soc->ResetPendingFrame();
 }
 
 void SdlRenderer::DrawSilkscreen() {

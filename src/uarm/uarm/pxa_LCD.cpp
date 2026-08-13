@@ -587,9 +587,9 @@ void pxaLcdLoad(struct PxaLcd *lcd, T &loader) {
 
     if (lcd->framebufferTrackingActive) {
         lcd->framebufferTrackingActive =
-            socSetFramebuffer(lcd->soc, lcd->framebufferBase, lcd->framebufferSize);
+            lcd->soc->SetFramebuffer(lcd->framebufferBase, lcd->framebufferSize);
     } else {
-        socSetFramebuffer(lcd->soc, 0, 0);
+        lcd->soc->SetFramebuffer(0, 0);
     }
 }
 

@@ -2,6 +2,7 @@
 #define _SOC_GENERIC_IMPL_H_
 
 // clang-format off
+#include "MMU.h"
 #include "soc_generic.h"
 // clang-format on
 
@@ -53,6 +54,37 @@ bool SocGeneric<T>::ExecuteInjected(uint64_t maxCycles, uint64_t cyclesPerSecond
     injectedTimeNsec += (cycles * 1000000) / (cyclesPerSecond / 1000);
 
     return cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_INJECTED_CALL_DONE;
+}
+
+template <class T>
+void SocGeneric<T>::Reset() {
+    const bool pcmOutputEnabled = pcmEnabled;
+    const bool cardInserted = this->cardInserted;
+    const uint64_t accumulatedTime = scheduler->GetTime();
+
+    pcmSuspended = false;
+
+    SavestateLoader<ChunkType> loader;
+    loader.Load(powerOnState->GetBuffer(), powerOnState->GetSize(), static_cast<T&>(*this));
+
+    if (cardInserted) SdInsert();
+
+    SetPcmOutputEnabled(pcmOutputEnabled);
+
+    if (jammedKey != keyInvalid && releaseJammedKeyAt > accumulatedTime) {
+        JamKey(jammedKey, (releaseJammedKeyAt - accumulatedTime) / 1_msec);
+    } else {
+        jammedKey = keyInvalid;
+    }
+
+    static_cast<T&>(*this).OnReset();
+}
+
+template <class T>
+void SocGeneric<T>::DumpMMU() {
+    if constexpr (T::MEMORY_SYSTEM_KIND == ARM_MEMORY_SYSTEM_MMU) {
+        mmuDump(cpuGetMMU(cpu));
+    }
 }
 
 template <class T>
@@ -162,8 +194,64 @@ uint64_t SocGeneric<T>::RunUntil(uint64_t maxCycles, uint64_t cyclesPerSecond) {
 }
 
 template <class T>
+void SocGeneric<T>::PumpEventQueues() {
+    eventQueueTicks++;
+
+    PumpPenEventQueue();
+    PumpKeyEventQueue();
+}
+
+template <class T>
+void SocGeneric<T>::PumpPenEventQueue() {
+    if (penEventQueue->GetSize() == 0) return;
+
+    if (penDown && !penEventQueue->Peek().penDown &&
+        eventQueueTicks - eventQueueTicksAtPenDown < MIN_EVENT_QUEUE_TICKS_BEFORE_PEN_UP) {
+        return;
+    }
+
+    PenEvent evt(penEventQueue->Pop());
+
+    if (evt.penDown) {
+        while (penEventQueue->GetSize() > 0 && penEventQueue->Peek().penDown) {
+            evt = penEventQueue->Pop();
+        }
+    }
+
+    if (evt.penDown || penDown) {
+        if (evt.penDown && !penDown) eventQueueTicksAtPenDown = eventQueueTicks;
+        penDown = evt.penDown;
+
+        static_cast<T&>(*this).OnTouch(evt.x, evt.y);
+    }
+}
+
+template <class T>
+void SocGeneric<T>::PumpKeyEventQueue() {
+    if (jammedKey != keyInvalid && scheduler->GetTime() >= releaseJammedKeyAt) {
+        static_cast<T&>(*this).OnEngageKey(jammedKey, false);
+        jammedKey = keyInvalid;
+    }
+
+    if (keyEventQueue->GetSize() > 0) {
+        KeyEvent evt(keyEventQueue->Pop());
+        if (evt.key == jammedKey) return;
+
+        static_cast<T&>(*this).OnEngageKey(evt.key, evt.keyDown);
+    }
+}
+
+template <class T>
 uint64_t SocGeneric<T>::GetTime() {
     return scheduler->GetTime();
+}
+
+template <class T>
+void SocGeneric<T>::JamKey(enum KeyId key, uint32_t durationMsec) {
+    jammedKey = key;
+    releaseJammedKeyAt = scheduler->GetTime() + durationMsec * 1_msec;
+
+    static_cast<T&>(*this).OnEngageKey(jammedKey, true);
 }
 
 #endif  // _SOC_GENERIC_IMPL_H_

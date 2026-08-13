@@ -1,5 +1,5 @@
 // clang-format off
-#include "soc_generic_impl.h"
+#include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
 
 #include "soc_PXA.h"
@@ -217,15 +217,17 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
     SdEject();
 }
 
-void SocPXA::Reset() {
-    // CSTODO implement
-
-    SocGeneric<SocPXA>::Reset();
-}
-
 uint32_t *SocPXA::GetPendingFrame() { return pxaLcdGetPendingFrame(lcd); }
 
 void SocPXA::ResetPendingFrame() { return pxaLcdResetPendingFrame(lcd); }
+
+enum DeviceType5 SocPXA::GetDeviceType() { return deviceGetType(dev); }
+
+void SocPXA::SuspendTimerInterrupts(bool suspendInterrupts) {
+    pxaTimrSuspendInterrupts(tmr, suspendInterrupts);
+}
+
+bool SocPXA::LcdEnabled() { return pxaLcdIsEnabled(lcd); }
 
 uint32_t SocPXA::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     switch (clientType) {
@@ -266,6 +268,7 @@ uint32_t SocPXA::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
 void SocPXA::OnSetFramebufferDirty() { pxaLcdSetFramebufferDirty(lcd); }
 
 void SocPXA::OnSleep() {
+    printf("onsleep\n");
     scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, pxaTimrTicksToNextInterrupt(tmr));
 }
 
@@ -284,11 +287,26 @@ void SocPXA::OnSetPcmSuspended() {
     if (!pcmSuspended) cpuSetSlowPath(cpu, SLOW_PATH_REASON_RESCHEDULE);
 }
 
+void SocPXA::OnSdInsert() {
+    pxaMmcInsert(mmc, vSD);
+    deviceSetSdCardInserted(dev, true);
+}
+
+void SocPXA::OnSdEject() {
+    pxaMmcInsert(mmc, nullptr);
+    deviceSetSdCardInserted(dev, false);
+}
+
 void SocPXA::OnTouch(int x, int y) { deviceTouch(dev, x, y); }
 
 void SocPXA::OnEngageKey(KeyId key, bool down) {
     deviceKey(dev, key, down);
     keypadKeyEvt(kp, key, down);
+}
+
+void SocPXA::OnReset() {
+    pxaLcdResetPaletteBuffer(lcd);
+    nandResetPageBuffer(nand);
 }
 
 void SocPXA::OnLoad(SavestateLoader<ChunkType> &loader) {
@@ -464,6 +482,24 @@ bool SocPXA::Batch0Required() {
     if (hwUart && socUartTaskRequired(hwUart)) return true;
 
     return false;
+}
+
+void SocPXA::RescheduleCB(void *ctx, uint32_t task) {
+    auto *self = reinterpret_cast<SocPXA *>(ctx);
+
+    switch (task) {
+        case RESCHEDULE_TASK_DEVICE_TIER0:
+        case RESCHEDULE_TASK_SSP:
+        case RESCHEDULE_TASK_UART:
+        case RESCHEDULE_TASK_DMA:
+            self->scheduler->RescheduleTask(SCHEDULER_TASK_AUX_1, 1);
+            cpuSetSlowPath(self->cpu, SLOW_PATH_REASON_RESCHEDULE);
+            break;
+    }
+}
+
+uint64_t SocPXA::GetTimeCB(void *ctx) {
+    return reinterpret_cast<SocPXA *>(ctx)->scheduler->GetTime();
 }
 
 template void SocGeneric<SocPXA>::Save<Savestate<ChunkType>>(Savestate<ChunkType> &savestate);

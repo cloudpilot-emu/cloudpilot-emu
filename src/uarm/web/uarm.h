@@ -9,7 +9,7 @@
 #include "MainLoop.h"
 #include "device.h"
 
-struct SoC;
+class SoC;
 struct AudioQueue;
 class DbBackup;
 

@@ -18,7 +18,7 @@ SdlAudioDriver::SdlAudioDriver(SoC* soc, AudioQueue* audioQueue)
 void SdlAudioDriver::Start() {
     if (initialized) {
         SDL_PauseAudioDevice(audioDevice, 0);
-        socSetPcmOutputEnabled(soc, true);
+        soc->SetPcmOutputEnabled(true);
 
         return;
     }
@@ -43,7 +43,7 @@ void SdlAudioDriver::Start() {
         std::cout << "audio running, period size " << audioSpecActual.samples << std::endl;
     }
 
-    socSetPcmOutputEnabled(soc, true);
+    soc->SetPcmOutputEnabled(true);
     SDL_PauseAudioDevice(audioDevice, 0);
 
     bufferThresholdStart = audioSpecActual.samples;
@@ -57,7 +57,7 @@ void SdlAudioDriver::Start() {
 void SdlAudioDriver::Pause() {
     if (!initialized) return;
 
-    socSetPcmOutputEnabled(soc, false);
+    soc->SetPcmOutputEnabled(false);
     SDL_PauseAudioDevice(audioDevice, 1);
 }
 

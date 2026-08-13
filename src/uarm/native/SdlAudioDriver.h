@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-struct SoC;
+class SoC;
 struct AudioQueue;
 
 class SdlAudioDriver {

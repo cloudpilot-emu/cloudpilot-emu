@@ -38,14 +38,14 @@ bool ramAccessF(void* userData, uint32_t pa, void* bufP) {
         switch (size) {
             case 1:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart)
-                    socSetFramebufferDirty(ram->soc);
+                    ram->soc->SetFramebufferDirty();
 
                 *((uint8_t*)addr) = *(uint8_t*)bufP;  // our memory system is little-endian
                 break;
 
             case 2:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_2)
-                    socSetFramebufferDirty(ram->soc);
+                    ram->soc->SetFramebufferDirty();
 
                 *((uint16_t*)addr) =
                     htole16(*(uint16_t*)bufP);  // our memory system is little-endian
@@ -53,14 +53,14 @@ bool ramAccessF(void* userData, uint32_t pa, void* bufP) {
 
             case 4:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_4)
-                    socSetFramebufferDirty(ram->soc);
+                    ram->soc->SetFramebufferDirty();
 
                 *((uint32_t*)addr) = htole32(*(uint32_t*)bufP);
                 break;
 
             case 64:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_64)
-                    socSetFramebufferDirty(ram->soc);
+                    ram->soc->SetFramebufferDirty();
 
                 if (offset & 0x3f) MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset + 0x3f);
 
@@ -76,7 +76,7 @@ bool ramAccessF(void* userData, uint32_t pa, void* bufP) {
 
             case 32:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_32)
-                    socSetFramebufferDirty(ram->soc);
+                    ram->soc->SetFramebufferDirty();
 
                 if (offset & 0x1f) MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset + 0x1f);
 
@@ -88,7 +88,7 @@ bool ramAccessF(void* userData, uint32_t pa, void* bufP) {
 
             case 16:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_16)
-                    socSetFramebufferDirty(ram->soc);
+                    ram->soc->SetFramebufferDirty();
 
                 if (offset & 0x0f) MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset + 0x0f);
 
@@ -98,7 +98,7 @@ bool ramAccessF(void* userData, uint32_t pa, void* bufP) {
 
             case 8:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_8)
-                    socSetFramebufferDirty(ram->soc);
+                    ram->soc->SetFramebufferDirty();
 
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 break;

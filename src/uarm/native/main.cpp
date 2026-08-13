@@ -1,3 +1,4 @@
+#include "soc_PXA.h"
 #pragma GCC diagnostic ignored "-Wmultichar"
 
 #include <SDL.h>
@@ -21,7 +22,6 @@
 #include "SdlAudioDriver.h"
 #include "SdlEventHandler.h"
 #include "SdlRenderer.h"
-#include "SoC.h"
 #include "argparse.h"
 #include "audio_queue.h"
 #include "buffer.h"
@@ -31,6 +31,7 @@
 #include "rom_info5.h"
 #include "sdcard.h"
 #include "session/session_file5.h"
+#include "soc_PXA.h"
 
 using namespace std;
 
@@ -212,37 +213,37 @@ namespace {
             sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release(), key.c_str());
         }
 
-        SoC* soc = socInit(romInfo.GetDeviceType(), ramSize, nor.data, nor.size,
-                           reinterpret_cast<uint8_t*>(nand.data), nand.size,
-                           options.gdbPort.value_or(0), deviceGetSocRev());
+        SoC* soc = new SocPXA(romInfo.GetDeviceType(), ramSize, nor.data, nor.size,
+                              reinterpret_cast<uint8_t*>(nand.data), nand.size,
+                              options.gdbPort.value_or(0), deviceGetSocRev());
 
-        if (memory.data && memory.size > socGetMemoryData(soc).size) {
+        if (memory.data && memory.size > soc->GetMemoryData().size) {
             cerr << "RAM size mismatch" << endl;
             return false;
         }
 
         if (memory.data) {
-            memcpy(socGetMemoryData(soc).data, memory.data, memory.size);
+            memcpy(soc->GetMemoryData().data, memory.data, memory.size);
             free(memory.data);
         }
 
-        if (!socLoad(soc, savestate.size, savestate.data)) {
+        if (!soc->Load(savestate.size, savestate.data)) {
             cerr << "failed to restore savestate" << endl;
         }
 
         if (savestate.data) free(savestate.data);
 
-        if (socSdInserted(soc)) {
-            if (!socSdRemount(soc)) {
+        if (soc->SdInserted()) {
+            if (!soc->SdRemount()) {
                 cerr << "failed to remount SD card" << endl;
                 sdCardReset();
             }
         } else if (sdCardInitialized()) {
-            socSdInsert(soc);
+            soc->SdInsert();
         }
 
         AudioQueue* audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
-        socSetAudioQueue(soc, audioQueue);
+        soc->SetAudioQueue(audioQueue);
 
         MainLoop mainLoop(soc);
         mainLoop.SetCyclesPerSecondLimit(options.mips * 1000000);
@@ -275,7 +276,7 @@ namespace {
         while (true) {
             uint64_t now = timestampUsec();
 
-            if (!options.disableAudio) socSetPcmSuspended(soc, audioDriver.GetAudioBackpressure());
+            if (!options.disableAudio) soc->SetPcmSuspended(audioDriver.GetAudioBackpressure());
 
             mainLoop.Cycle(now);
 
@@ -314,7 +315,7 @@ namespace {
                 sdlRenderer = make_unique<SdlRenderer>(window, soc, scale, rotation);
                 sdlEventHandler.SetRotation(rotation);
 
-                socSetFramebufferDirty(soc);
+                soc->SetFramebufferDirty();
             }
 
             if (timesliceRemaining > 10) usleep(timesliceRemaining);

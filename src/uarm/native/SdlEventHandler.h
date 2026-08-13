@@ -7,8 +7,8 @@
 
 class SdlEventHandler {
    public:
-    SdlEventHandler(struct SoC* soc, int scale,
-                    DeviceDisplayConfiguration& deviceDisplayConfiguration, Rotation rotation);
+    SdlEventHandler(SoC* soc, int scale, DeviceDisplayConfiguration& deviceDisplayConfiguration,
+                    Rotation rotation);
 
     void HandleEvents();
 
@@ -23,7 +23,7 @@ class SdlEventHandler {
     int RotateY(int x, int y);
 
    private:
-    struct SoC* soc;
+    SoC* soc;
 
     bool penDown{false};
     int scale{1};

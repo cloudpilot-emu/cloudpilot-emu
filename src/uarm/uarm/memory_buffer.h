@@ -20,7 +20,7 @@ struct MemoryBuffer {
     bool isSubBuffer{false};
 };
 
-bool memoryBufferValid(struct MemoryBuffer* memoryBuffer) { return memoryBuffer->buffer; }
+bool memoryBufferValid(struct MemoryBuffer* memoryBuffer);
 
 bool memoryBufferAllocate(struct MemoryBuffer* memoryBuffer, size_t size);
 

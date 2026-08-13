@@ -73,7 +73,7 @@ namespace {
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
-        socSdEject(ctx->soc);
+        ctx->soc->SdEject();
         sdCardReset();
     }
 
@@ -102,27 +102,27 @@ namespace {
         string key = md5(data.get(), len);
 
         sdCardInitializeWithData(len / SD_SECTOR_SIZE, data.release(), key.c_str());
-        socSdInsert(ctx->soc);
+        ctx->soc->SdInsert();
     }
 
     void CmdReset(vector<string> args, cli::CommandEnvironment& env, void* context) {
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
-        socReset(ctx->soc);
+        ctx->soc->Reset();
     }
 
     void CmdResetNoExtensions(vector<string> args, cli::CommandEnvironment& env, void* context) {
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
-        socJamKey(ctx->soc, keyIdUp, 2000);
-        socReset(ctx->soc);
+        ctx->soc->JamKey(keyIdUp, 2000);
+        ctx->soc->Reset();
     }
 
     void CmdResetHard(vector<string> args, cli::CommandEnvironment& env, void* context) {
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
-        socJamKey(ctx->soc, keyIdPower, 2000);
-        socReset(ctx->soc);
+        ctx->soc->JamKey(keyIdPower, 2000);
+        ctx->soc->Reset();
     }
 
     void CmdRotate(vector<string> args, cli::CommandEnvironment& env, void* context) {
@@ -141,21 +141,21 @@ namespace {
             sdCardRekey(key.c_str());
         }
 
-        if (!socSave(ctx->soc)) {
+        if (!ctx->soc->Save()) {
             cout << "failed to save state" << endl;
             return;
         }
 
         SessionFile5 sessionFile;
 
-        const Buffer rom = socGetRomData(ctx->soc);
-        const Buffer nand = socGetNandData(ctx->soc);
-        const Buffer memory = socGetMemoryData(ctx->soc);
-        const Buffer savestate = socGetSavestate(ctx->soc);
+        const Buffer rom = ctx->soc->GetRomData();
+        const Buffer nand = ctx->soc->GetNandData();
+        const Buffer memory = ctx->soc->GetMemoryData();
+        const Buffer savestate = ctx->soc->GetSavestate();
         const Buffer sd = sdCardData();
 
-        sessionFile.SetDeviceId(socGetDeviceType(ctx->soc))
-            .SetRamSize(socGetRamSize(ctx->soc))
+        sessionFile.SetDeviceId(ctx->soc->GetDeviceType())
+            .SetRamSize(ctx->soc->GetRamSize())
             .SetNor(rom.size, reinterpret_cast<uint8_t*>(rom.data))
             .SetNand(nand.size, reinterpret_cast<uint8_t*>(nand.data))
             .SetMemory(memory.size, reinterpret_cast<uint8_t*>(memory.data))
@@ -204,13 +204,13 @@ namespace {
         if (args.size() != 0) return env.PrintUsage();
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
-        socDumpMMU(ctx->soc);
+        ctx->soc->DumpMMU();
     }
 
     void CmdOsVersion(vector<string> args, cli::CommandEnvironment& env, void* context) {
         if (args.size() != 0) return env.PrintUsage();
         auto ctx = reinterpret_cast<commands::Context*>(context);
-        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+        SyscallDispatch* sd = ctx->soc->GetSyscallDispatch();
 
         if (!syscallDispatchM68kSupport(sd)) {
             cout << "m68k syscalls not supported" << endl;
@@ -251,7 +251,7 @@ namespace {
         }
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
-        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+        SyscallDispatch* sd = ctx->soc->GetSyscallDispatch();
 
         if (!syscallDispatchM68kSupport(sd)) {
             cout << "m68k syscalls not supported" << endl;
@@ -278,7 +278,7 @@ namespace {
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
-        const auto result = dbInstallerInstall(socGetSyscallDispatch(ctx->soc), len, data.get());
+        const auto result = dbInstallerInstall(ctx->soc->GetSyscallDispatch(), len, data.get());
 
         switch (result) {
             case DB_INSTALL_RESULT_NEEDS_RESET:
@@ -322,7 +322,7 @@ namespace {
     void CmdDbList(vector<string> args, cli::CommandEnvironment& env, void* context) {
         if (args.size() != 0) return env.PrintUsage();
         auto ctx = reinterpret_cast<commands::Context*>(context);
-        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+        SyscallDispatch* sd = ctx->soc->GetSyscallDispatch();
 
         DbMetadataList metadataList;
         if (!dbListGet(sd, metadataList)) return;
@@ -346,7 +346,7 @@ namespace {
         if (args.size() != 1) return env.PrintUsage();
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
-        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+        SyscallDispatch* sd = ctx->soc->GetSyscallDispatch();
 
         DbBackup backup(sd, type);
 
@@ -396,7 +396,7 @@ namespace {
         if (args.size() != 1) return env.PrintUsage();
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
-        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+        SyscallDispatch* sd = ctx->soc->GetSyscallDispatch();
 
         launchAppByName(sd, args[0].c_str());
     }

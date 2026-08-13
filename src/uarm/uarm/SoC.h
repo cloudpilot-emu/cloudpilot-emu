@@ -6,7 +6,6 @@
 #include <cstdint>
 
 #include "buffer.h"
-#include "cputil.h"
 #include "device_type5.h"
 #include "keys.h"
 #include "memory_buffer.h"
@@ -30,7 +29,7 @@ struct PatchContext;
 
 class SoC {
    public:
-    virtual void Reset();
+    virtual void Reset() = 0;
 
     virtual uint64_t Run(uint64_t maxCycles, uint64_t cyclesPerSecond) = 0;
     virtual bool RunToPaceSyscall(uint16_t syscall, uint64_t maxCycles,
@@ -39,9 +38,6 @@ class SoC {
 
     uint64_t GetInjectedTimeNsec() { return injectedTimeNsec; }
     void ResetInjectedTimeNsec() { injectedTimeNsec = 0; }
-
-    virtual uint32_t *GetPendingFrame() = 0;
-    virtual void ResetPendingFrame() = 0;
 
     void KeyDown(enum KeyId key);
     void KeyUp(enum KeyId key);
@@ -76,34 +72,40 @@ class SoC {
     void SdInsert();
     bool SdRemount();
     void SdEject();
-    bool SdInserted();
+    bool SdInserted() { return cardInserted; }
 
     virtual void DumpMMU() = 0;
 
-    struct ArmCpu *GetCpu();
-    struct SyscallDispatch *GetSyscallDispatch();
-    uint32_t GetRamSize();
-    struct NAND *GetNand();
-    struct SystemState *GetSystemState();
-    virtual enum DeviceType5 GetDeviceType() = 0;
+    struct ArmCpu *GetCpu() { return cpu; }
+    struct SyscallDispatch *GetSyscallDispatch() { return syscallDispatch; };
+    uint32_t GetRamSize() { return ramSize; };
+    struct NAND *GetNand() { return nand; };
+    struct SystemState *GetSystemState() { return systemState; };
 
-    void JamKey(enum KeyId key, uint32_t durationMsec);
-    virtual void SuspendTimerInterrupts(bool suspendInterrupts) = 0;
+    virtual void JamKey(enum KeyId key, uint32_t durationMsec) = 0;
 
     bool IsPacePatched();
+    virtual uint64_t GetTime() = 0;
+
+    // Actual SoC needs to implement those, the other virtuals are taken
+    // care of in soc_generic.h
+    virtual uint32_t *GetPendingFrame() = 0;
+    virtual void ResetPendingFrame() = 0;
+    virtual enum DeviceType5 GetDeviceType() = 0;
+    virtual void SuspendTimerInterrupts(bool suspendInterrupts) = 0;
     virtual bool LcdEnabled() = 0;
 
    protected:
+    // Actual SoC needs to implement those, the other virtuals are taken
+    // care of in soc_generic.h
     virtual void OnSetFramebufferDirty() = 0;
     virtual void OnSleep() = 0;
     virtual void OnWakeup() = 0;
     virtual void OnSetAudioQueue(struct AudioQueue *audioQueue) = 0;
     virtual void OnSetPcmOutputEnabled() = 0;
     virtual void OnSetPcmSuspended() = 0;
-    virtual void OnTouch(int x, int y) = 0;
-    virtual void OnEngageKey(KeyId key, bool down) = 0;
-
-    virtual uint64_t GetTime() = 0;
+    virtual void OnSdInsert() = 0;
+    virtual void OnSdEject() = 0;
 
    protected:
     struct PenEvent {
@@ -124,8 +126,6 @@ class SoC {
 
    protected:
     SoC();
-
-    void PumpEventQueues();
 
    protected:
     ArmRom *rom{nullptr};
@@ -168,10 +168,6 @@ class SoC {
 
     uint32_t ramBase{0};
     uint32_t ramSize{0};
-
-   private:
-    void PumpPenEventQueue();
-    void PumpKeyEventQueue();
 
    private:
     SoC(const SoC &) = delete;

@@ -43,7 +43,7 @@ namespace {
     }
 }  // namespace
 
-SdlEventHandler::SdlEventHandler(struct SoC* soc, int scale,
+SdlEventHandler::SdlEventHandler(SoC* soc, int scale,
                                  DeviceDisplayConfiguration& deviceDisplayConfiguration,
                                  Rotation rotation)
     : soc(soc), scale(scale), rotation(rotation) {
@@ -63,35 +63,35 @@ void SdlEventHandler::HandleEvents() {
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button != SDL_BUTTON_LEFT) break;
                 penDown = true;
-                socPenDown(soc, RotateX(event.button.x, event.button.y) / scale,
-                           RotateY(event.button.x, event.button.y) / scale);
+                soc->PenDown(RotateX(event.button.x, event.button.y) / scale,
+                             RotateY(event.button.x, event.button.y) / scale);
 
                 break;
 
             case SDL_MOUSEBUTTONUP:
                 if (event.button.button != SDL_BUTTON_LEFT) break;
                 penDown = false;
-                socPenUp(soc);
+                soc->PenUp();
 
                 break;
 
             case SDL_MOUSEMOTION:
                 if (!penDown) break;
 
-                socPenDown(soc, RotateX(event.motion.x, event.motion.y) / scale,
-                           RotateY(event.motion.x, event.motion.y) / scale);
+                soc->PenDown(RotateX(event.motion.x, event.motion.y) / scale,
+                             RotateY(event.motion.x, event.motion.y) / scale);
 
                 break;
 
             case SDL_KEYDOWN: {
                 enum KeyId key = mapKey(event.key.keysym.sym);
-                if (key) socKeyDown(soc, key);
+                if (key) soc->KeyDown(key);
                 break;
             }
 
             case SDL_KEYUP: {
                 enum KeyId key = mapKey(event.key.keysym.sym);
-                if (key) socKeyUp(soc, key);
+                if (key) soc->KeyUp(key);
                 break;
             }
 

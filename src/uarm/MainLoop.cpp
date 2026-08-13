@@ -37,7 +37,7 @@ MainLoop::MainLoop(SoC* soc)
 
 double MainLoop::Cycle(uint64_t now) {
     // virtualTimeUsec += static_cast<double>(socGetInjectedTimeNsec(soc)) / 1000;
-    socResetInjectedTimeNsec(soc);
+    soc->ResetInjectedTimeNsec();
 
     double deltaUsec = now - virtualTimeUsec;
     if (deltaUsec < 0) return 0;
@@ -59,7 +59,7 @@ double MainLoop::Cycle(uint64_t now) {
     double cyclesPerSecond = CalculateCyclesPerSecond(
         deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC ? (maxLoad - MAX_LOAD_CATCHUP_MARGIN) : maxLoad);
     const uint64_t cyclesEmulated =
-        socRun(soc, deltaUsec * cyclesPerSecond / 1E6, round(cyclesPerSecond));
+        soc->Run(deltaUsec * cyclesPerSecond / 1E6, round(cyclesPerSecond));
 
     const double slizeSizeSeconds = cyclesEmulated / cyclesPerSecond;
 

@@ -12,7 +12,6 @@
 #include "vSD.h"
 
 #define EVENT_QUEUE_CAPACITY 64
-#define MIN_EVENT_QUEUE_TICKS_BEFORE_PEN_UP 2
 
 using namespace std;
 
@@ -21,13 +20,6 @@ SoC::PenEvent SoC::PenEvent::PenUp() { return {.penDown = false, .x = -1, .y = -
 
 SoC::KeyEvent SoC::KeyEvent::KeyDown(enum KeyId key) { return {.keyDown = true, .key = key}; }
 SoC::KeyEvent SoC::KeyEvent::KeyUp(enum KeyId key) { return {.keyDown = false, .key = key}; }
-
-void SoC::Reset() {
-    penEventQueue->Clear();
-    keyEventQueue->Clear();
-
-    SetFramebufferDirty();
-}
 
 SoC::SoC()
     : savestate(make_unique<Savestate<ChunkType>>()),
@@ -41,51 +33,6 @@ SoC::SoC()
     systemState = createSystemState();
 
     vSD = vsdInit(sdCardRead, sdCardWrite, 0);
-}
-
-void SoC::PumpEventQueues() {
-    eventQueueTicks++;
-
-    PumpPenEventQueue();
-    PumpKeyEventQueue();
-}
-
-void SoC::PumpPenEventQueue() {
-    if (penEventQueue->GetSize() == 0) return;
-
-    if (penDown && !penEventQueue->Peek().penDown &&
-        eventQueueTicks - eventQueueTicksAtPenDown < MIN_EVENT_QUEUE_TICKS_BEFORE_PEN_UP) {
-        return;
-    }
-
-    PenEvent evt(penEventQueue->Pop());
-
-    if (evt.penDown) {
-        while (penEventQueue->GetSize() > 0 && penEventQueue->Peek().penDown) {
-            evt = penEventQueue->Pop();
-        }
-    }
-
-    if (evt.penDown || penDown) {
-        if (evt.penDown && !penDown) eventQueueTicksAtPenDown = eventQueueTicks;
-        penDown = evt.penDown;
-
-        OnTouch(evt.x, evt.y);
-    }
-}
-
-void SoC::PumpKeyEventQueue() {
-    if (jammedKey != keyInvalid && GetTime() >= releaseJammedKeyAt) {
-        OnEngageKey(jammedKey, false);
-        jammedKey = keyInvalid;
-    }
-
-    if (keyEventQueue->GetSize() > 0) {
-        KeyEvent evt(keyEventQueue->Pop());
-        if (evt.key == jammedKey) return;
-
-        OnEngageKey(evt.key, evt.keyDown);
-    }
 }
 
 void SoC::KeyDown(enum KeyId key) { keyEventQueue->Push(KeyEvent::KeyDown(key)); }
@@ -126,7 +73,7 @@ void SoC::Sleep() {
     cpuSetSleeping(cpu);
     OnSleep();
 
-    // soc->sleepAtTime = soc->scheduler->GetTime();
+    // sleepAtTime = scheduler->GetTime();
     // printf("sleep\n");
 }
 
@@ -137,7 +84,7 @@ void SoC::Wakeup(uint8_t wakeupSource) {
     cpuWakeup(cpu);
     OnWakeup();
 
-    // printf("wakeupt after %llu nsec from %u\n", soc->scheduler->GetTime() - soc->sleepAtTime,
+    // printf("wakeupt after %llu nsec from %u\n", scheduler->GetTime() - sleepAtTime,
     //        (int)wakeupSource);
 }
 
@@ -183,3 +130,40 @@ Buffer SoC::GetMemoryData() { return {.size = bufferMemory.size, .data = bufferM
 Buffer SoC::GetMemoryDirtyPages() {
     return {.size = bufferMemory.dirtyPagesSize, .data = bufferMemory.dirtyPages};
 }
+
+struct Buffer SoC::GetSavestate() {
+    return {.size = savestate->GetSize(), .data = savestate->GetBuffer()};
+}
+
+void SoC::SdInsert() {
+    if (cardInserted || !sdCardInitialized()) return;
+    cardInserted = true;
+
+    vsdReset(vSD, sdCardSectorCount());
+
+    OnSdInsert();
+}
+
+bool SoC::SdRemount() {
+    if (!cardInserted) return false;
+
+    if (!sdCardInitialized() || strncmp(cardId, sdCardGetId(), SD_CARD_ID_MAX_LEN) != 0) {
+        OnSdEject();
+        return false;
+    } else {
+        OnSdInsert();
+    }
+
+    return true;
+}
+
+void SoC::SdEject() {
+    if (!cardInserted) return;
+    cardInserted = false;
+
+    vsdReset(vSD, 0);
+
+    OnSdEject();
+}
+
+bool SoC::IsPacePatched() { return pacePatch->enterPace; }

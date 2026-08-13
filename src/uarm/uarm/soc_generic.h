@@ -16,6 +16,11 @@ class SocGeneric : public SoC {
     bool RunToPaceSyscall(uint16_t syscall, uint64_t maxCycles, uint64_t cyclesPerSecond) override;
     bool ExecuteInjected(uint64_t maxCycles, uint64_t cyclesPerSecond) override;
 
+    void Reset() override;
+    void DumpMMU() override;
+    void JamKey(enum KeyId key, uint32_t durationMsec) override;
+    uint64_t GetTime() override;
+
     bool Save() override;
     bool Load(size_t savestateSize, void* savestateData) override;
 
@@ -25,13 +30,14 @@ class SocGeneric : public SoC {
     void Save(U& savestate);
 
    protected:
-    uint64_t GetTime() override;
+    void PumpEventQueues();
 
    protected:
     std::unique_ptr<Scheduler<T>> scheduler;
 
    private:
     static constexpr unsigned int SOC_GENERIC_SAVESTATE_VERSION = 2;
+    static constexpr unsigned int MIN_EVENT_QUEUE_TICKS_BEFORE_PEN_UP = 2;
 
    private:
     template <unsigned int breakReason, bool injected>
@@ -39,6 +45,9 @@ class SocGeneric : public SoC {
 
     template <typename U>
     void DoSaveLoad(U& chunkHelper, uint32_t version);
+
+    void PumpPenEventQueue();
+    void PumpKeyEventQueue();
 
    private:
     uint16_t paceBreakSyscall{0};

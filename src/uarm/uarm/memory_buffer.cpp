@@ -49,3 +49,5 @@ void memoryBufferMarkRangeDirty(struct MemoryBuffer* memoryBuffer, size_t addres
     for (size_t page = address >> 10; page <= (address + size - 1) >> 10; page++)
         memoryBuffer->dirtyPages[page >> 5] |= (1 << (page & 0x1f));
 }
+
+bool memoryBufferValid(struct MemoryBuffer* memoryBuffer) { return memoryBuffer->buffer; }
