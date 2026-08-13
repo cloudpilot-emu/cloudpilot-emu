@@ -5,6 +5,9 @@
 .deps-emcc
 .deps-test
 
+.cache
+compile_commands.json*
+
 src/**/*.js
 src/**/*.wasm
 
