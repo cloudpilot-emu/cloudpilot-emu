@@ -15,12 +15,12 @@
 
 #define SAVESTATE_VERSION 0
 
-struct SocGpio {
+struct PxaGpio {
     struct PxaIc *ic;
     uint8_t socRev, nGpios;
 
     uint32_t latches[4];    // what pxa wants to be outputting
-    uint32_t inputs[4];     // what pxa is receiving	[only set by the socGpioSetState() API]
+    uint32_t inputs[4];     // what pxa is receiving	[only set by the pxaGpioSetState() API]
     uint32_t levels[4];     // what pxa sees (it differs from above for IN pins)
     uint32_t dirs[4];       // 1 = output
     uint32_t riseDet[4];    // 1 = rise detect
@@ -47,7 +47,7 @@ struct SocGpio {
     }
 };
 
-static void socGpioPrvRecalcValues(struct SocGpio *gpio, uint_fast8_t which) {
+static void pxaGpioPrvRecalcValues(struct PxaGpio *gpio, uint_fast8_t which) {
     uint32_t val, newVal, oldVal = gpio->levels[which], t;
 
     if (which >= 4) {
@@ -107,7 +107,7 @@ static void socGpioPrvRecalcValues(struct SocGpio *gpio, uint_fast8_t which) {
     }
 }
 
-static void socGpioPrvRecalcIntrs(struct SocGpio *gpio) {
+static void pxaGpioPrvRecalcIntrs(struct PxaGpio *gpio) {
     pxaIcInt(gpio->ic, PXA_I_GPIO_all,
              gpio->detStatus[3] || gpio->detStatus[2] || gpio->detStatus[1] ||
                  (gpio->detStatus[0] & ~3));
@@ -115,9 +115,9 @@ static void socGpioPrvRecalcIntrs(struct SocGpio *gpio) {
     pxaIcInt(gpio->ic, PXA_I_GPIO_0, (gpio->detStatus[0] & 1) != 0);
 }
 
-static bool socGpioPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaGpioPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
                                  void *buf) {
-    struct SocGpio *gpio = (struct SocGpio *)userData;
+    struct PxaGpio *gpio = (struct PxaGpio *)userData;
     uint32_t val = 0, paOfst = pa & 3;
     bool dirsChanged = false;
 
@@ -220,11 +220,11 @@ static bool socGpioPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         goto done;
 
     recalc:
-        socGpioPrvRecalcValues(gpio, pa);
+        pxaGpioPrvRecalcValues(gpio, pa);
         if (dirsChanged && gpio->dirNotifF) gpio->dirNotifF(gpio->dirNotifD);
 
     trigger_intrs:
-        socGpioPrvRecalcIntrs(gpio);
+        pxaGpioPrvRecalcIntrs(gpio);
     } else {
         switch (pa) {
             case 64:
@@ -312,8 +312,8 @@ done:
     return true;
 }
 
-struct SocGpio *socGpioInit(struct ArmMem *physMem, struct PxaIc *ic, uint_fast8_t socRev) {
-    struct SocGpio *gpio = (struct SocGpio *)malloc(sizeof(*gpio));
+struct PxaGpio *pxaGpioInit(struct ArmMem *physMem, struct PxaIc *ic, uint_fast8_t socRev) {
+    struct PxaGpio *gpio = (struct PxaGpio *)malloc(sizeof(*gpio));
 
     if (!gpio) ERR("cannot alloc GPIO");
 
@@ -332,13 +332,13 @@ struct SocGpio *socGpioInit(struct ArmMem *physMem, struct PxaIc *ic, uint_fast8
             break;
     }
 
-    if (!memRegionAdd(physMem, PXA_GPIO_BASE, PXA_GPIO_SIZE, socGpioPrvMemAccessF, gpio))
+    if (!memRegionAdd(physMem, PXA_GPIO_BASE, PXA_GPIO_SIZE, pxaGpioPrvMemAccessF, gpio))
         ERR("cannot add GPIO to MEM\n");
 
     return gpio;
 }
 
-void socGpioSetState(struct SocGpio *gpio, uint_fast8_t gpioNum, bool on) {
+void pxaGpioSetState(struct PxaGpio *gpio, uint_fast8_t gpioNum, bool on) {
     uint32_t set = gpioNum >> 5;
     uint32_t v = 1UL << (gpioNum & 0x1F);
     uint32_t *p;
@@ -351,11 +351,11 @@ void socGpioSetState(struct SocGpio *gpio, uint_fast8_t gpioNum, bool on) {
     else
         *p &= ~v;
 
-    socGpioPrvRecalcValues(gpio, set);
-    socGpioPrvRecalcIntrs(gpio);
+    pxaGpioPrvRecalcValues(gpio, set);
+    pxaGpioPrvRecalcIntrs(gpio);
 }
 
-enum SocGpioState socGpioGetState(struct SocGpio *gpio, uint_fast8_t gpioNum) {
+enum PxaGpioState pxaGpioGetState(struct PxaGpio *gpio, uint_fast8_t gpioNum) {
     uint32_t sSet = gpioNum >> 5;
     uint32_t bSet = gpioNum >> 4;
     uint32_t bShift = ((gpioNum & 0x0F) * 2);
@@ -363,24 +363,24 @@ enum SocGpioState socGpioGetState(struct SocGpio *gpio, uint_fast8_t gpioNum) {
     uint32_t bV = 3UL << bShift;
     uint_fast8_t afr;
 
-    if (gpioNum >= gpio->nGpios) return SocGpioStateNoSuchGpio;
+    if (gpioNum >= gpio->nGpios) return PxaGpioStateNoSuchGpio;
 
     afr = (gpio->AFRs[bSet] & bV) >> bShift;
 
     if (gpio->socRev == 1 && gpioNum > 85) {  // AFRS work a bit different here
 
-        if (afr != 1) return (enum SocGpioState)(afr + SocGpioStateAFR0);
+        if (afr != 1) return (enum PxaGpioState)(afr + PxaGpioStateAFR0);
     } else {
-        if (afr != 0) return (enum SocGpioState)(afr + SocGpioStateAFR0);
+        if (afr != 0) return (enum PxaGpioState)(afr + PxaGpioStateAFR0);
     }
 
     if (gpio->dirs[sSet] & sV)
-        return (gpio->latches[sSet] & sV) ? SocGpioStateHigh : SocGpioStateLow;
+        return (gpio->latches[sSet] & sV) ? PxaGpioStateHigh : PxaGpioStateLow;
 
-    return SocGpioStateHiZ;
+    return PxaGpioStateHiZ;
 }
 
-void socGpioSetNotif(struct SocGpio *gpio, uint_fast8_t gpioNum, GpioChangedNotifF notifF,
+void pxaGpioSetNotif(struct PxaGpio *gpio, uint_fast8_t gpioNum, GpioChangedNotifF notifF,
                      void *userData) {
     if (gpioNum >= gpio->nGpios) return;
 
@@ -388,13 +388,13 @@ void socGpioSetNotif(struct SocGpio *gpio, uint_fast8_t gpioNum, GpioChangedNoti
     gpio->notifD[gpioNum] = userData;
 }
 
-void socGpioSetDirsChangedNotif(struct SocGpio *gpio, GpioDirsChangedF notifF, void *userData) {
+void pxaGpioSetDirsChangedNotif(struct PxaGpio *gpio, GpioDirsChangedF notifF, void *userData) {
     gpio->dirNotifF = notifF;
     gpio->dirNotifD = userData;
 }
 
 template <typename T>
-void pxaGpioSave(struct SocGpio *gpio, T &savestate) {
+void pxaGpioSave(struct PxaGpio *gpio, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaGpio, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -403,7 +403,7 @@ void pxaGpioSave(struct SocGpio *gpio, T &savestate) {
 }
 
 template <typename T>
-void pxaGpioLoad(struct SocGpio *gpio, T &loader) {
+void pxaGpioLoad(struct PxaGpio *gpio, T &loader) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaGpio, SAVESTATE_VERSION, "pxa gpio");
     if (!chunk) return;
 
@@ -411,8 +411,8 @@ void pxaGpioLoad(struct SocGpio *gpio, T &loader) {
     gpio->DoSaveLoad(helper);
 }
 
-template void pxaGpioSave<Savestate<ChunkType>>(SocGpio *gpio, Savestate<ChunkType> &savestate);
-template void pxaGpioSave<SavestateProbe<ChunkType>>(SocGpio *gpio,
+template void pxaGpioSave<Savestate<ChunkType>>(PxaGpio *gpio, Savestate<ChunkType> &savestate);
+template void pxaGpioSave<SavestateProbe<ChunkType>>(PxaGpio *gpio,
                                                      SavestateProbe<ChunkType> &savestate);
-template void pxaGpioLoad<SavestateLoader<ChunkType>>(SocGpio *gpio,
+template void pxaGpioLoad<SavestateLoader<ChunkType>>(PxaGpio *gpio,
                                                       SavestateLoader<ChunkType> &loader);

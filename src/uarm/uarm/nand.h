@@ -8,8 +8,8 @@
 #include "CPU.h"
 #include "buffer.h"
 #include "mem.h"
+#include "pxa_GPIO.h"
 #include "reschedule.h"
-#include "soc_GPIO.h"
 
 struct NAND;
 struct MemoryBuffer;

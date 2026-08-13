@@ -128,15 +128,15 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
         sram = ramInit(mem, this, SRAM_BASE, SRAM_SIZE, &bufferSram, false);
     }
 
-    gpio = socGpioInit(mem, ic, socRev);
+    gpio = pxaGpioInit(mem, ic, socRev);
     tmr = pxaTimrInit(mem, ic);
     rtc = pxaRtcInit(mem, ic);
-    ffUart = socUartInit(mem, rescheduleCb, ic, PXA_FFUART_BASE, PXA_I_FFUART);
-    stUart = socUartInit(mem, rescheduleCb, ic, PXA_STUART_BASE, PXA_I_STUART);
-    btUart = socUartInit(mem, rescheduleCb, ic, PXA_BTUART_BASE, PXA_I_BTUART);
+    ffUart = pxaUartInit(mem, rescheduleCb, ic, PXA_FFUART_BASE, PXA_I_FFUART);
+    stUart = pxaUartInit(mem, rescheduleCb, ic, PXA_STUART_BASE, PXA_I_STUART);
+    btUart = pxaUartInit(mem, rescheduleCb, ic, PXA_BTUART_BASE, PXA_I_BTUART);
 
     if (socRev != 2) {
-        hwUart = socUartInit(mem, rescheduleCb, ic, PXA_HWUART_BASE, PXA_I_HWUART);
+        hwUart = pxaUartInit(mem, rescheduleCb, ic, PXA_HWUART_BASE, PXA_I_HWUART);
     }
 
     pwrClk = pxaPwrClkInit(cpu, mem, this, socRev == 2);
@@ -147,7 +147,7 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
 
     i2c = pxaI2cInit(mem, ic, dma, PXA_I2C_BASE, PXA_I_I2C);
     memCtrl = pxaMemCtrlrInit(mem, socRev);
-    ac97 = socAC97Init(mem, ic, dma);
+    ac97 = pxaAC97Init(mem, ic, dma);
 
     // SSP/SSP1
     ssp[0] = pxaSspInit(mem, rescheduleCb, ic, dma, PXA_SSP1_BASE, PXA_I_SSP, DMA_CMR_SSP_RX);
@@ -454,10 +454,10 @@ void SocPXA::SchedulePcmTask() {
 
 void SocPXA::CycleBatch0() {
     pxaDmaPeriodic(dma);
-    socUartProcess(ffUart);
-    if (hwUart) socUartProcess(hwUart);
-    socUartProcess(stUart);
-    socUartProcess(btUart);
+    pxaUartProcess(ffUart);
+    if (hwUart) pxaUartProcess(hwUart);
+    pxaUartProcess(stUart);
+    pxaUartProcess(btUart);
     for (int i = 0; i < 3; i++) {
         if (ssp[i]) pxaSspPeriodic(ssp[i]);
     }
@@ -475,10 +475,10 @@ bool SocPXA::Batch0Required() {
 
     if (deviceTaskRequired(dev, DEVICE_PERIODIC_TIER0)) return true;
 
-    if (socUartTaskRequired(ffUart) || socUartTaskRequired(stUart) || socUartTaskRequired(btUart))
+    if (pxaUartTaskRequired(ffUart) || pxaUartTaskRequired(stUart) || pxaUartTaskRequired(btUart))
         return true;
 
-    if (hwUart && socUartTaskRequired(hwUart)) return true;
+    if (hwUart && pxaUartTaskRequired(hwUart)) return true;
 
     return false;
 }

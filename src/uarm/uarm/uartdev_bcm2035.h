@@ -4,13 +4,13 @@
 #include <cstdint>
 
 #include "get_emu_time.h"
-#include "soc_UART.h"
+#include "pxa_UART.h"
 
 struct Bcm2035;
 
 struct Bcm2035* bcm2035Init(GetEmuTime getTime);
 
-void bcm2035RegisterWithUart(struct Bcm2035* bcm2035, SocUart* uart);
+void bcm2035RegisterWithUart(struct Bcm2035* bcm2035, PxaUart* uart);
 
 template <typename T>
 void bcm2035Save(struct Bcm2035* bcm2035, T& savestate);

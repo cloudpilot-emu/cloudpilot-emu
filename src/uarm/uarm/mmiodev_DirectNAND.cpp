@@ -14,7 +14,7 @@
 
 struct DirectNAND {
     uint32_t baseCleAddr, baseAleAddr, baseDataAddr, maskBitsAddr;
-    struct SocGpio *gpio;
+    struct PxaGpio *gpio;
     struct NAND *nand;
 
     int8_t rdyPinNo;
@@ -23,7 +23,7 @@ struct DirectNAND {
 static void directNandPrvReady(void *userData, bool ready) {
     struct DirectNAND *directNand = (struct DirectNAND *)userData;
 
-    if (directNand->rdyPinNo >= 0) socGpioSetState(directNand->gpio, directNand->rdyPinNo, ready);
+    if (directNand->rdyPinNo >= 0) pxaGpioSetState(directNand->gpio, directNand->rdyPinNo, ready);
 }
 
 static bool directNandPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
@@ -65,7 +65,7 @@ static bool directNandPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t si
 
 struct DirectNAND *directNandInit(struct ArmMem *physMem, struct Reschedule reschedule,
                                   uint32_t baseCleAddr, uint32_t baseAleAddr, uint32_t baseDataAddr,
-                                  uint32_t maskBitsAddr, struct SocGpio *gpio, int rdyPin,
+                                  uint32_t maskBitsAddr, struct PxaGpio *gpio, int rdyPin,
                                   const struct NandSpecs *specs, uint8_t *nandContent,
                                   size_t nandSize, const struct MemoryBuffer *pageBuffer) {
     struct DirectNAND *directNand = (struct DirectNAND *)malloc(sizeof(*directNand));

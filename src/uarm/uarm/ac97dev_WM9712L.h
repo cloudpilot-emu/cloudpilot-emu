@@ -5,8 +5,8 @@
 
 #include <cstdint>
 
-#include "soc_AC97.h"
-#include "soc_GPIO.h"
+#include "pxa_AC97.h"
+#include "pxa_GPIO.h"
 
 struct WM9712L;
 
@@ -20,7 +20,7 @@ enum WM9712LauxPin {  // Vref is 3.3v,
     WM9712LauxPinAux4,
 };
 
-struct WM9712L *wm9712LInit(struct SocAC97 *ac97, struct SocGpio *gpio, int8_t penDownPin);
+struct WM9712L *wm9712LInit(struct PxaAC97 *ac97, struct PxaGpio *gpio, int8_t penDownPin);
 void wm9712Lperiodic(struct WM9712L *wm);
 
 void wm9712LsetAuxVoltage(struct WM9712L *wm, enum WM9712LauxPin which, uint32_t mV);

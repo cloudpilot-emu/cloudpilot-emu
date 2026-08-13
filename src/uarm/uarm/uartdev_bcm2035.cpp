@@ -196,8 +196,8 @@ struct Bcm2035* bcm2035Init(GetEmuTime getTime) {
     return bcm2035;
 }
 
-void bcm2035RegisterWithUart(struct Bcm2035* bcm2035, SocUart* uart) {
-    socUartSetFuncs(uart, bcm2035ReadF, bcm2035WriteF, bcm2035ClientIsActive, bcm2035ClientTick,
+void bcm2035RegisterWithUart(struct Bcm2035* bcm2035, PxaUart* uart) {
+    pxaUartSetFuncs(uart, bcm2035ReadF, bcm2035WriteF, bcm2035ClientIsActive, bcm2035ClientTick,
                     bcm2035);
 }
 

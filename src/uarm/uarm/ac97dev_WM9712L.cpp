@@ -69,8 +69,8 @@ enum WM9712LsampleIdx {
 };
 
 struct WM9712L {
-    struct SocGpio *gpio;
-    struct SocAC97 *ac97;
+    struct PxaGpio *gpio;
+    struct PxaAC97 *ac97;
     int8_t penDownPin;
 
     uint16_t digiRegs[3];
@@ -123,7 +123,7 @@ struct WM9712L {
 
 static void wm9712LprvGpioRecalc(struct WM9712L *wm) {
     if (wm->penDownPin >= 0)
-        socGpioSetState(wm->gpio, wm->penDownPin, (wm->gpioSharing & 8) ? false : wm->penDown);
+        pxaGpioSetState(wm->gpio, wm->penDownPin, (wm->gpioSharing & 8) ? false : wm->penDown);
 }
 
 static bool wm9712LprvCodecRegR(void *userData, uint32_t regAddr, uint16_t *regValP) {
@@ -410,7 +410,7 @@ static bool wm9712LprvUnusedRegR(void *userData, uint32_t regAddr, uint16_t *reg
 
 static bool wm9712LprvUnusedRegW(void *userData, uint32_t regAddr, uint16_t val) { return false; }
 
-struct WM9712L *wm9712LInit(struct SocAC97 *ac97, struct SocGpio *gpio, int8_t penDownPin) {
+struct WM9712L *wm9712LInit(struct PxaAC97 *ac97, struct PxaGpio *gpio, int8_t penDownPin) {
     struct WM9712L *wm = (struct WM9712L *)malloc(sizeof(*wm));
 
     if (!wm) ERR("cannot alloc WM9712L");
@@ -448,9 +448,9 @@ struct WM9712L *wm9712LInit(struct SocAC97 *ac97, struct SocGpio *gpio, int8_t p
     wm->auxDacRate = 0xbb80;
     wm->adcRate = 0xbb80;
 
-    socAC97clientAdd(ac97, Ac97PrimaryAudio, wm9712LprvCodecRegR, wm9712LprvCodecRegW, wm);
-    socAC97clientAdd(ac97, Ac97SecondaryAudio, wm9712LprvUnusedRegR, wm9712LprvUnusedRegW, wm);
-    socAC97clientAdd(ac97, Ac97PrimaryModem, wm9712LprvUnusedRegR, wm9712LprvUnusedRegW, wm);
+    pxaAC97clientAdd(ac97, Ac97PrimaryAudio, wm9712LprvCodecRegR, wm9712LprvCodecRegW, wm);
+    pxaAC97clientAdd(ac97, Ac97SecondaryAudio, wm9712LprvUnusedRegR, wm9712LprvUnusedRegW, wm);
+    pxaAC97clientAdd(ac97, Ac97PrimaryModem, wm9712LprvUnusedRegR, wm9712LprvUnusedRegW, wm);
 
     return wm;
 }
@@ -583,17 +583,17 @@ static bool wm9712LprvHaveModemOutSample(struct WM9712L *wm, uint32_t *sampP) {
 void wm9712Lperiodic(struct WM9712L *wm) {
     uint32_t val;
 
-    if (socAC97clientClientWantData(wm->ac97, Ac97PrimaryAudio, &val))
+    if (pxaAC97clientClientWantData(wm->ac97, Ac97PrimaryAudio, &val))
         wm9712LprvNewAudioPlaybackSample(wm, val);
 
     if (wm9712LprvHaveAudioOutSample(wm, &val))
-        socAC97clientClientHaveData(wm->ac97, Ac97PrimaryAudio, val);
+        pxaAC97clientClientHaveData(wm->ac97, Ac97PrimaryAudio, val);
 
     if (wm9712LprvHaveMicOutSample(wm, &val))
-        socAC97clientClientHaveData(wm->ac97, Ac97SecondaryAudio, val);
+        pxaAC97clientClientHaveData(wm->ac97, Ac97SecondaryAudio, val);
 
     if (wm9712LprvHaveModemOutSample(wm, &val))
-        socAC97clientClientHaveData(wm->ac97, Ac97PrimaryModem, val);
+        pxaAC97clientClientHaveData(wm->ac97, Ac97PrimaryModem, val);
 }
 
 void wm9712LsetAuxVoltage(struct WM9712L *wm, enum WM9712LauxPin which, uint32_t mV) {

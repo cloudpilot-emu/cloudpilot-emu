@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-#include "soc_GPIO.h"
+#include "pxa_GPIO.h"
 
 struct Keypad;
 
@@ -23,7 +23,7 @@ enum KeyId {
     keyIdPower = 10
 };
 
-struct Keypad *keypadInit(struct SocGpio *gpio, bool matrixHasPullUps);
+struct Keypad *keypadInit(struct PxaGpio *gpio, bool matrixHasPullUps);
 bool keypadDefineRow(struct Keypad *kp, unsigned rowIdx, int8_t gpio);
 bool keypadDefineCol(struct Keypad *kp, unsigned colIdx, int8_t gpio);
 bool keypadAddGpioKey(struct Keypad *kp, enum KeyId key, int8_t gpioNum, bool activeHigh);

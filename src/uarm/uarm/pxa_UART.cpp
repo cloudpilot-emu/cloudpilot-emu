@@ -29,16 +29,16 @@ struct UartFifo {
     }
 };
 
-struct SocUart {
+struct PxaUart {
     struct PxaIc *ic;
     uint32_t baseAddr;
 
     struct Reschedule reschedule;
 
-    SocUartReadF readF;
-    SocUartWriteF writeF;
-    SocUartClientIsActive clientIsActiveF;
-    SocUartClientTick clientTickF;
+    PxaUartReadF readF;
+    PxaUartWriteF writeF;
+    PxaUartClientIsActive clientIsActiveF;
+    PxaUartClientTick clientTickF;
     void *callbackData;
 
     struct UartFifo TX, RX;
@@ -143,15 +143,15 @@ struct SocUart {
 #define UART_MSR_DDSR 0x02  // dsr changed since last read
 #define UART_MSR_DCTS 0x01  // cts changed since last read
 
-static void socUartPrvRecalc(struct SocUart *uart);
+static void pxaUartPrvRecalc(struct PxaUart *uart);
 
-static void socUartPrvIrq(struct SocUart *uart, bool raise) {
+static void pxaUartPrvIrq(struct PxaUart *uart, bool raise) {
     pxaIcInt(uart->ic, uart->irq,
              !(uart->MCR & UART_MCR_LOOP) && (uart->MCR & UART_MCR_OUT2) &&
                  raise /* only raise if ints are enabled */);
 }
 
-static uint_fast16_t socUartPrvDefaultRead(
+static uint_fast16_t pxaUartPrvDefaultRead(
     void *userData)  // these are special funcs since they always get their own userData - the uart
                      // pointer :)
 {
@@ -160,7 +160,7 @@ static uint_fast16_t socUartPrvDefaultRead(
     return UART_CHAR_NONE;  // we read nothing..as always
 }
 
-static void socUartPrvDefaultWrite(uint_fast16_t chr,
+static void pxaUartPrvDefaultWrite(uint_fast16_t chr,
                                    void *userData)  // these are special funcs since they always get
                                                     // their own userData - the uart pointer :)
 {
@@ -170,22 +170,22 @@ static void socUartPrvDefaultWrite(uint_fast16_t chr,
     // nothing to do here
 }
 
-static uint16_t socUartPrvGetchar(struct SocUart *uart) {
-    SocUartReadF func = uart->readF;
+static uint16_t pxaUartPrvGetchar(struct PxaUart *uart) {
+    PxaUartReadF func = uart->readF;
 
-    void *data = (func == socUartPrvDefaultRead) ? uart : uart->callbackData;
+    void *data = (func == pxaUartPrvDefaultRead) ? uart : uart->callbackData;
 
     return func(data);
 }
 
-static void socUartPrvPutchar(struct SocUart *uart, uint_fast16_t chr) {
-    SocUartWriteF func = uart->writeF;
-    void *data = (func == socUartPrvDefaultWrite) ? uart : uart->callbackData;
+static void pxaUartPrvPutchar(struct PxaUart *uart, uint_fast16_t chr) {
+    PxaUartWriteF func = uart->writeF;
+    void *data = (func == pxaUartPrvDefaultWrite) ? uart : uart->callbackData;
 
     func(chr, data);
 }
 
-static uint_fast8_t socUartPrvFifoUsed(struct UartFifo *fifo)  // return num spots used
+static uint_fast8_t pxaUartPrvFifoUsed(struct UartFifo *fifo)  // return num spots used
 {
     uint_fast8_t v;
 
@@ -198,12 +198,12 @@ static uint_fast8_t socUartPrvFifoUsed(struct UartFifo *fifo)  // return num spo
     return v;
 }
 
-static void socUartPrvFifoFlush(struct UartFifo *fifo) {
+static void pxaUartPrvFifoFlush(struct UartFifo *fifo) {
     fifo->read = UART_FIFO_EMPTY;
     fifo->write = UART_FIFO_EMPTY;
 }
 
-static bool socUartPrvFifoPut(struct UartFifo *fifo, uint_fast16_t val)  // return success
+static bool pxaUartPrvFifoPut(struct UartFifo *fifo, uint_fast16_t val)  // return success
 {
     if (fifo->read == UART_FIFO_EMPTY) {
         fifo->read = 0;
@@ -219,7 +219,7 @@ static bool socUartPrvFifoPut(struct UartFifo *fifo, uint_fast16_t val)  // retu
     return true;
 }
 
-static uint_fast16_t socUartPrvFifoGet(struct UartFifo *fifo) {
+static uint_fast16_t pxaUartPrvFifoGet(struct UartFifo *fifo) {
     uint_fast16_t ret;
 
     if (fifo->read == UART_FIFO_EMPTY) {
@@ -237,7 +237,7 @@ static uint_fast16_t socUartPrvFifoGet(struct UartFifo *fifo) {
     return ret;
 }
 
-static uint_fast16_t socUartPrvFifoPeekNth(struct UartFifo *fifo, uint_fast8_t n) {
+static uint_fast16_t pxaUartPrvFifoPeekNth(struct UartFifo *fifo, uint_fast8_t n) {
     uint_fast16_t ret;
 
     if (fifo->read == UART_FIFO_EMPTY) {
@@ -250,11 +250,11 @@ static uint_fast16_t socUartPrvFifoPeekNth(struct UartFifo *fifo, uint_fast8_t n
     return ret;
 }
 
-static uint_fast16_t socUartPrvFifoPeek(struct UartFifo *fifo) {
-    return socUartPrvFifoPeekNth(fifo, 0);
+static uint_fast16_t pxaUartPrvFifoPeek(struct UartFifo *fifo) {
+    return pxaUartPrvFifoPeekNth(fifo, 0);
 }
 
-static void socUartPrvSendChar(struct SocUart *uart, uint_fast16_t v) {
+static void pxaUartPrvSendChar(struct PxaUart *uart, uint_fast16_t v) {
     if (uart->LSR & UART_LSR_TEMT) {  // if transmit, put in shift register immediately if it's idle
 
         uart->transmitShift = v;
@@ -262,8 +262,8 @@ static void socUartPrvSendChar(struct SocUart *uart, uint_fast16_t v) {
         uart->reschedule.rescheduleCb(uart->reschedule.ctx, RESCHEDULE_TASK_UART);
     } else if (uart->FCR & UART_FCR_TRFIFOE) {  // put in tx fifo if in fifo mode
 
-        socUartPrvFifoPut(&uart->TX, v);
-        if (socUartPrvFifoUsed(&uart->TX) >
+        pxaUartPrvFifoPut(&uart->TX, v);
+        if (pxaUartPrvFifoUsed(&uart->TX) >
             UART_FIFO_DEPTH / 2)  // we go went below half-full buffer - set appropriate bit...
             uart->LSR &= ~UART_LSR_TDRQ;
     } else if (uart->LSR & UART_LSR_TDRQ) {  // send without fifo if in polled mode
@@ -275,9 +275,9 @@ static void socUartPrvSendChar(struct SocUart *uart, uint_fast16_t v) {
     }
 }
 
-static bool socUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
                                  void *buf) {
-    struct SocUart *uart = (struct SocUart *)userData;
+    struct PxaUart *uart = (struct PxaUart *)userData;
     bool DLAB = (uart->LCR & UART_LCR_DLAB) != 0;
     bool recalcValues = false;
     uint_fast8_t t, val = 0;
@@ -300,7 +300,7 @@ static bool socUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
                     uart->DLL = val;
                     recalcValues = false;
                 } else {
-                    socUartPrvSendChar(uart, val);
+                    pxaUartPrvSendChar(uart, val);
                 }
                 break;
 
@@ -334,16 +334,16 @@ static bool socUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
                                                    // requested
 
                         if (val & UART_FCR_RESETRF) {
-                            socUartPrvFifoFlush(&uart->RX);  // clear the RX fifo now
+                            pxaUartPrvFifoFlush(&uart->RX);  // clear the RX fifo now
                         }
                         if (val & UART_FCR_RESETTF) {
-                            socUartPrvFifoFlush(&uart->TX);  // clear the TX fifo now
+                            pxaUartPrvFifoFlush(&uart->TX);  // clear the TX fifo now
                             uart->LSR = UART_LSR_TEMT | UART_LSR_TDRQ;
                         }
                         uart->IIR = UART_IIR_FIFOES | UART_IIR_NOINT;
                     } else {
-                        socUartPrvFifoFlush(&uart->TX);
-                        socUartPrvFifoFlush(&uart->RX);
+                        pxaUartPrvFifoFlush(&uart->TX);
+                        pxaUartPrvFifoFlush(&uart->RX);
                         uart->LSR = UART_LSR_TEMT | UART_LSR_TDRQ;
                         uart->IIR = UART_IIR_NOINT;
                     }
@@ -359,7 +359,7 @@ static bool socUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
                         // nothing
                     } else {  // break cleared (tx line released)
 
-                        socUartPrvSendChar(uart, UART_CHAR_BREAK);
+                        pxaUartPrvSendChar(uart, UART_CHAR_BREAK);
                     }
                 }
                 uart->LCR = val;
@@ -390,8 +390,8 @@ static bool socUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
                     val = 0;
                 } else if (uart->FCR & UART_FCR_TRFIFOE) {  // fifo mode -> read fifo
 
-                    val = socUartPrvFifoGet(&uart->RX);
-                    if (!socUartPrvFifoUsed(&uart->RX)) uart->LSR &= ~UART_LSR_DR;
+                    val = pxaUartPrvFifoGet(&uart->RX);
+                    if (!pxaUartPrvFifoUsed(&uart->RX)) uart->LSR &= ~UART_LSR_DR;
                     recalcValues = true;  // error bits might have changed
                 } else {                  // polled mode -> read rx polled reg
 
@@ -441,18 +441,18 @@ static bool socUartPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
             *(uint32_t *)buf = val;
     }
 
-    if (recalcValues) socUartPrvRecalc(uart);
+    if (recalcValues) pxaUartPrvRecalc(uart);
 
     return true;
 }
 
-void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF writeF,
-                     SocUartClientIsActive clientIsActiveF, SocUartClientTick clientTickF,
+void pxaUartSetFuncs(struct PxaUart *uart, PxaUartReadF readF, PxaUartWriteF writeF,
+                     PxaUartClientIsActive clientIsActiveF, PxaUartClientTick clientTickF,
                      void *userData) {
     if (!readF)
-        readF = socUartPrvDefaultRead;  // these are special funcs since they get their own private
+        readF = pxaUartPrvDefaultRead;  // these are special funcs since they get their own private
                                         // data - the uart :)
-    if (!writeF) writeF = socUartPrvDefaultWrite;
+    if (!writeF) writeF = pxaUartPrvDefaultWrite;
 
     uart->readF = readF;
     uart->writeF = writeF;
@@ -461,9 +461,9 @@ void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF wri
     uart->callbackData = userData;
 }
 
-struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct PxaIc *ic,
+struct PxaUart *pxaUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct PxaIc *ic,
                             uint32_t baseAddr, uint8_t irq) {
-    struct SocUart *uart = (struct SocUart *)malloc(sizeof(*uart));
+    struct PxaUart *uart = (struct PxaUart *)malloc(sizeof(*uart));
 
     if (!uart) ERR("cannot alloc UART at 0x%08x", baseAddr);
 
@@ -476,18 +476,18 @@ struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule
     uart->IER = UART_IER_UUE | UART_IER_NRZE;  // uart on
     uart->LSR = UART_LSR_TEMT | UART_LSR_TDRQ;
     uart->MSR = UART_MSR_CTS;
-    socUartPrvFifoFlush(&uart->TX);
-    socUartPrvFifoFlush(&uart->RX);
+    pxaUartPrvFifoFlush(&uart->TX);
+    pxaUartPrvFifoFlush(&uart->RX);
 
-    socUartSetFuncs(uart, nullptr, nullptr, nullptr, nullptr, nullptr);
+    pxaUartSetFuncs(uart, nullptr, nullptr, nullptr, nullptr, nullptr);
 
-    if (!memRegionAdd(physMem, baseAddr, PXA_UART_SIZE, socUartPrvMemAccessF, uart))
+    if (!memRegionAdd(physMem, baseAddr, PXA_UART_SIZE, pxaUartPrvMemAccessF, uart))
         ERR("cannot add UART at 0x%08x to MEM\n", baseAddr);
 
     return uart;
 }
 
-void socUartProcess(struct SocUart *uart)  // send and rceive up to one character
+void pxaUartProcess(struct PxaUart *uart)  // send and rceive up to one character
 {
     uint_fast16_t v;
     uint_fast8_t t;
@@ -496,14 +496,14 @@ void socUartProcess(struct SocUart *uart)  // send and rceive up to one characte
 
     // first process sending (if any)
     if (!(uart->LSR & UART_LSR_TEMT)) {
-        socUartPrvPutchar(uart, uart->transmitShift);
+        pxaUartPrvPutchar(uart, uart->transmitShift);
 
         if (uart->FCR & UART_FCR_TRFIFOE) {  // fifo mode
 
-            t = socUartPrvFifoUsed(&uart->TX);
+            t = pxaUartPrvFifoUsed(&uart->TX);
 
             if (t--) {
-                uart->transmitShift = socUartPrvFifoGet(&uart->TX);
+                uart->transmitShift = pxaUartPrvFifoGet(&uart->TX);
                 if (t <= UART_FIFO_DEPTH / 2)
                     uart->LSR |= UART_LSR_TDRQ;  // above half full - clear TDRQ bit
             } else {
@@ -518,14 +518,14 @@ void socUartProcess(struct SocUart *uart)  // send and rceive up to one characte
     }
 
     // now process receiving
-    v = socUartPrvGetchar(uart);
+    v = pxaUartPrvGetchar(uart);
     if (v != UART_CHAR_NONE) {
         uart->cyclesSinceRecv = 0;
         uart->LSR |= UART_LSR_DR;
 
         if (uart->FCR & UART_FCR_TRFIFOE) {  // fifo mode
 
-            if (!socUartPrvFifoPut(&uart->RX, v)) {
+            if (!pxaUartPrvFifoPut(&uart->RX, v)) {
                 uart->LSR |= UART_LSR_OE;
             }
         } else {
@@ -538,10 +538,10 @@ void socUartProcess(struct SocUart *uart)  // send and rceive up to one characte
         uart->cyclesSinceRecv++;
     }
 
-    socUartPrvRecalc(uart);
+    pxaUartPrvRecalc(uart);
 }
 
-static void socUartPrvRecalcCharBits(struct SocUart *uart, uint_fast16_t c) {
+static void pxaUartPrvRecalcCharBits(struct PxaUart *uart, uint_fast16_t c) {
     if (c & UART_CHAR_BREAK) uart->LSR |= UART_LSR_BI;
 
     if (c & UART_CHAR_FRAME_ERR) uart->LSR |= UART_LSR_FE;
@@ -549,7 +549,7 @@ static void socUartPrvRecalcCharBits(struct SocUart *uart, uint_fast16_t c) {
     if (c & UART_CHAR_PAR_ERR) uart->LSR |= UART_LSR_PE;
 }
 
-static void socUartPrvRecalc(struct SocUart *uart) {
+static void pxaUartPrvRecalc(struct PxaUart *uart) {
     bool errorSet = false;
     uint_fast8_t v;
 
@@ -560,8 +560,8 @@ static void socUartPrvRecalc(struct SocUart *uart) {
     if (uart->FCR & UART_FCR_TRFIFOE) {  // fifo mode
 
         // check rx fifo for errors
-        for (v = 0; v < socUartPrvFifoUsed(&uart->RX); v++) {
-            if ((socUartPrvFifoPeekNth(&uart->RX, v) >> 8) && (uart->IER & UART_IER_RLSE)) {
+        for (v = 0; v < pxaUartPrvFifoUsed(&uart->RX); v++) {
+            if ((pxaUartPrvFifoPeekNth(&uart->RX, v) >> 8) && (uart->IER & UART_IER_RLSE)) {
                 uart->LSR |= UART_LSR_FIFOE;
                 uart->IIR |= UART_IIR_RECV_ERR;
                 errorSet = true;
@@ -569,8 +569,8 @@ static void socUartPrvRecalc(struct SocUart *uart) {
             }
         }
 
-        v = socUartPrvFifoUsed(&uart->RX);
-        if (v) socUartPrvRecalcCharBits(uart, socUartPrvFifoPeek(&uart->RX));
+        v = pxaUartPrvFifoUsed(&uart->RX);
+        if (v) pxaUartPrvRecalcCharBits(uart, pxaUartPrvFifoPeek(&uart->RX));
 
         switch (uart->FCR & UART_FCR_ITL_MASK) {
             case UART_FCR_ITL_1:
@@ -593,7 +593,7 @@ static void socUartPrvRecalc(struct SocUart *uart) {
             errorSet = true;
             uart->IIR |= UART_IIR_RECV_DATA;
         }
-        if (socUartPrvFifoUsed(&uart->RX) && uart->cyclesSinceRecv >= 4 &&
+        if (pxaUartPrvFifoUsed(&uart->RX) && uart->cyclesSinceRecv >= 4 &&
             (uart->IER & UART_IER_RAVIE) && !errorSet) {
             errorSet = true;
             uart->IIR |= UART_IIR_RCV_TIMEOUT;
@@ -603,7 +603,7 @@ static void socUartPrvRecalc(struct SocUart *uart) {
         uint_fast16_t c = uart->receiveHolding;
 
         if (uart->LSR & UART_LSR_DR) {
-            socUartPrvRecalcCharBits(uart, c);
+            pxaUartPrvRecalcCharBits(uart, c);
 
             if ((c >> 8) && !errorSet && (uart->IER & UART_IER_RLSE)) {
                 uart->IIR |= UART_IIR_RECV_ERR;
@@ -622,16 +622,16 @@ static void socUartPrvRecalc(struct SocUart *uart) {
 
     if (!errorSet) uart->IIR |= UART_IIR_NOINT;
 
-    socUartPrvIrq(uart, errorSet);
+    pxaUartPrvIrq(uart, errorSet);
 }
 
-bool socUartTaskRequired(struct SocUart *uart) {
+bool pxaUartTaskRequired(struct PxaUart *uart) {
     return (uart->clientIsActiveF ? uart->clientIsActiveF(uart->callbackData) : false) ||
            (uart->LSR & UART_LSR_TEMT) == 0;
 }
 
 template <typename T>
-void pxaUartSave(SocUart *uart, T &savestate, uint32_t index) {
+void pxaUartSave(PxaUart *uart, T &savestate, uint32_t index) {
     auto chunk = savestate.GetChunk(ChunkType::pxaUart + index, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -640,7 +640,7 @@ void pxaUartSave(SocUart *uart, T &savestate, uint32_t index) {
 }
 
 template <typename T>
-void pxaUartLoad(struct SocUart *uart, T &loader, uint32_t index) {
+void pxaUartLoad(struct PxaUart *uart, T &loader, uint32_t index) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaUart + index, SAVESTATE_VERSION, "uart");
     if (!chunk) return;
 
@@ -648,11 +648,11 @@ void pxaUartLoad(struct SocUart *uart, T &loader, uint32_t index) {
     uart->DoSaveLoad(helper);
 }
 
-template void pxaUartSave<Savestate<ChunkType>>(SocUart *uart, Savestate<ChunkType> &savestate,
+template void pxaUartSave<Savestate<ChunkType>>(PxaUart *uart, Savestate<ChunkType> &savestate,
                                                 uint32_t index);
-template void pxaUartSave<SavestateProbe<ChunkType>>(SocUart *uart,
+template void pxaUartSave<SavestateProbe<ChunkType>>(PxaUart *uart,
                                                      SavestateProbe<ChunkType> &savestate,
                                                      uint32_t index);
-template void pxaUartLoad<SavestateLoader<ChunkType>>(SocUart *uart,
+template void pxaUartLoad<SavestateLoader<ChunkType>>(PxaUart *uart,
                                                       SavestateLoader<ChunkType> &loader,
                                                       uint32_t index);

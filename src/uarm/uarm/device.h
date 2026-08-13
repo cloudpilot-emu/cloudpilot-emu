@@ -6,21 +6,19 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "ROM.h"
 #include "SoC.h"
 #include "device_type5.h"
 #include "get_emu_time.h"
 #include "keys.h"
 #include "mem.h"
 #include "nand.h"
+#include "pxa_AC97.h"
+#include "pxa_GPIO.h"
 #include "pxa_I2C.h"
 #include "pxa_I2S.h"
 #include "pxa_SSP.h"
+#include "pxa_UART.h"
 #include "reschedule.h"
-#include "soc_AC97.h"
-#include "soc_GPIO.h"
-#include "soc_UART.h"
-#include "soc_uWire.h"
 #include "vSD.h"
 
 #define DEVICE_PERIODIC_TIER0 0
@@ -36,9 +34,8 @@ struct DeviceDisplayConfiguration {
 
 struct SocPeriphs {
     // in to deviceSetup
-    struct SocAC97 *ac97;
-    struct SocGpio *gpio;
-    struct SocUwire *uw;
+    struct PxaAC97 *ac97;
+    struct PxaGpio *gpio;
     struct PxaI2c *i2c;
     struct PxaI2s *i2s;
     struct PxaSsp *ssp;
@@ -48,15 +45,15 @@ struct SocPeriphs {
     class SoC *soc;
 
     // PXA order: ffUart, hwUart, stUart, btUart
-    struct SocUart *uarts[4];
+    struct PxaUart *uarts[4];
 
     void *adc;  // some cases need this
     void *kpc;  // some cases need this
 
     // out from deviceSetup
     struct NAND *nand;
-    struct SocUart *dbgUart;
-    struct SocUart *btUart;
+    struct PxaUart *dbgUart;
+    struct PxaUart *btUart;
 };
 
 enum RamTermination {  // what's after ram in phys map? (some devices probe)

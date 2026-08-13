@@ -23,7 +23,7 @@ struct KeyMatrix {
 };
 
 struct Keypad {
-    struct SocGpio *gpio;
+    struct PxaGpio *gpio;
 
     struct KeyGpio gpios[MAX_GPIO_KEYS];
     int8_t kpGpioRow[MAX_KP_ROWS];  //<0 for inval
@@ -45,7 +45,7 @@ static void keypadPrvMatrixRecalc(struct Keypad *kp) {
 
         if (kp->kpGpioRow[i] < 0) continue;
 
-        if (socGpioGetState(kp->gpio, kp->kpGpioRow[i]) != SocGpioStateHiZ) continue;
+        if (pxaGpioGetState(kp->gpio, kp->kpGpioRow[i]) != PxaGpioStateHiZ) continue;
 
         for (j = 0; j < MAX_KP_COLS; j++) {
             uint8_t colSta;
@@ -54,10 +54,10 @@ static void keypadPrvMatrixRecalc(struct Keypad *kp) {
 
             if (!kp->km[i][j].isDown) continue;
 
-            colSta = socGpioGetState(kp->gpio, kp->kpGpioCol[j]);
+            colSta = pxaGpioGetState(kp->gpio, kp->kpGpioCol[j]);
 
-            if (colSta == SocGpioStateLow || colSta == SocGpioStateHigh) {
-                bool colHi = colSta == SocGpioStateHigh;
+            if (colSta == PxaGpioStateLow || colSta == PxaGpioStateHigh) {
+                bool colHi = colSta == PxaGpioStateHigh;
 
                 if (haveStrong && !rowState != !colHi)
                     fprintf(stderr, "row %u (%u) being pulled in different directions\n", i,
@@ -67,7 +67,7 @@ static void keypadPrvMatrixRecalc(struct Keypad *kp) {
                 rowState = rowState && colHi;
             }
         }
-        socGpioSetState(kp->gpio, kp->kpGpioRow[i], rowState);
+        pxaGpioSetState(kp->gpio, kp->kpGpioRow[i], rowState);
     }
 
     // calc input cols
@@ -77,7 +77,7 @@ static void keypadPrvMatrixRecalc(struct Keypad *kp) {
 
         if (kp->kpGpioCol[j] < 0) continue;
 
-        if (socGpioGetState(kp->gpio, kp->kpGpioCol[j]) != SocGpioStateHiZ) continue;
+        if (pxaGpioGetState(kp->gpio, kp->kpGpioCol[j]) != PxaGpioStateHiZ) continue;
 
         for (i = 0; i < MAX_KP_ROWS; i++) {
             uint8_t rowSta;
@@ -86,10 +86,10 @@ static void keypadPrvMatrixRecalc(struct Keypad *kp) {
 
             if (!kp->km[i][j].isDown) continue;
 
-            rowSta = socGpioGetState(kp->gpio, kp->kpGpioRow[i]);
+            rowSta = pxaGpioGetState(kp->gpio, kp->kpGpioRow[i]);
 
-            if (rowSta == SocGpioStateLow || rowSta == SocGpioStateHigh) {
-                bool rowHi = rowSta == SocGpioStateHigh;
+            if (rowSta == PxaGpioStateLow || rowSta == PxaGpioStateHigh) {
+                bool rowHi = rowSta == PxaGpioStateHigh;
 
                 if (haveStrong && !rowHi != !colState)
                     fprintf(stderr, "col %u (%u) being pulled in different directions\n", j,
@@ -99,7 +99,7 @@ static void keypadPrvMatrixRecalc(struct Keypad *kp) {
                 colState = rowHi && colState;
             }
         }
-        socGpioSetState(kp->gpio, kp->kpGpioCol[j], colState);
+        pxaGpioSetState(kp->gpio, kp->kpGpioCol[j], colState);
     }
 
     kp->recalcing = false;
@@ -111,7 +111,7 @@ static void keypadPrvGpioDirsChanged(void *userData) {
     if (!kp->recalcing) keypadPrvMatrixRecalc(kp);
 }
 
-struct Keypad *keypadInit(struct SocGpio *gpio, bool matrixHasPullUps) {
+struct Keypad *keypadInit(struct PxaGpio *gpio, bool matrixHasPullUps) {
     struct Keypad *kp = (struct Keypad *)malloc(sizeof(*kp));
     unsigned i;
 
@@ -126,7 +126,7 @@ struct Keypad *keypadInit(struct SocGpio *gpio, bool matrixHasPullUps) {
 
     for (i = 0; i < MAX_KP_COLS; i++) kp->kpGpioCol[i] = -1;
 
-    socGpioSetDirsChangedNotif(kp->gpio, keypadPrvGpioDirsChanged, kp);
+    pxaGpioSetDirsChangedNotif(kp->gpio, keypadPrvGpioDirsChanged, kp);
 
     return kp;
 }
@@ -136,7 +136,7 @@ void keypadKeyEvt(struct Keypad *kp, enum KeyId key, bool wentDown) {
 
     for (i = 0; i < MAX_GPIO_KEYS; i++) {
         if (kp->gpios[i].key == key && kp->gpios[i].gpioNum >= 0) {
-            socGpioSetState(
+            pxaGpioSetState(
                 kp->gpio, kp->gpios[i].gpioNum,
                 (wentDown && kp->gpios[i].activeHigh) || (!wentDown && !kp->gpios[i].activeHigh));
         }
@@ -162,7 +162,7 @@ void keypadReset(struct Keypad *kp) {
 
     for (i = 0; i < MAX_GPIO_KEYS; i++) {
         if (kp->gpios[i].key != 0 && kp->gpios[i].gpioNum >= 0) {
-            socGpioSetState(kp->gpio, kp->gpios[i].gpioNum, !kp->gpios[i].activeHigh);
+            pxaGpioSetState(kp->gpio, kp->gpios[i].gpioNum, !kp->gpios[i].activeHigh);
         }
     }
 
@@ -199,8 +199,8 @@ static bool keypadDefineRowOrCol(struct Keypad *kp, unsigned idx, int8_t *arr, u
 
     arr[idx] = gpioNum;
 
-    socGpioSetNotif(kp->gpio, gpioNum, keypadPrvGpioChanged, kp);
-    socGpioSetState(kp->gpio, gpioNum, kp->matrixHasPullUps);
+    pxaGpioSetNotif(kp->gpio, gpioNum, keypadPrvGpioChanged, kp);
+    pxaGpioSetState(kp->gpio, gpioNum, kp->matrixHasPullUps);
     keypadPrvMatrixRecalc(kp);
 
     return true;
@@ -223,7 +223,7 @@ bool keypadAddGpioKey(struct Keypad *kp, enum KeyId key, int8_t gpioNum, bool ac
             kp->gpios[i].gpioNum = gpioNum;
             kp->gpios[i].activeHigh = activeHigh;
 
-            socGpioSetState(kp->gpio, gpioNum, !activeHigh);
+            pxaGpioSetState(kp->gpio, gpioNum, !activeHigh);
             return true;
         }
     }

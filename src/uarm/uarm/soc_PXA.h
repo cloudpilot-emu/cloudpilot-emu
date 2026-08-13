@@ -8,10 +8,10 @@
 #include "memory_buffer.h"
 #include "soc_generic.h"
 
-struct SocUart;
+struct PxaUart;
 struct PxaSsp;
-struct SocGpio;
-struct SocAC97;
+struct PxaGpio;
+struct PxaAC97;
 struct PxaDma;
 struct PxaI2s;
 struct PxaI2c;
@@ -84,10 +84,10 @@ class SocPXA : public SocGeneric<SocPXA> {
    private:
     uint8_t socRev{0};
 
-    SocUart *ffUart{nullptr}, *hwUart{nullptr}, *stUart{nullptr}, *btUart{nullptr};
+    PxaUart *ffUart{nullptr}, *hwUart{nullptr}, *stUart{nullptr}, *btUart{nullptr};
     PxaSsp *ssp[3]{nullptr, nullptr, nullptr};
-    SocGpio *gpio{nullptr};
-    SocAC97 *ac97{nullptr};
+    PxaGpio *gpio{nullptr};
+    PxaAC97 *ac97{nullptr};
     PxaDma *dma{nullptr};
     PxaI2s *i2s{nullptr};
     PxaI2c *i2c{nullptr};

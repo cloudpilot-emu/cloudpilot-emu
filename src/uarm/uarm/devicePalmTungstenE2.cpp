@@ -105,7 +105,7 @@ struct Device {
     struct WM9712L *wm9712L;
     struct DirectNAND *nand;
     struct Bcm2035 *bcm2035;
-    struct SocGpio *gpio;
+    struct PxaGpio *gpio;
 
     struct Reschedule reschedule;
 
@@ -189,16 +189,16 @@ struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
 
     sp->gpio = sp->gpio;
 
-    socGpioSetState(sp->gpio, 1, true);  // reset button
+    pxaGpioSetState(sp->gpio, 1, true);  // reset button
 
-    socGpioSetState(sp->gpio, 4,
+    pxaGpioSetState(sp->gpio, 4,
                     true);  // not in cradle (also prevents FIQ wtchdog from firing after 5 sec)
 
-    socGpioSetState(sp->gpio, 40, true);  // no hotsync button pressed [??]
+    pxaGpioSetState(sp->gpio, 40, true);  // no hotsync button pressed [??]
 
-    socGpioSetState(sp->gpio, 12, false);  // no headphones [??]
+    pxaGpioSetState(sp->gpio, 12, false);  // no headphones [??]
 
-    socGpioSetState(sp->gpio, 52, true);  // no manufacturing test mode please
+    pxaGpioSetState(sp->gpio, 52, true);  // no manufacturing test mode please
 
     wm9712LsetAuxVoltage(dev->wm9712L, WM9712LauxPinBmon, 4200 / 3);  // main battery is 4.2V
 
@@ -260,7 +260,7 @@ void deviceSetAudioQueue(struct Device *dev, struct AudioQueue *audioQueue) {
 bool deviceI2sConnected() { return false; }
 
 void deviceSetSdCardInserted(struct Device *dev, bool inserted) {
-    socGpioSetState(dev->gpio, 10, !inserted);
+    pxaGpioSetState(dev->gpio, 10, !inserted);
 }
 
 enum DeviceType5 deviceGetType(struct Device *dev) { return dev->type; }

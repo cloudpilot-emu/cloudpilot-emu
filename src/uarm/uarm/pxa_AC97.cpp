@@ -53,7 +53,7 @@ struct Ac97CodecStruct {
     }
 };
 
-struct SocAC97 {
+struct PxaAC97 {
     struct PxaDma *dma;
     struct PxaIc *ic;
 
@@ -81,7 +81,7 @@ struct SocAC97 {
     }
 };
 
-static void socAC97prvIrqUpdate(struct SocAC97 *ac97) {
+static void pxaAC97prvIrqUpdate(struct PxaAC97 *ac97) {
     bool irq = false;
 
     irq = irq || !!(ac97->posr & (ac97->pocr << 1) & 0x14);
@@ -96,7 +96,7 @@ static void socAC97prvIrqUpdate(struct SocAC97 *ac97) {
     pxaIcInt(ac97->ic, PXA_I_AC97, irq);
 }
 
-static void socAC97PrvFifoDmaUpdate(struct SocAC97 *ac97, struct AC97Fifo *fifo) {
+static void pxaAC97PrvFifoDmaUpdate(struct PxaAC97 *ac97, struct AC97Fifo *fifo) {
     bool fifoReadyForRead = fifo->isRxFifo ? (fifo->numItems >= 8) : (fifo->numItems < 8);
 
     if (fifoReadyForRead)
@@ -107,7 +107,7 @@ static void socAC97PrvFifoDmaUpdate(struct SocAC97 *ac97, struct AC97Fifo *fifo)
     if (fifo->dmaChannelNum) pxaDmaExternalReq(ac97->dma, fifo->dmaChannelNum, fifoReadyForRead);
 }
 
-static bool socAC97PrvFifoAdd(struct SocAC97 *ac97, struct AC97Fifo *fifo, uint32_t val) {
+static bool pxaAC97PrvFifoAdd(struct PxaAC97 *ac97, struct AC97Fifo *fifo, uint32_t val) {
     uint32_t ptr, cap = sizeof(fifo->data) / sizeof(*fifo->data);
     bool ret = false;
 
@@ -120,12 +120,12 @@ static bool socAC97PrvFifoAdd(struct SocAC97 *ac97, struct AC97Fifo *fifo, uint3
         fifo->data[ptr] = val;
     }
 
-    socAC97PrvFifoDmaUpdate(ac97, fifo);
+    pxaAC97PrvFifoDmaUpdate(ac97, fifo);
 
     return ret;
 }
 
-static bool socAC97PrvFifoGet(struct SocAC97 *ac97, struct AC97Fifo *fifo, uint32_t *valP) {
+static bool pxaAC97PrvFifoGet(struct PxaAC97 *ac97, struct AC97Fifo *fifo, uint32_t *valP) {
     uint32_t cap = sizeof(fifo->data) / sizeof(*fifo->data);
     bool ret = false;
 
@@ -143,42 +143,42 @@ static bool socAC97PrvFifoGet(struct SocAC97 *ac97, struct AC97Fifo *fifo, uint3
         ret = true;
     }
 
-    socAC97PrvFifoDmaUpdate(ac97, fifo);
+    pxaAC97PrvFifoDmaUpdate(ac97, fifo);
 
     return ret;
 }
 
-static bool socAC97PrvFifoW(struct SocAC97 *ac97, struct Ac97CodecStruct *codec, uint32_t val) {
-    return socAC97PrvFifoAdd(ac97, &codec->txFifo, val);
+static bool pxaAC97PrvFifoW(struct PxaAC97 *ac97, struct Ac97CodecStruct *codec, uint32_t val) {
+    return pxaAC97PrvFifoAdd(ac97, &codec->txFifo, val);
 }
 
-static bool socAC97PrvFifoR(struct SocAC97 *ac97, struct Ac97CodecStruct *codec, uint32_t *valP) {
-    return socAC97PrvFifoGet(ac97, &codec->rxFifo, valP);
+static bool pxaAC97PrvFifoR(struct PxaAC97 *ac97, struct Ac97CodecStruct *codec, uint32_t *valP) {
+    return pxaAC97PrvFifoGet(ac97, &codec->rxFifo, valP);
 }
 
-static bool socAC97PrvPcmFifoW(struct SocAC97 *ac97, uint32_t val) {
-    return socAC97PrvFifoW(ac97, &ac97->primaryAudio, val);
+static bool pxaAC97PrvPcmFifoW(struct PxaAC97 *ac97, uint32_t val) {
+    return pxaAC97PrvFifoW(ac97, &ac97->primaryAudio, val);
 }
 
-static bool socAC97PrvPcmFifoR(struct SocAC97 *ac97, uint32_t *valP) {
-    return socAC97PrvFifoR(ac97, &ac97->primaryAudio, valP);
+static bool pxaAC97PrvPcmFifoR(struct PxaAC97 *ac97, uint32_t *valP) {
+    return pxaAC97PrvFifoR(ac97, &ac97->primaryAudio, valP);
 }
 
-static bool socAC97PrvMicFifoR(struct SocAC97 *ac97, uint32_t *valP) {
-    return socAC97PrvFifoR(ac97, &ac97->secondaryAudio, valP);
+static bool pxaAC97PrvMicFifoR(struct PxaAC97 *ac97, uint32_t *valP) {
+    return pxaAC97PrvFifoR(ac97, &ac97->secondaryAudio, valP);
 }
 
-static bool socAC97PrvModemFifoW(struct SocAC97 *ac97, uint32_t val) {
-    return socAC97PrvFifoW(ac97, &ac97->primaryModem, val);
+static bool pxaAC97PrvModemFifoW(struct PxaAC97 *ac97, uint32_t val) {
+    return pxaAC97PrvFifoW(ac97, &ac97->primaryModem, val);
 }
 
-static bool socAC97PrvModemFifoR(struct SocAC97 *ac97, uint32_t *valP) {
-    return socAC97PrvFifoR(ac97, &ac97->primaryModem, valP);
+static bool pxaAC97PrvModemFifoR(struct PxaAC97 *ac97, uint32_t *valP) {
+    return pxaAC97PrvFifoR(ac97, &ac97->primaryModem, valP);
 }
 
-static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
+static bool pxaAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
                                  void *buf) {
-    struct SocAC97 *ac97 = (struct SocAC97 *)userData;
+    struct PxaAC97 *ac97 = (struct PxaAC97 *)userData;
     struct Ac97CodecStruct *cd = NULL;
     uint32_t val = 0;
 
@@ -198,7 +198,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 0:
             if (write) {
                 ac97->pocr = val & 0x0e;
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->pocr;
             break;
@@ -206,7 +206,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 1:
             if (write) {
                 ac97->picr = val & 0x0a;
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->picr;
             break;
@@ -214,7 +214,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 2:
             if (write) {
                 ac97->mccr = val & 0x0a;
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->mccr;
             break;
@@ -223,7 +223,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
             if (write) {
                 ac97->gcr = val & 0x000c033ful;
                 ac97->gsr = (ac97->gsr & ~8ul) | (val & 8);  // set shut off status
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->gcr;
             break;
@@ -231,7 +231,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 4:
             if (write) {
                 ac97->posr &= ~(val & 0x10);
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->posr;
             break;
@@ -239,7 +239,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 5:
             if (write) {
                 ac97->pisr &= ~(val & 0x18);
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->pisr;
             break;
@@ -247,7 +247,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 6:
             if (write) {
                 ac97->mcsr &= ~(val & 0x18);
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->mcsr;
             break;
@@ -255,7 +255,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 7:
             if (write) {
                 ac97->gsr &= ~(val & 0x000c8c01ul);
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->gsr;
             break;
@@ -273,22 +273,22 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
 
         case 16:
             if (write)
-                return socAC97PrvPcmFifoW(ac97, val);
+                return pxaAC97PrvPcmFifoW(ac97, val);
             else
-                return socAC97PrvPcmFifoR(ac97, (uint32_t *)buf);
+                return pxaAC97PrvPcmFifoR(ac97, (uint32_t *)buf);
             break;
 
         case 24:
             if (write)
                 return false;
             else
-                return socAC97PrvMicFifoR(ac97, (uint32_t *)buf);
+                return pxaAC97PrvMicFifoR(ac97, (uint32_t *)buf);
             break;
 
         case 64:
             if (write) {
                 ac97->mocr = val & 0x0a;
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->mocr;
             break;
@@ -296,7 +296,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 66:
             if (write) {
                 ac97->micr = val & 0x0a;
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->micr;
             break;
@@ -304,7 +304,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 68:
             if (write) {
                 ac97->mosr &= ~(val & 0x10);
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->mosr;
             break;
@@ -312,16 +312,16 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         case 70:
             if (write) {
                 ac97->misr &= ~(val & 0x18);
-                socAC97prvIrqUpdate(ac97);
+                pxaAC97prvIrqUpdate(ac97);
             } else
                 val = ac97->misr;
             break;
 
         case 80:
             if (write)
-                return socAC97PrvModemFifoW(ac97, val);
+                return pxaAC97PrvModemFifoW(ac97, val);
             else
-                return socAC97PrvModemFifoR(ac97, (uint32_t *)buf);
+                return pxaAC97PrvModemFifoR(ac97, (uint32_t *)buf);
             break;
     }
     if (pa >= 0x080 && pa < 0x0c0)
@@ -347,7 +347,7 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
         ac97->car = 0;
         val = readVal;
 
-        socAC97prvIrqUpdate(ac97);
+        pxaAC97prvIrqUpdate(ac97);
     }
 
     if (!write) {
@@ -360,8 +360,8 @@ static bool socAC97PrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
     return true;
 }
 
-struct SocAC97 *socAC97Init(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma) {
-    struct SocAC97 *ac97 = (struct SocAC97 *)malloc(sizeof(*ac97));
+struct PxaAC97 *pxaAC97Init(struct ArmMem *physMem, struct PxaIc *ic, struct PxaDma *dma) {
+    struct PxaAC97 *ac97 = (struct PxaAC97 *)malloc(sizeof(*ac97));
 
     if (!ac97) ERR("cannot alloc AC97");
 
@@ -395,17 +395,17 @@ struct SocAC97 *socAC97Init(struct ArmMem *physMem, struct PxaIc *ic, struct Pxa
     ac97->primaryModem.rxFifo.icr = &ac97->micr;
     ac97->primaryModem.rxFifo.isr = &ac97->misr;
 
-    if (!memRegionAdd(physMem, PXA_AC97_BASE, PXA_AC97_SIZE, socAC97PrvMemAccessF, ac97))
+    if (!memRegionAdd(physMem, PXA_AC97_BASE, PXA_AC97_SIZE, pxaAC97PrvMemAccessF, ac97))
         ERR("cannot add AC97 to MEM\n");
 
     return ac97;
 }
 
-void socAC97Periodic(struct SocAC97 *ac97) {
+void pxaAC97Periodic(struct PxaAC97 *ac97) {
     // nothing - codecs do their own work getting data to and from us :)
 }
 
-static struct Ac97CodecStruct *socAC97prvCodecPtrGet(struct SocAC97 *ac97, enum Ac97Codec which) {
+static struct Ac97CodecStruct *pxaAC97prvCodecPtrGet(struct PxaAC97 *ac97, enum Ac97Codec which) {
     switch (which) {
         case Ac97PrimaryAudio:
             return &ac97->primaryAudio;
@@ -424,32 +424,32 @@ static struct Ac97CodecStruct *socAC97prvCodecPtrGet(struct SocAC97 *ac97, enum 
     }
 }
 
-void socAC97clientAdd(struct SocAC97 *ac97, enum Ac97Codec which, Ac97CodecRegR regR,
+void pxaAC97clientAdd(struct PxaAC97 *ac97, enum Ac97Codec which, Ac97CodecRegR regR,
                       Ac97CodecRegW regW, void *userData) {
-    struct Ac97CodecStruct *cd = socAC97prvCodecPtrGet(ac97, which);
+    struct Ac97CodecStruct *cd = pxaAC97prvCodecPtrGet(ac97, which);
 
     cd->regR = regR;
     cd->regW = regW;
     cd->userData = userData;
 }
 
-bool socAC97clientClientWantData(struct SocAC97 *ac97, enum Ac97Codec which, uint32_t *dataPtr) {
-    struct Ac97CodecStruct *cd = socAC97prvCodecPtrGet(ac97, which);
+bool pxaAC97clientClientWantData(struct PxaAC97 *ac97, enum Ac97Codec which, uint32_t *dataPtr) {
+    struct Ac97CodecStruct *cd = pxaAC97prvCodecPtrGet(ac97, which);
 
-    (void)socAC97PrvFifoGet(ac97, &cd->txFifo, dataPtr);
+    (void)pxaAC97PrvFifoGet(ac97, &cd->txFifo, dataPtr);
 
     // they still get data, just last valid data. not fresh new data
     return true;
 }
 
-void socAC97clientClientHaveData(struct SocAC97 *ac97, enum Ac97Codec which, uint32_t data) {
-    struct Ac97CodecStruct *cd = socAC97prvCodecPtrGet(ac97, which);
+void pxaAC97clientClientHaveData(struct PxaAC97 *ac97, enum Ac97Codec which, uint32_t data) {
+    struct Ac97CodecStruct *cd = pxaAC97prvCodecPtrGet(ac97, which);
 
-    (void)socAC97PrvFifoAdd(ac97, &cd->rxFifo, data);
+    (void)pxaAC97PrvFifoAdd(ac97, &cd->rxFifo, data);
 }
 
 template <typename T>
-void pxaAC97Save(struct SocAC97 *ac97, T &savestate) {
+void pxaAC97Save(struct PxaAC97 *ac97, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaAc97, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
 
@@ -458,7 +458,7 @@ void pxaAC97Save(struct SocAC97 *ac97, T &savestate) {
 }
 
 template <typename T>
-void pxaAC97Load(struct SocAC97 *ac97, T &loader) {
+void pxaAC97Load(struct PxaAC97 *ac97, T &loader) {
     auto chunk = loader.GetChunkOrFail(ChunkType::pxaAc97, SAVESTATE_VERSION, "pxa ac97");
     if (!chunk) return;
 
@@ -466,8 +466,8 @@ void pxaAC97Load(struct SocAC97 *ac97, T &loader) {
     ac97->DoSaveLoad(helper);
 }
 
-template void pxaAC97Save<Savestate<ChunkType>>(SocAC97 *ac97, Savestate<ChunkType> &savestate);
-template void pxaAC97Save<SavestateProbe<ChunkType>>(SocAC97 *ac97,
+template void pxaAC97Save<Savestate<ChunkType>>(PxaAC97 *ac97, Savestate<ChunkType> &savestate);
+template void pxaAC97Save<SavestateProbe<ChunkType>>(PxaAC97 *ac97,
                                                      SavestateProbe<ChunkType> &savestate);
-template void pxaAC97Load<SavestateLoader<ChunkType>>(SocAC97 *ac97,
+template void pxaAC97Load<SavestateLoader<ChunkType>>(PxaAC97 *ac97,
                                                       SavestateLoader<ChunkType> &loader);
