@@ -1,9 +1,11 @@
 #ifndef _SOC_PV_H_
 #define _SOC_PV_H_
 
-#include "RAM.h"
 #include "memory_buffer.h"
 #include "soc_generic.h"
+
+struct ArmRam;
+struct PvIc;
 
 class SocPV : public SocGeneric<SocPV> {
     friend SocGeneric<SocPV>;
@@ -47,6 +49,8 @@ class SocPV : public SocGeneric<SocPV> {
    private:
     MemoryBuffer bufferTinyRam;
     ArmRam *tinyRam;
+
+    PvIc *ic;
 };
 
 #endif  // _SOC_PV_H_

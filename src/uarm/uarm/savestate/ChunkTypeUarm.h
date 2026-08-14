@@ -25,6 +25,8 @@ enum class ChunkType : uint32_t {
     wm9712L = 0x0140,
     bcm2035 = 0x0150,
 
+    pvIc = 0x1000,
+
     scheduler = 0x10000,
     cpu = 0x10010,
     pace = 0x10020,

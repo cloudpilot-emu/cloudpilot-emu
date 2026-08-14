@@ -48,6 +48,7 @@ SOURCE_CXX =		 					\
 	uarm/SoC.cpp 						\
 	uarm/soc_PXA.cpp					\
 	uarm/soc_pv.cpp						\
+	uarm/pv_ic.cpp						\
 	uarm/patch68k.cpp 					\
 	uarm/peephole.cpp					\
 	uarm/pace_patch.cpp					\

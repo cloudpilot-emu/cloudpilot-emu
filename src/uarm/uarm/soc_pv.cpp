@@ -15,6 +15,7 @@
 #include "patch_dispatch.h"
 #include "patches.h"
 #include "peephole.h"
+#include "pv_ic.h"
 #include "syscall_dispatch.h"
 
 #define CPUID_V5T 0x4100a200
@@ -59,6 +60,8 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
     peepholeOptimize((uint32_t *)peepholeBuffer, romSize);
     patch68kInit(PATCH_68K_NVFS);
 
+    ic = pvIcInit(cpu, mem);
+
     powerOnState->Save(*this);
     SdEject();
 }
@@ -97,10 +100,12 @@ void SocPV::OnEngageKey(KeyId key, bool down) {}
 
 void SocPV::OnReset() {}
 
-void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {}
+void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) { pvIcLoad(ic, loader); }
 
 template <typename T>
-void SocPV::OnSave(T &savestate) {}
+void SocPV::OnSave(T &savestate) {
+    pvIcSave(ic, savestate);
+}
 
 void SocPV::AllocateBuffers() {
     size_t memoryBufferSize = ramSize + MEMORY_BUFFER_GRANULARITY;
