@@ -17,7 +17,7 @@
 #include "peephole.h"
 #include "syscall_dispatch.h"
 
-#define CPUID_PXA255 0x69052D06ul
+#define CPUID_V5T 0x4100a200
 
 #define ROM_BASE 0x10000000
 #define RAM_BASE 0x20000000
@@ -41,7 +41,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
 
     AllocateBuffers();
 
-    cpu = cpuInit(ROM_BASE, mem, ARM_MEMORY_SYSTEM_MPU, true, false, gdbPort, CPUID_PXA255,
+    cpu = cpuInit(ROM_BASE, mem, ARM_MEMORY_SYSTEM_MPU, false, false, gdbPort, CPUID_V5T,
                   0x0B16A16AUL, patchDispatch, pacePatch, systemState);
 
     patchDispatchSetCpu(patchDispatch, cpu);
@@ -77,7 +77,7 @@ uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) { retu
 
 void SocPV::OnSetFramebufferDirty() {}
 
-void SocPV::OnSleep() {}
+bool SocPV::OnSleep() { return false; }
 
 void SocPV::OnWakeup() {}
 

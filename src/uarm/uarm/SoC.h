@@ -99,7 +99,7 @@ class SoC {
     // Actual SoC needs to implement those, the other virtuals are taken
     // care of in soc_generic.h
     virtual void OnSetFramebufferDirty() = 0;
-    virtual void OnSleep() = 0;
+    virtual bool OnSleep() = 0;
     virtual void OnWakeup() = 0;
     virtual void OnSetAudioQueue(struct AudioQueue *audioQueue) = 0;
     virtual void OnSetPcmOutputEnabled() = 0;

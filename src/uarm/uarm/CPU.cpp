@@ -3741,6 +3741,8 @@ void cpuSetModePace(struct ArmCpu *cpu, bool modePace) { cpu->modePace = modePac
 
 bool cpuIsThumb(struct ArmCpu *cpu) { return cpu->T; }
 
+bool cpuHasPendingInterrupt(struct ArmCpu *cpu) { return cpu->waitingEventsTotal > 0; }
+
 void cpuSetCurInstrPC(struct ArmCpu *cpu, uint32_t curInstrPC) { cpu->curInstrPC = curInstrPC; }
 
 uint32_t cpuGetCurInstrPC(struct ArmCpu *cpu) { return cpu->curInstrPC; }

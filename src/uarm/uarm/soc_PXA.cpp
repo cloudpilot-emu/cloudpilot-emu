@@ -267,8 +267,12 @@ uint32_t SocPXA::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
 
 void SocPXA::OnSetFramebufferDirty() { pxaLcdSetFramebufferDirty(lcd); }
 
-void SocPXA::OnSleep() {
+bool SocPXA::OnSleep() {
+    if (cpuHasPendingInterrupt(cpu)) return false;
+
     scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, pxaTimrTicksToNextInterrupt(tmr));
+
+    return true;
 }
 
 void SocPXA::OnWakeup() { scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, 1); }

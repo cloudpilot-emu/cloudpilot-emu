@@ -53,7 +53,7 @@ class SocPXA : public SocGeneric<SocPXA> {
 
    protected:
     void OnSetFramebufferDirty() override;
-    void OnSleep() override;
+    bool OnSleep() override;
     void OnWakeup() override;
     void OnSetAudioQueue(struct AudioQueue *audioQueue) override;
     void OnSetPcmOutputEnabled() override;

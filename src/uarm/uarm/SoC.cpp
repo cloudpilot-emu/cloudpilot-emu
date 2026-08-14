@@ -67,11 +67,10 @@ bool SoC::SetFramebuffer(uint32_t start, uint32_t size) {
 void SoC::ClearFramebufferDirty() { framebufferDirty = false; }
 
 void SoC::Sleep() {
-    if (sleeping) return;
-    sleeping = true;
+    if (sleeping || !OnSleep()) return;
 
+    sleeping = true;
     cpuSetSleeping(cpu);
-    OnSleep();
 
     // sleepAtTime = scheduler->GetTime();
     // printf("sleep\n");
