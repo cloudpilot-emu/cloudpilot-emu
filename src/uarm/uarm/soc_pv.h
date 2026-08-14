@@ -12,7 +12,7 @@ class SocPV : public SocGeneric<SocPV> {
     static constexpr int MEMORY_SYSTEM_KIND = ARM_MEMORY_SYSTEM_MPU;
 
    public:
-    SocPV(uint32_t ramSize, void *romData, const uint32_t romSize);
+    SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPort);
 
     uint32_t *GetPendingFrame() override;
     void ResetPendingFrame() override;

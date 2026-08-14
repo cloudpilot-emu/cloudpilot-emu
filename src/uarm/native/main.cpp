@@ -1,3 +1,4 @@
+#include "device_type5.h"
 #include "soc_PXA.h"
 #pragma GCC diagnostic ignored "-Wmultichar"
 
@@ -32,6 +33,7 @@
 #include "sdcard.h"
 #include "session/session_file5.h"
 #include "soc_PXA.h"
+#include "soc_pv.h"
 
 using namespace std;
 
@@ -213,9 +215,14 @@ namespace {
             sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release(), key.c_str());
         }
 
-        SoC* soc = new SocPXA(romInfo.GetDeviceType(), ramSize, nor.data, nor.size,
-                              reinterpret_cast<uint8_t*>(nand.data), nand.size,
-                              options.gdbPort.value_or(0), deviceGetSocRev());
+        const DeviceType5 deviceType = romInfo.GetDeviceType();
+        const int gdbPort = options.gdbPort.value_or(-1);
+
+        SoC* soc = (deviceType == deviceTypePV)
+                       ? static_cast<SoC*>(new SocPV(ramSize, nor.data, nor.size, gdbPort))
+                       : static_cast<SoC*>(new SocPXA(deviceType, ramSize, nor.data, nor.size,
+                                                      reinterpret_cast<uint8_t*>(nand.data),
+                                                      nand.size, gdbPort, deviceGetSocRev()));
 
         if (memory.data && memory.size > soc->GetMemoryData().size) {
             cerr << "RAM size mismatch" << endl;

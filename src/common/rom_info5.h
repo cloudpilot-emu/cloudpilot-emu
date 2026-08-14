@@ -19,6 +19,7 @@ class RomInfo5 {
     const char* GetRomName() const;
     bool NeedsNand() const;
     bool NeedsNandPatch() const;
+    bool SupportsNand() const;
 
     uint32_t GetCompanyId() const;
     uint32_t GetHalId() const;

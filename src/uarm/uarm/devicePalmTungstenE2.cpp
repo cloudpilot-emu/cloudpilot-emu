@@ -5,6 +5,7 @@
 #include "ac97dev_WM9712L.h"
 #include "cputil.h"
 #include "device.h"
+#include "device_type5.h"
 #include "mmiodev_DirectNAND.h"
 #include "savestate/savestateAll.h"
 #include "uartdev_bcm2035.h"
@@ -236,7 +237,7 @@ void deviceGetDisplayConfiguration(enum DeviceType5 deviceType,
                                    struct DeviceDisplayConfiguration *displayConfiguration) {
     displayConfiguration->width = 320;
 
-    if (deviceType == deviceTypeFrankenE2) {
+    if (deviceType == deviceTypeFrankenE2 || deviceType == deviceTypePV) {
         displayConfiguration->height = 480;
         displayConfiguration->graffitiHeight = 0;
     } else {

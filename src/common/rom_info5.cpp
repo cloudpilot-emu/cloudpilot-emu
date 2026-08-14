@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 
+#include "device_type5.h"
+
 #pragma GCC diagnostic ignored "-Wmultichar"
 
 using namespace std;
@@ -11,6 +13,7 @@ using namespace std;
 namespace {
     constexpr uint32_t HAL_ID_DMITRY_TUNGSTEN_E3 = 'DmGR';
     constexpr uint32_t HAL_ID_TUNGSTEN_E2 = 'hspr';
+    constexpr uint32_t HAL_ID_PV = 'PvPv';
     constexpr uint32_t COMPANY_ID_PALM = 'Palm';
 
     constexpr uint32_t SIGNATURE = 0xfeedbeef;
@@ -30,6 +33,9 @@ namespace {
 
     const char* describeDeviceType(DeviceType5 deviceType) {
         switch (deviceType) {
+            case deviceTypePV:
+                return "rePalm paravirtualized";
+
             case deviceTypeE2:
                 return "Tungsten E2";
 
@@ -56,12 +62,15 @@ const char* RomInfo5::GetManufacturer() const { return manufacturer.c_str(); }
 const char* RomInfo5::GetRomName() const { return romName.c_str(); }
 
 bool RomInfo5::IsDmitryPatched() const {
-    return (GetCardName() != string("PalmCard") || GetHalId() != HAL_ID_TUNGSTEN_E2);
+    return (GetCardName() != string("PalmCard") || GetHalId() != HAL_ID_TUNGSTEN_E2 ||
+            GetHalId() == HAL_ID_PV);
 }
 
 bool RomInfo5::NeedsNand() const { return !IsDmitryPatched(); }
 
 bool RomInfo5::NeedsNandPatch() const { return IsDmitryPatched(); }
+
+bool RomInfo5::SupportsNand() const { return GetHalId() == HAL_ID_PV; }
 
 uint32_t RomInfo5::GetCompanyId() const { return companyId; }
 
@@ -73,6 +82,10 @@ uint32_t RomInfo5::GetRecommendedRamSize() const {
 
 DeviceType5 RomInfo5::GetDeviceType() const {
     if (!isValid) return deviceTypeInvalid;
+
+    if (halId == HAL_ID_PV) {
+        return deviceTypePV;
+    }
 
     if (companyId == COMPANY_ID_PALM && halId == HAL_ID_TUNGSTEN_E2) {
         return deviceTypeE2;

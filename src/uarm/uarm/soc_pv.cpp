@@ -35,14 +35,14 @@ namespace {
     }
 }  // namespace
 
-SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize) {
+SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPort) {
     ramSize = sanitizeRamSize((ramSize));
     this->ramSize = ramSize;
 
     AllocateBuffers();
 
-    cpu = cpuInit(ROM_BASE, mem, ARM_MEMORY_SYSTEM_MPU, true, false, -1, CPUID_PXA255, 0x0B16A16AUL,
-                  patchDispatch, pacePatch, systemState);
+    cpu = cpuInit(ROM_BASE, mem, ARM_MEMORY_SYSTEM_MPU, true, false, gdbPort, CPUID_PXA255,
+                  0x0B16A16AUL, patchDispatch, pacePatch, systemState);
 
     patchDispatchSetCpu(patchDispatch, cpu);
 

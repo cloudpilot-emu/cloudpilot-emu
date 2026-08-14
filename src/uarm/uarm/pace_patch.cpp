@@ -7,7 +7,7 @@
 #include "cputil.h"
 
 #define findCallout(var, name, location)                                                     \
-    const uint32_t var = decodeBBlBlx(rom, enterPace + location - 0x1fd28);                  \
+    const uint32_t var = decodeBBlBlx(rom, paceLocation + location - 0x1fd28);               \
     if (!var) {                                                                              \
         fprintf(stderr, "unable to locate callout for" name ", PACE will not be patched\n"); \
         return;                                                                              \
