@@ -1,6 +1,7 @@
 #include "MPU.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 
 #include "cputil.h"
@@ -14,7 +15,7 @@
 struct MpuRegion {
     bool enabled{false};
     uint32_t base{0};
-    uint32_t size{0};
+    uint32_t mask{0};
 
     uint32_t config;
     uint8_t cacheable;
@@ -22,7 +23,7 @@ struct MpuRegion {
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
-        chunkHelper.Do32(base).Do32(size).Do32(config).Do(typename T::Pack8() << cacheable << ap);
+        chunkHelper.Do32(config);
     }
 };
 
@@ -41,26 +42,14 @@ struct ArmMpu {
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
         chunkHelper.Do(typename T::Pack8() << cacheable << bufferable).Do16(ap);
+
         for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) regions[i].DoSaveLoad(chunkHelper);
     }
 };
 
 namespace {
-    void rebuildCache(ArmMpu* mpu) {
+    void clearCache(ArmMpu* mpu) {
         memset(mpu->regionCache, CACHE_EMPTY_VALUE, sizeof(mpu->regionCache));
-
-        for (int8_t iRegion = MPU_NUM_REGIONS - 1; iRegion >= 0; iRegion--) {
-            const MpuRegion& region = mpu->regions[iRegion];
-            const size_t pages = region.size >> 12;
-
-            for (size_t page = region.base >> 12; page < pages + (region.base >> 12); page++) {
-                uint32_t& cacheEntry = mpu->regionCache[page >> 3];
-                const uint32_t shift = (page & 0x07) << 2;
-
-                cacheEntry &= ~(0x0f << shift);
-                cacheEntry |= iRegion << shift;
-            }
-        }
     }
 }  // namespace
 
@@ -77,16 +66,8 @@ void mpuReset(ArmMpu* mpu) {
     mpu->bufferable = 0;
     mpu->ap = 0;
 
-    for (MpuRegion& region : mpu->regions) {
-        region.enabled = false;
-        region.ap = 0;
-        region.cacheable = 0;
-        region.config = 0;
-        region.base = 0;
-        region.size = 0;
-    }
-
-    memset(mpu->regionCache, CACHE_EMPTY_VALUE, sizeof(mpu->regionCache));
+    clearCache(mpu);
+    for (MpuRegion& region : mpu->regions) region = MpuRegion{};
 }
 
 MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write) {
@@ -98,6 +79,7 @@ MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool wri
     regionIndex &= 0x0f;
 
     const MpuRegion& region = mpu->regions[regionIndex];
+
     if (!region.enabled) return 0;
 
     switch (region.ap) {
@@ -124,7 +106,7 @@ void mpuSetCacheable(ArmMpu* mpu, uint8_t cacheable) {
     mpu->cacheable = cacheable;
 
     for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
-        mpu->regions[i].cacheable = ((cacheable >> i) & 0x01) ? MPU_TEST_RESULT_BIT_CACHEABLE : 0;
+        mpu->regions[i].cacheable = ((cacheable << i) & 0x80) ? MPU_TEST_RESULT_BIT_CACHEABLE : 0;
     }
 }
 
@@ -134,19 +116,50 @@ void mpuSetAP(ArmMpu* mpu, uint16_t ap) {
     mpu->ap = ap;
 
     for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
-        mpu->regions[i].ap = (ap >> (i << 1)) & 0x03;
+        mpu->regions[i].ap = (ap >> ((MPU_NUM_REGIONS - 1 - i) << 1)) & 0x03;
     }
 }
 
 void mpuSetRegionConfig(ArmMpu* mpu, uint8_t iRegion, uint32_t config) {
-    MpuRegion& region = mpu->regions[iRegion & 0x07];
+    // if (iRegion == 7) return;
+    // we order the regions internally from 0 to 8 (0 = highest priorty, 8 = fallback)
+    iRegion = MPU_NUM_REGIONS - 1 - (iRegion & 0x07);
+
+    MpuRegion& region = mpu->regions[iRegion];
+    const uint8_t sizeTag = (config >> 1) & 0x1f;
 
     region.config = config;
     region.enabled = config & 0x01;
-    region.base = config & 0xfffff000;
-    region.size = 1 << (((config >> 1) & 0x1f) + 1);
+    region.mask = sizeTag == 31 ? 0 : (0xffffffffu << (sizeTag + 1));
+    region.base = config & region.mask;
 
-    rebuildCache(mpu);
+    const uint32_t pages = 1 << (sizeTag - 11);
+    for (uint32_t page = region.base >> 12; page < pages + (region.base >> 12); page++) {
+        const uint32_t shift = (page & 0x07) << 2;
+        const uint32_t mask = ~(0x0f << shift);
+        const uint32_t pageIndex = page >> 3;
+
+        const uint8_t pageRegion = (mpu->regionCache[pageIndex] >> shift) & 0x0f;
+
+        if (region.enabled && pageRegion > iRegion) {
+            // region enable and page belongs to lower priority region?
+            // -> page now belongs to this region
+            mpu->regionCache[pageIndex] &= mask;
+            mpu->regionCache[pageIndex] |= (iRegion << shift);
+        } else if (!region.enabled && pageRegion == iRegion) {
+            // region disabled and page belonged to this region? look for lower priority
+            // region to map page to
+            uint8_t iNewRegion = iRegion + 1;
+            for (; iNewRegion < MPU_NUM_REGIONS; iNewRegion++) {
+                MpuRegion& newRegion = mpu->regions[iNewRegion];
+
+                if (newRegion.base == ((page << 12) & newRegion.mask)) break;
+            }
+
+            mpu->regionCache[pageIndex] &= mask;
+            mpu->regionCache[pageIndex] |= (iNewRegion << shift);
+        }
+    }
 }
 
 bool mpuIsEnabled(ArmMpu* mpu) { return mpu->enabled; }
@@ -178,7 +191,14 @@ void mpuLoad(struct ArmMpu* mpu, T& loader) {
     LoadChunkHelper helper(*chunk);
     mpu->DoSaveLoad(helper);
 
-    rebuildCache(mpu);
+    clearCache(mpu);
+
+    for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
+        mpuSetRegionConfig(mpu, MPU_NUM_REGIONS - 1 - i, mpu->regions[i].config);
+    }
+
+    mpuSetAP(mpu, mpu->ap);
+    mpuSetCacheable(mpu, mpu->bufferable);
 }
 
 template void mpuSave<Savestate<ChunkType>>(ArmMpu* mpu, Savestate<ChunkType>& savestate);
