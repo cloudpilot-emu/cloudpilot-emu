@@ -3479,6 +3479,8 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
         gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC],
                         true);  // early in case it changes PC
 
+        cycleAcc += 1;
+
         // FCSE
 #ifdef SUPPORT_FCSE
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
@@ -3501,8 +3503,6 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, translatedInstr);
 #endif
-
-        cycleAcc += 1;
 
         if constexpr (injected) {
             if (cpu->regs[REG_NO_PC] == INJECTED_CALL_LR_MAGIC)
@@ -3527,6 +3527,8 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
         gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC],
                         true);  // early in case it changes PC
 
+        cycleAcc += 1;
+
         // FCSE
 #ifdef SUPPORT_FCSE
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
@@ -3549,8 +3551,6 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, instr);
 #endif
-
-        cycleAcc += 1;
 
         if constexpr (injected) {
             if (cpu->regs[REG_NO_PC] == INJECTED_CALL_LR_MAGIC)
