@@ -8,6 +8,7 @@ struct ArmRam;
 struct PvIc;
 struct PvTimer;
 struct PvUart;
+struct PvHypercallInterface;
 
 class SocPV : public SocGeneric<SocPV> {
     friend SocGeneric<SocPV>;
@@ -57,6 +58,7 @@ class SocPV : public SocGeneric<SocPV> {
     PvIc *ic;
     PvUart *uart;
     PvUart *uartDebug;
+    PvHypercallInterface *hypercallIface;
 };
 
 #endif  // _SOC_PV_H_

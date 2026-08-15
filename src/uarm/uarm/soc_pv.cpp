@@ -1,6 +1,4 @@
 // clang-format off
-#include "pv_uart.h"
-#include "scheduler.h"
 #include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
 
@@ -18,8 +16,11 @@
 #include "patch_dispatch.h"
 #include "patches.h"
 #include "peephole.h"
+#include "pv_hypercall_interface.h"
 #include "pv_ic.h"
 #include "pv_timer.h"
+#include "pv_uart.h"
+#include "scheduler.h"
 #include "syscall_dispatch.h"
 
 #define CPUID_V5T 0x4100a200
@@ -74,6 +75,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
     timer = pvTimerInit(mem, ic);
     uart = pvUartInit(mem, UART_BASE);
     uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
+    hypercallIface = pvHypercallInterfaceInit(cpu, ramSize);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
@@ -87,7 +89,9 @@ void SocPV::ResetPendingFrame() {}
 
 enum DeviceType5 SocPV::GetDeviceType() { return deviceTypePV; }
 
-void SocPV::SuspendTimerInterrupts(bool suspendInterrupts) {}
+void SocPV::SuspendTimerInterrupts(bool suspendInterrupts) {
+    pvTimerSuspendInterrupts(timer, suspendInterrupts);
+}
 
 bool SocPV::LcdEnabled() { return true; }
 
