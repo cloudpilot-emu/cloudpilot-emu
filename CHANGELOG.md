@@ -1,4 +1,4 @@
-# Next Version 2.2.3
+# Next version
 
 - Work around Webkit bug that may cause audio delay after resuming from
   background.
@@ -172,10 +172,10 @@ with older host devices may vary ;)
 
 - Work around various PalmOS bugs in database import and export.
 
-  Prior to this version, databases imported and exported with PalmOS 3.x may
-  contain defects due to PalmOS bugs. In most cases these defects are harmless,
-  but if you rely on database backups for important data you may want to save
-  new backups to make sure your data is backed up faithfully.
+    Prior to this version, databases imported and exported with PalmOS 3.x may
+    contain defects due to PalmOS bugs. In most cases these defects are harmless,
+    but if you rely on database backups for important data you may want to save
+    new backups to make sure your data is backed up faithfully.
 
 # Version 1.10.7
 
@@ -546,11 +546,11 @@ in order to generate new certificates.
   that it missed.
 - Optimizations that give 10% -- 30% performance improvement
 - Support for serveral Clié devices:
-  - Sony PEG-S300, PEG-S320
-  - Sony PEG-T400 series
-  - Sony PEG-N600C series
-  - Sony PEG-T600C series
-  - Sony PEG-N700C series
+    - Sony PEG-S300, PEG-S320
+    - Sony PEG-T400 series
+    - Sony PEG-N600C series
+    - Sony PEG-T600C series
+    - Sony PEG-N700C series
 
 # Version 1.5.8
 
