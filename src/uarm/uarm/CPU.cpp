@@ -3262,7 +3262,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, uint8_t memorySystemKind
     cpu->m68kTrap0Handlers = new M68kTrapHandlerMap();
 
     // CPAR is only for XScale
-    if (!xscale) cpu->CPAR = 0xffffffff;
+    if (!xscale) cpu->CPAR = 0xffff;
 
     cpuReset(cpu, pc);
 
