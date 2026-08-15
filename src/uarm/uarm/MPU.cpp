@@ -106,6 +106,7 @@ void mpuSetCacheable(ArmMpu* mpu, uint8_t cacheable) {
     mpu->cacheable = cacheable;
 
     for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
+        // mind the gap: we reorder regions internally (see below)
         mpu->regions[i].cacheable = ((cacheable << i) & 0x80) ? MPU_TEST_RESULT_BIT_CACHEABLE : 0;
     }
 }
@@ -116,6 +117,7 @@ void mpuSetAP(ArmMpu* mpu, uint16_t ap) {
     mpu->ap = ap;
 
     for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
+        // mind the gap: we reorder regions internally (see below)
         mpu->regions[i].ap = (ap >> ((MPU_NUM_REGIONS - 1 - i) << 1)) & 0x03;
     }
 }
