@@ -15,7 +15,7 @@ import { WorkletType } from './worklet-types';
 
 class SampleQueue {
     constructor(
-        private capacity: number,
+        public readonly capacity: number,
         private sampleRateFrom: number,
         private sampleRateTo: number,
     ) {
@@ -140,7 +140,10 @@ class PcmProcessor extends AudioWorkletProcessor implements AudioWorkletProcesso
                 const count = message.count;
                 const samples = new Uint32Array(message.buffer);
 
-                for (let i = 0; i < count; i++) this.sampleQueue.push(samples[i]);
+                const start = count > this.sampleQueue.capacity ? count - this.sampleQueue.capacity : 0;
+                const effectiveCount = Math.min(count, this.sampleQueue.capacity);
+
+                for (let i = start; i < effectiveCount; i++) this.sampleQueue.push(samples[i]);
 
                 this.dispatchStreamMessage({ type: StreamMessageClientType.returnBuffer, buffer: message.buffer }, [
                     message.buffer,

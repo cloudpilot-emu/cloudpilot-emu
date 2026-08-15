@@ -31,6 +31,8 @@ export interface SystemState {
 }
 
 const MAX_PCM_SUSPEND_MSEC = 500;
+const MAX_PCM_BUFFERS_IN_FLIGHT = 2;
+const MAX_PCM_WAIT_FOR_BUFFER_MSEC = 2000;
 
 type All<T> = { [P in keyof T]-?: T[P] };
 
@@ -413,7 +415,16 @@ export class Emulator {
     };
 
     private processSamples(timesliceSizeSeconds: number): void {
-        if (!this.pcmStreaming || this.settings.disableAudio) {
+        const now = performance.now();
+
+        if (
+            this.pcmBuffersInFlight >= MAX_PCM_BUFFERS_IN_FLIGHT &&
+            now - this.pcmLastBufferSentAt >= MAX_PCM_WAIT_FOR_BUFFER_MSEC
+        ) {
+            this.pcmBuffersInFlight = 0;
+        }
+
+        if (!this.pcmStreaming || this.settings.disableAudio || this.pcmBuffersInFlight >= MAX_PCM_BUFFERS_IN_FLIGHT) {
             this.uarm.clearSampleQueue();
             return;
         }
@@ -437,6 +448,9 @@ export class Emulator {
             },
             [sampleBuffer.buffer],
         );
+
+        this.pcmLastBufferSentAt = now;
+        this.pcmBuffersInFlight++;
     }
 
     private updateSystemState(): void {
@@ -506,6 +520,8 @@ export class Emulator {
 
             case StreamMessageClientType.returnBuffer:
                 this.sampleBufferPool.push(message.buffer);
+                this.pcmBuffersInFlight--;
+
                 break;
 
             default:
@@ -540,6 +556,8 @@ export class Emulator {
     private pcmSuspended = false;
     private pcmSuspendedForMsec = 0;
     private sampleBufferPool: Array<ArrayBufferLike> = [];
+    private pcmBuffersInFlight = 0;
+    private pcmLastBufferSentAt = 0;
 
     private returnSnapshotCallbacks: Array<() => void> = [];
 

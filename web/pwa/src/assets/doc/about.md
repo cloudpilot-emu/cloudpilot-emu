@@ -192,6 +192,9 @@ speed and host utilization in the session settings.
     install CloudpilotEmu from the
     [App Store](https://apps.apple.com/de/app/cloudpilotemu/id6478502699)
     or as a homescreen app (on iOS) or to add it to the dock (Safari on MacOS).
+-   Audio may be silent for about two seconds after resuming from the background.
+    On rare ocassions, audio may pick up a large latency that only goes away
+    after a closing and reopening the tab or app.
 -   Safari: On rare occasions there have been issues with Safari handling 
     CloudpilotEmu's service worker. Symptoms of this are either repeated
     (bogus) update notifications without the "New version..." dialog on reload, or
