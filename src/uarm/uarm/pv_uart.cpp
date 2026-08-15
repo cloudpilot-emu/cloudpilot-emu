@@ -16,7 +16,7 @@ struct PvUart {
 static bool pvUartPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
                                 void* buf) {
     if (size != 4 && size != 1) {
-        printf("invalid UART access\n");
+        fprintf(stderr, "invalid UART access\n");
         return false;
     }
 

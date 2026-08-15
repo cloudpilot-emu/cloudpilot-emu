@@ -26,12 +26,12 @@ static bool executeHyptercall(PvHypercallInterface *hypercallIface, ArmCpu *cpu)
             break;
 
         case HYPERCALL_IDX_CARD_READ_SEC:
-            printf("hypercall: attempt to read sector\n");
+            fprintf(stderr, "hypercall: attempt to read sector\n");
             cpuSetReg(cpu, 0, 1);
             break;
 
         case HYPERCALL_IDX_CARD_WRITE_SEC:
-            printf("hypercall: attempt to write sector\n");
+            fprintf(stderr, "hypercall: attempt to write sector\n");
             cpuSetReg(cpu, 0, 1);
             break;
 
