@@ -1,6 +1,7 @@
 #include "pv_ic.h"
 
 #include <cstdint>
+#include <cstdio>
 
 #include "CPU.h"
 #include "cputil.h"
@@ -38,6 +39,11 @@ static void pvIcUpdate(PvIc* pv) {
 
 static bool pvIcPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
                               void* buf) {
+    if (size != 4) {
+        fprintf(stderr, "invalid write to IC\n");
+        return false;
+    }
+
     auto ic = reinterpret_cast<PvIc*>(userData);
     pa >>= 2;
 

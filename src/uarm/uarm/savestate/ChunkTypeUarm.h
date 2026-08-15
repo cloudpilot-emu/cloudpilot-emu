@@ -26,6 +26,7 @@ enum class ChunkType : uint32_t {
     bcm2035 = 0x0150,
 
     pvIc = 0x1000,
+    pvTimer = 0x1010,
 
     scheduler = 0x10000,
     cpu = 0x10010,

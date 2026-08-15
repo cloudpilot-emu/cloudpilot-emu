@@ -1,4 +1,5 @@
 // clang-format off
+#include "scheduler.h"
 #include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
 
@@ -16,6 +17,7 @@
 #include "patches.h"
 #include "peephole.h"
 #include "pv_ic.h"
+#include "pv_timer.h"
 #include "syscall_dispatch.h"
 
 #define CPUID_V5T 0x4100a200
@@ -41,6 +43,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
     this->ramSize = ramSize;
 
     AllocateBuffers();
+    SetupScheduler();
 
     cpu = cpuInit(ROM_BASE, mem, ARM_MEMORY_SYSTEM_MPU, false, false, gdbPort, CPUID_V5T,
                   0x0B16A16AUL, patchDispatch, pacePatch, systemState);
@@ -61,6 +64,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
     patch68kInit(PATCH_68K_NVFS);
 
     ic = pvIcInit(cpu, mem);
+    timer = pvTimerInit(mem, ic);
 
     powerOnState->Save(*this);
     SdEject();
@@ -76,7 +80,20 @@ void SocPV::SuspendTimerInterrupts(bool suspendInterrupts) {}
 
 bool SocPV::LcdEnabled() { return true; }
 
-uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) { return 1; }
+uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
+    switch (clientType) {
+        case SCHEDULER_TASK_TIMER:
+            pvTimerTick(timer);
+            return 1;
+
+        case SCHEDULER_TASK_AUX_2:
+            PumpEventQueues();
+            return 1;
+
+        default:
+            ERR("invalid client type\n");
+    }
+}
 
 void SocPV::OnSetFramebufferDirty() {}
 
@@ -100,11 +117,15 @@ void SocPV::OnEngageKey(KeyId key, bool down) {}
 
 void SocPV::OnReset() {}
 
-void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) { pvIcLoad(ic, loader); }
+void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {
+    pvIcLoad(ic, loader);
+    pvTimerLoad(timer, loader);
+}
 
 template <typename T>
 void SocPV::OnSave(T &savestate) {
     pvIcSave(ic, savestate);
+    pvTimerSave(timer, savestate);
 }
 
 void SocPV::AllocateBuffers() {
@@ -115,6 +136,14 @@ void SocPV::AllocateBuffers() {
                                                   MEMORY_BUFFER_GRANULARITY);
 
     if (!success) ERR("failed to allocate memory buffer");
+}
+
+void SocPV::SetupScheduler() {
+    // Timer: 1kHz;
+    scheduler->ScheduleTask(SCHEDULER_TASK_TIMER, 1_sec / 1000ull, 1);
+
+    // Pump event queues: 30 Hz
+    scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30ull, 1);
 }
 
 template void SocGeneric<SocPV>::Save<Savestate<ChunkType>>(Savestate<ChunkType> &savestate);

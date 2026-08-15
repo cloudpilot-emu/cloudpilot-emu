@@ -6,6 +6,7 @@
 
 struct ArmRam;
 struct PvIc;
+struct PvTimer;
 
 class SocPV : public SocGeneric<SocPV> {
     friend SocGeneric<SocPV>;
@@ -45,11 +46,13 @@ class SocPV : public SocGeneric<SocPV> {
 
    private:
     void AllocateBuffers();
+    void SetupScheduler();
 
    private:
     MemoryBuffer bufferTinyRam;
     ArmRam *tinyRam;
 
+    PvTimer *timer;
     PvIc *ic;
 };
 
