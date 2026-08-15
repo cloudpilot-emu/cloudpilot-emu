@@ -39,8 +39,8 @@ static void pvTimerUpdateInterrupt(PvTimer* timer) {
     pvIcInt(timer->ic, IRQ_NO_TIMER, timer->signalling);
 }
 
-static bool pvIcPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
-                              void* buf) {
+static bool pvTimerPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
+                                 void* buf) {
     if (size != 4) {
         fprintf(stderr, "invalid write to IC\n");
         return false;
@@ -90,7 +90,7 @@ PvTimer* pvTimerInit(ArmMem* mem, PvIc* ic) {
 
     timer->ic = ic;
 
-    memRegionAdd(mem, TIMER_BASE, TIMER_SIZE, pvIcPrvMemAccessF, ic);
+    memRegionAdd(mem, TIMER_BASE, TIMER_SIZE, pvTimerPrvMemAccessF, ic);
 
     return timer;
 }

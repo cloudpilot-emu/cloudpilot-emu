@@ -50,6 +50,7 @@ SOURCE_CXX =		 					\
 	uarm/soc_pv.cpp						\
 	uarm/pv_ic.cpp						\
 	uarm/pv_timer.cpp					\
+	uarm/pv_uart.cpp					\
 	uarm/patch68k.cpp 					\
 	uarm/peephole.cpp					\
 	uarm/pace_patch.cpp					\

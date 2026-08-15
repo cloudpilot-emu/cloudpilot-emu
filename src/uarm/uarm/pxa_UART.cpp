@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "CPEndian.h"
 #include "cputil.h"
 #include "mem.h"
 #include "savestate/savestateAll.h"

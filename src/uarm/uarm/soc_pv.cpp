@@ -1,4 +1,5 @@
 // clang-format off
+#include "pv_uart.h"
 #include "scheduler.h"
 #include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
@@ -6,6 +7,7 @@
 #include "soc_pv.h"
 
 #include <cstdint>
+#include <cstdio>
 
 #include "CPU.h"
 #include "RAM.h"
@@ -28,6 +30,9 @@
 #define PV_TINYRAM_BASE 0xffff0000
 #define PV_TINYRAM_SIZE 0x00000100
 
+#define UART_DEBUG_BASE 0x30000100
+#define UART_BASE 0x30000110
+
 namespace {
     uint32_t sanitizeRamSize(uint32_t ramSize) {
         uint32_t sanitizedSize = (ramSize >> 20) << 20;
@@ -36,6 +41,8 @@ namespace {
 
         return sanitizedSize;
     }
+
+    void uartDebugWriteF(uint8_t chr, void *ctx) { fprintf(stderr, "%c", chr); }
 }  // namespace
 
 SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPort) {
@@ -65,6 +72,10 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
 
     ic = pvIcInit(cpu, mem);
     timer = pvTimerInit(mem, ic);
+    uart = pvUartInit(mem, UART_BASE);
+    uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
+
+    pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
     powerOnState->Save(*this);
     SdEject();
