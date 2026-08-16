@@ -355,6 +355,10 @@ export class Emulator {
 
             this.dispatchPcmPortMessage({ type: StreamMessageHostType.flush });
             this.suspendPcm(false);
+
+            if (this.pcmWaitingForBuffersDrain) {
+                this.pcmLastBufferSentAt = performance.now();
+            }
         }
 
         if (!shoulBeRunning) {
