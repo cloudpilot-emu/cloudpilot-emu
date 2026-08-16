@@ -417,14 +417,20 @@ export class Emulator {
     private processSamples(timesliceSizeSeconds: number): void {
         const now = performance.now();
 
-        if (
-            this.pcmBuffersInFlight >= MAX_PCM_BUFFERS_IN_FLIGHT &&
-            now - this.pcmLastBufferSentAt >= MAX_PCM_WAIT_FOR_BUFFER_MSEC
-        ) {
+        if (this.pcmWaitingForBuffersDrain && now - this.pcmLastBufferSentAt >= MAX_PCM_WAIT_FOR_BUFFER_MSEC) {
             this.pcmBuffersInFlight = 0;
+            this.pcmWaitingForBuffersDrain = false;
         }
 
-        if (!this.pcmStreaming || this.settings.disableAudio || this.pcmBuffersInFlight >= MAX_PCM_BUFFERS_IN_FLIGHT) {
+        if (this.pcmBuffersInFlight >= MAX_PCM_BUFFERS_IN_FLIGHT) {
+            this.pcmWaitingForBuffersDrain = true;
+        }
+
+        if (this.pcmWaitingForBuffersDrain && this.pcmBuffersInFlight === 0) {
+            this.pcmWaitingForBuffersDrain = false;
+        }
+
+        if (!this.pcmStreaming || this.settings.disableAudio || this.pcmWaitingForBuffersDrain) {
             this.uarm.clearSampleQueue();
             return;
         }
@@ -558,6 +564,7 @@ export class Emulator {
     private sampleBufferPool: Array<ArrayBufferLike> = [];
     private pcmBuffersInFlight = 0;
     private pcmLastBufferSentAt = 0;
+    private pcmWaitingForBuffersDrain = false;
 
     private returnSnapshotCallbacks: Array<() => void> = [];
 
