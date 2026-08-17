@@ -32,7 +32,7 @@ export interface SystemState {
 
 const MAX_PCM_SUSPEND_MSEC = 500;
 const MAX_PCM_BUFFERS_IN_FLIGHT = 5;
-const MAX_PCM_WAIT_FOR_BUFFER_MSEC = 3000;
+const MAX_PCM_WAIT_FOR_BUFFER_MSEC = 5000;
 
 type All<T> = { [P in keyof T]-?: T[P] };
 
