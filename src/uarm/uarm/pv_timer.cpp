@@ -90,7 +90,7 @@ PvTimer* pvTimerInit(ArmMem* mem, PvIc* ic) {
 
     timer->ic = ic;
 
-    memRegionAdd(mem, TIMER_BASE, TIMER_SIZE, pvTimerPrvMemAccessF, ic);
+    memRegionAdd(mem, TIMER_BASE, TIMER_SIZE, pvTimerPrvMemAccessF, timer);
 
     return timer;
 }
@@ -134,8 +134,8 @@ void pvTimerLoad(struct PvTimer* timer, T& loader) {
     timer->DoSaveLoad(helper);
 }
 
-template void pvTimerSave<Savestate<ChunkType>>(PvTimer* ic, Savestate<ChunkType>& savestate);
-template void pvTimerSave<SavestateProbe<ChunkType>>(PvTimer* ic,
+template void pvTimerSave<Savestate<ChunkType>>(PvTimer* timer, Savestate<ChunkType>& savestate);
+template void pvTimerSave<SavestateProbe<ChunkType>>(PvTimer* timer,
                                                      SavestateProbe<ChunkType>& savestate);
-template void pvTimerLoad<SavestateLoader<ChunkType>>(PvTimer* ic,
+template void pvTimerLoad<SavestateLoader<ChunkType>>(PvTimer* timer,
                                                       SavestateLoader<ChunkType>& loader);
