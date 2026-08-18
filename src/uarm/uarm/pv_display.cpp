@@ -149,26 +149,36 @@ PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut) {
 
 template <int bpp>
 static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* target) {
-    const auto framebuffer = reinterpret_cast<uint8_t*>(
+    auto framebuffer = reinterpret_cast<uint8_t*>(
         ramResolveAddress(display->ram, display->base, display->stride * RESOLUTION_HEIGHT));
     if (!framebuffer) return false;
 
     const auto clut = reinterpret_cast<uint32_t*>(display->bufferClut->buffer);
 
-    const uint32_t lineBytes = RESOLUTION_WIDTH >> (4 - bpp);
+    const uint32_t lineBytes = (RESOLUTION_WIDTH * bpp) / 8;
     if (lineBytes < display->stride) return false;
 
     const uint32_t pitchDelta = display->stride - lineBytes;
-    Nibbler<bpp> nibbler;
 
-    nibbler.reset(framebuffer, 0);
+    Nibbler<bpp> nibbler;
+    if constexpr (bpp != 8) {
+        nibbler.reset(framebuffer, 0);
+    }
 
     for (uint32_t y = 0; y < RESOLUTION_HEIGHT; y++) {
         for (uint32_t x = 0; x < RESOLUTION_WIDTH; x++) {
-            *(target++) = clut[nibbler.nibble()];
+            if constexpr (bpp != 8) {
+                *(target++) = clut[nibbler.nibble()];
+            } else {
+                *(target++) = clut[*(framebuffer++)];
+            }
         }
 
-        nibbler.skipBytes(pitchDelta);
+        if constexpr (bpp != 8) {
+            nibbler.skipBytes(pitchDelta);
+        } else {
+            framebuffer += pitchDelta;
+        }
     }
 
     return true;
@@ -178,14 +188,17 @@ bool pvDisplayRenderFramebuffer(PvDisplay* display, uint32_t* target) {
     if (display->base == 0 || display->stride == 0) return false;
 
     switch (display->depth) {
-        case 1:
+        case 0:
             return pvDisplayRenderFramebufferIndexed<1>(display, target);
 
-        case 2:
+        case 1:
             return pvDisplayRenderFramebufferIndexed<2>(display, target);
 
-        case 3:
+        case 2:
             return pvDisplayRenderFramebufferIndexed<4>(display, target);
+
+        case 3:
+            return pvDisplayRenderFramebufferIndexed<8>(display, target);
 
         case 4: {
             const uint32_t lineBytes = RESOLUTION_WIDTH << 1;
