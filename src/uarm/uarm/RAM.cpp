@@ -263,3 +263,9 @@ struct ArmRam* ramInit(struct ArmMem* mem, class SoC* soc, uint32_t adr, uint32_
 
     return ram;
 }
+
+void* ramResolveAddress(struct ArmRam* ram, uint32_t pv, uint32_t size) {
+    if (pv < ram->adr || pv + size > ram->adr + ram->sz) return nullptr;
+
+    return ram->buf.buffer + (pv - ram->adr);
+}

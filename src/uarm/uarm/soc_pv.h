@@ -1,7 +1,10 @@
 #ifndef _SOC_PV_H_
 #define _SOC_PV_H_
 
+#include <memory>
+
 #include "memory_buffer.h"
+#include "pv_display.h"
 #include "soc_generic.h"
 
 struct ArmRam;
@@ -9,6 +12,7 @@ struct PvIc;
 struct PvTimer;
 struct PvUart;
 struct PvHypercallInterface;
+struct PvDisplay;
 
 class SocPV : public SocGeneric<SocPV> {
     friend SocGeneric<SocPV>;
@@ -52,6 +56,7 @@ class SocPV : public SocGeneric<SocPV> {
 
    private:
     MemoryBuffer bufferTinyRam;
+    MemoryBuffer bufferClut;
     ArmRam *tinyRam;
 
     PvTimer *timer;
@@ -59,6 +64,9 @@ class SocPV : public SocGeneric<SocPV> {
     PvUart *uart;
     PvUart *uartDebug;
     PvHypercallInterface *hypercallIface;
+    PvDisplay *display;
+
+    std::unique_ptr<uint32_t[]> framebuffer;
 };
 
 #endif  // _SOC_PV_H_

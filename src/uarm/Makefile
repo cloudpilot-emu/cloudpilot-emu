@@ -52,6 +52,7 @@ SOURCE_CXX =		 					\
 	uarm/pv_timer.cpp					\
 	uarm/pv_uart.cpp					\
 	uarm/pv_hypercall_interface.cpp		\
+	uarm/pv_display.cpp					\
 	uarm/patch68k.cpp 					\
 	uarm/peephole.cpp					\
 	uarm/pace_patch.cpp					\

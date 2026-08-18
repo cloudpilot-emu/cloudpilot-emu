@@ -27,6 +27,7 @@ enum class ChunkType : uint32_t {
 
     pvIc = 0x1000,
     pvTimer = 0x1010,
+    pvDisplay = 0x1020,
 
     scheduler = 0x10000,
     cpu = 0x10010,

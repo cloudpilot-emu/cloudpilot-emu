@@ -21,4 +21,6 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
 
 void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size);
 
+void* ramResolveAddress(struct ArmRam* ram, uint32_t pv, uint32_t size);
+
 #endif

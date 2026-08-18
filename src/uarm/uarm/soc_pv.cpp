@@ -1,4 +1,5 @@
 // clang-format off
+#include "pv_display.h"
 #include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
 
@@ -6,6 +7,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 
 #include "CPU.h"
 #include "RAM.h"
@@ -16,6 +18,7 @@
 #include "patch_dispatch.h"
 #include "patches.h"
 #include "peephole.h"
+#include "pv_display.h"
 #include "pv_hypercall_interface.h"
 #include "pv_ic.h"
 #include "pv_timer.h"
@@ -33,6 +36,11 @@
 
 #define UART_DEBUG_BASE 0x30000100
 #define UART_BASE 0x30000110
+
+#define RESOLUTION_WIDTH 320
+#define RESOLUTION_HEIGHT 480
+
+using namespace std;
 
 namespace {
     uint32_t sanitizeRamSize(uint32_t ramSize) {
@@ -76,16 +84,27 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
     uart = pvUartInit(mem, UART_BASE);
     uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
     hypercallIface = pvHypercallInterfaceInit(cpu, ramSize);
+    display = pvDisplayInit(mem, ram, &bufferClut);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
+
+    framebuffer = make_unique<uint32_t[]>((RESOLUTION_HEIGHT * RESOLUTION_WIDTH) >> 2);
 
     powerOnState->Save(*this);
     SdEject();
 }
 
-uint32_t *SocPV::GetPendingFrame() { return nullptr; }
+uint32_t *SocPV::GetPendingFrame() {
+    if (!framebufferDirty && !pvIsDirty(display)) return nullptr;
+    if (!pvDisplayRenderFramebuffer(display, framebuffer.get())) return nullptr;
 
-void SocPV::ResetPendingFrame() {}
+    return framebuffer.get();
+}
+
+void SocPV::ResetPendingFrame() {
+    ClearFramebufferDirty();
+    pvDisplayClearDirty(display);
+}
 
 enum DeviceType5 SocPV::GetDeviceType() { return deviceTypePV; }
 
@@ -135,19 +154,28 @@ void SocPV::OnReset() {}
 void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {
     pvIcLoad(ic, loader);
     pvTimerLoad(timer, loader);
+    pvDisplayLoad(display, loader);
 }
 
 template <typename T>
 void SocPV::OnSave(T &savestate) {
     pvIcSave(ic, savestate);
     pvTimerSave(timer, savestate);
+    pvDisplaySave(display, savestate);
 }
 
 void SocPV::AllocateBuffers() {
-    size_t memoryBufferSize = ramSize + MEMORY_BUFFER_GRANULARITY;
+    size_t memoryBufferSize = ramSize + 2 * MEMORY_BUFFER_GRANULARITY;
 
     bool success = memoryBufferAllocate(&bufferMemory, memoryBufferSize);
-    success = success && memoryBufferGetSubBuffer(&bufferMemory, &bufferTinyRam, ramSize,
+
+    size_t offset = ramSize;
+
+    success = success && memoryBufferGetSubBuffer(&bufferMemory, &bufferTinyRam, offset,
+                                                  MEMORY_BUFFER_GRANULARITY);
+    offset += MEMORY_BUFFER_GRANULARITY;
+
+    success = success && memoryBufferGetSubBuffer(&bufferMemory, &bufferClut, offset,
                                                   MEMORY_BUFFER_GRANULARITY);
 
     if (!success) ERR("failed to allocate memory buffer");
