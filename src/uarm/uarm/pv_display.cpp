@@ -38,7 +38,7 @@ struct PvDisplay {
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
-        chunkHelper.Do32(base).Do32(stride).Do8(depth);
+        chunkHelper.Do32(base).Do32(stride).Do8(depth).Do32(width).Do32(height).Do32(density);
     }
 };
 
@@ -248,11 +248,20 @@ void pvDisplaySave(struct PvDisplay* display, T& savestate) {
 
 template <typename T>
 void pvDisplayLoad(struct PvDisplay* display, T& loader) {
+    const uint32_t oldWidth = display->width;
+    const uint32_t oldHeight = display->height;
+    const uint32_t oldDensity = display->density;
+
     auto chunk = loader.GetChunkOrFail(ChunkType::pvDisplay, SAVESTATE_VERSION, "pvDisplay");
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
     display->DoSaveLoad(helper);
+
+    if (display->width != oldWidth || display->height != oldHeight ||
+        display->density != oldDensity) {
+        ERR("display geometry does not match after load \n");
+    }
 }
 
 template void pvDisplaySave<Savestate<ChunkType>>(PvDisplay* display,
