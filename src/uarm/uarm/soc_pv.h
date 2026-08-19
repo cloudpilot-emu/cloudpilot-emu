@@ -1,8 +1,10 @@
 #ifndef _SOC_PV_H_
 #define _SOC_PV_H_
 
+#include <cstddef>
 #include <memory>
 
+#include "display_configuration.h"
 #include "memory_buffer.h"
 #include "pv_display.h"
 #include "soc_generic.h"
@@ -13,6 +15,7 @@ struct PvTimer;
 struct PvUart;
 struct PvHypercallInterface;
 struct PvDisplay;
+struct PvKeys;
 
 class SocPV : public SocGeneric<SocPV> {
     friend SocGeneric<SocPV>;
@@ -21,7 +24,8 @@ class SocPV : public SocGeneric<SocPV> {
     static constexpr int MEMORY_SYSTEM_KIND = ARM_MEMORY_SYSTEM_MPU;
 
    public:
-    SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPort);
+    SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t displayWidth,
+          uint32_t displayHeight, uint32_t displayDensity, int gdbPort);
 
     uint32_t *GetPendingFrame() override;
     void ResetPendingFrame() override;
@@ -57,14 +61,19 @@ class SocPV : public SocGeneric<SocPV> {
    private:
     MemoryBuffer bufferTinyRam;
     MemoryBuffer bufferClut;
-    ArmRam *tinyRam;
+    ArmRam *tinyRam{nullptr};
 
-    PvTimer *timer;
-    PvIc *ic;
-    PvUart *uart;
-    PvUart *uartDebug;
-    PvHypercallInterface *hypercallIface;
-    PvDisplay *display;
+    uint32_t displayWidth{0};
+    uint32_t displayHeight{0};
+    uint32_t displayDensity{0};
+
+    PvTimer *timer{nullptr};
+    PvIc *ic{nullptr};
+    PvUart *uart{nullptr};
+    PvUart *uartDebug{nullptr};
+    PvHypercallInterface *hypercallIface{nullptr};
+    PvDisplay *display{nullptr};
+    PvKeys *keys{nullptr};
 
     std::unique_ptr<uint32_t[]> framebuffer;
 };

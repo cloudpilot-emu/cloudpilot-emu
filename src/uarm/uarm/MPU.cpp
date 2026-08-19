@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 #include "cputil.h"
@@ -17,8 +18,8 @@ struct MpuRegion {
     uint32_t base{0};
     uint32_t mask{0};
 
-    uint32_t config;
-    uint8_t cacheable;
+    uint32_t config{0};
+    uint8_t cacheable{0};
     uint8_t ap{0};
 
     template <typename T>
@@ -34,7 +35,7 @@ struct ArmMpu {
     uint32_t regionCache[1 << 17];
 
     // last region is a dummy and always disabled
-    MpuRegion regions[MPU_NUM_REGIONS + 1];
+    MpuRegion regions[MPU_NUM_REGIONS + 1]{};
     uint8_t cacheable{0};
     uint8_t bufferable{0};
     uint16_t ap{0};
@@ -129,11 +130,19 @@ void mpuSetRegionConfig(ArmMpu* mpu, uint8_t iRegion, uint32_t config) {
 
     MpuRegion& region = mpu->regions[iRegion];
     const uint8_t sizeTag = (config >> 1) & 0x1f;
+    const bool wasEnabled = region.enabled;
 
     region.config = config;
     region.enabled = config & 0x01;
-    region.mask = sizeTag == 31 ? 0 : (0xffffffffu << (sizeTag + 1));
-    region.base = config & region.mask;
+
+    if (region.enabled) {
+        // if the region is disabled we retain the old mask and base
+        region.mask = sizeTag == 31 ? 0 : (0xffffffffu << (sizeTag + 1));
+        region.base = config & region.mask;
+    }
+
+    // no changes to the cache if the region was disabled and stays disabled
+    if (!region.enabled && !wasEnabled) return;
 
     const uint32_t pages = 1 << (sizeTag - 11);
     for (uint32_t page = region.base >> 12; page < pages + (region.base >> 12); page++) {
@@ -155,7 +164,7 @@ void mpuSetRegionConfig(ArmMpu* mpu, uint8_t iRegion, uint32_t config) {
             for (; iNewRegion < MPU_NUM_REGIONS; iNewRegion++) {
                 MpuRegion& newRegion = mpu->regions[iNewRegion];
 
-                if (newRegion.base == ((page << 12) & newRegion.mask)) break;
+                if (newRegion.enabled && newRegion.base == ((page << 12) & newRegion.mask)) break;
             }
 
             mpu->regionCache[pageIndex] &= mask;
@@ -194,7 +203,6 @@ void mpuLoad(struct ArmMpu* mpu, T& loader) {
     mpu->DoSaveLoad(helper);
 
     clearCache(mpu);
-
     for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
         mpuSetRegionConfig(mpu, MPU_NUM_REGIONS - 1 - i, mpu->regions[i].config);
     }

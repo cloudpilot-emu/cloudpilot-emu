@@ -58,7 +58,7 @@ static bool pvIcPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bo
 
             break;
 
-        case (IC_OFFSET_STATE):
+        case (IC_OFFSET_STATE >> 2):
             if (write) {
                 return false;
             } else {

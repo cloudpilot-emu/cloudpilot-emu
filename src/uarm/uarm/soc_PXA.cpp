@@ -12,6 +12,7 @@
 #include "ROM.h"
 #include "cputil.h"
 #include "device.h"
+#include "display_configuration.h"
 #include "keys.h"
 #include "pace_patch.h"
 #include "patch68k.h"
@@ -185,8 +186,8 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
 
     mmc = pxaMmcInit(mem, ic, dma);
 
-    DeviceDisplayConfiguration displayConfiguration;
-    deviceGetDisplayConfiguration(deviceType, &displayConfiguration);
+    DisplayConfiguration displayConfiguration;
+    displayConfigurationGet(deviceType, &displayConfiguration);
 
     lcd = pxaLcdInit(mem, this, ic, &bufferLcd, displayConfiguration.width,
                      displayConfiguration.height);

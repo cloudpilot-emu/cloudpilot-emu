@@ -9,7 +9,8 @@ struct PvDisplay;
 struct ArmMem;
 struct ArmRam;
 
-PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut);
+PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut, uint32_t width,
+                         uint32_t height, uint32_t density);
 
 bool pvDisplayRenderFramebuffer(PvDisplay* display, uint32_t* target);
 

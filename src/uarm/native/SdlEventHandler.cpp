@@ -44,7 +44,7 @@ namespace {
 }  // namespace
 
 SdlEventHandler::SdlEventHandler(SoC* soc, int scale,
-                                 DeviceDisplayConfiguration& deviceDisplayConfiguration,
+                                 DisplayConfiguration& deviceDisplayConfiguration,
                                  Rotation rotation)
     : soc(soc), scale(scale), rotation(rotation) {
     width = deviceDisplayConfiguration.width;

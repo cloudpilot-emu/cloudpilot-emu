@@ -28,6 +28,7 @@
 #include "buffer.h"
 #include "cputil.h"
 #include "device.h"
+#include "display_configuration.h"
 #include "md5.h"
 #include "rom_info5.h"
 #include "sdcard.h"
@@ -53,7 +54,7 @@ namespace {
     constexpr size_t AUDIO_QUEUE_SIZE = 44100 / MAIN_LOOP_FPS * 10;
     constexpr size_t NAND_SIZE = 34603008;
 
-    int windowWidth(DeviceDisplayConfiguration& displayConfiguration, Rotation rotation) {
+    int windowWidth(DisplayConfiguration& displayConfiguration, Rotation rotation) {
         switch (rotation) {
             case Rotation::landscape_90:
             case Rotation::landscape_270:
@@ -64,7 +65,7 @@ namespace {
         }
     }
 
-    int windowHeight(DeviceDisplayConfiguration& displayConfiguration, Rotation rotation) {
+    int windowHeight(DisplayConfiguration& displayConfiguration, Rotation rotation) {
         switch (rotation) {
             case Rotation::landscape_90:
             case Rotation::landscape_270:
@@ -75,8 +76,7 @@ namespace {
         }
     }
 
-    SDL_Window* initSdl(DeviceDisplayConfiguration& displayConfiguration, int scale,
-                        Rotation rotation) {
+    SDL_Window* initSdl(DisplayConfiguration& displayConfiguration, int scale, Rotation rotation) {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) < 0) {
             cerr << "could not initialize SDL: " << SDL_GetError() << endl;
             return nullptr;
@@ -94,8 +94,8 @@ namespace {
         return window;
     }
 
-    void sdlResizeWindow(SDL_Window* window, DeviceDisplayConfiguration& displayConfiguration,
-                         int scale, Rotation rotation) {
+    void sdlResizeWindow(SDL_Window* window, DisplayConfiguration& displayConfiguration, int scale,
+                         Rotation rotation) {
         SDL_SetWindowSize(window, scale * windowWidth(displayConfiguration, rotation),
                           scale * windowHeight(displayConfiguration, rotation));
     }
@@ -218,8 +218,13 @@ namespace {
         const DeviceType5 deviceType = romInfo.GetDeviceType();
         const int gdbPort = options.gdbPort.value_or(-1);
 
+        DisplayConfiguration displayConfiguration;
+        displayConfigurationGet(romInfo.GetDeviceType(), &displayConfiguration);
+
         SoC* soc = (deviceType == deviceTypePV)
-                       ? static_cast<SoC*>(new SocPV(ramSize, nor.data, nor.size, gdbPort))
+                       ? static_cast<SoC*>(new SocPV(ramSize, nor.data, nor.size,
+                                                     displayConfiguration.width,
+                                                     displayConfiguration.height, 144, gdbPort))
                        : static_cast<SoC*>(new SocPXA(deviceType, ramSize, nor.data, nor.size,
                                                       reinterpret_cast<uint8_t*>(nand.data),
                                                       nand.size, gdbPort, deviceGetSocRev()));
@@ -254,9 +259,6 @@ namespace {
 
         MainLoop mainLoop(soc);
         mainLoop.SetCyclesPerSecondLimit(options.mips * 1000000);
-
-        DeviceDisplayConfiguration displayConfiguration;
-        deviceGetDisplayConfiguration(romInfo.GetDeviceType(), &displayConfiguration);
 
         Rotation rotation = Rotation::portrait_0;
         const int scale = options.smallWindow ? 1 : 2;

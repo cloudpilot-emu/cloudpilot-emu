@@ -3,11 +3,11 @@
 
 #include "Rotation.h"
 #include "SoC.h"
-#include "device.h"
+#include "display_configuration.h"
 
 class SdlEventHandler {
    public:
-    SdlEventHandler(SoC* soc, int scale, DeviceDisplayConfiguration& deviceDisplayConfiguration,
+    SdlEventHandler(SoC* soc, int scale, DisplayConfiguration& deviceDisplayConfiguration,
                     Rotation rotation);
 
     void HandleEvents();

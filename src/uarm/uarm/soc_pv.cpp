@@ -21,6 +21,7 @@
 #include "pv_display.h"
 #include "pv_hypercall_interface.h"
 #include "pv_ic.h"
+#include "pv_keys.h"
 #include "pv_timer.h"
 #include "pv_uart.h"
 #include "scheduler.h"
@@ -37,9 +38,6 @@
 #define UART_DEBUG_BASE 0x30000100
 #define UART_BASE 0x30000110
 
-#define RESOLUTION_WIDTH 320
-#define RESOLUTION_HEIGHT 480
-
 using namespace std;
 
 namespace {
@@ -54,7 +52,9 @@ namespace {
     void uartDebugWriteF(uint8_t chr, void *ctx) { fprintf(stderr, "%c", chr); }
 }  // namespace
 
-SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPort) {
+SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t displayWidth,
+             uint32_t displayHeight, uint32_t displayDensity, int gdbPort)
+    : displayWidth(displayWidth), displayHeight(displayHeight), displayDensity(displayDensity) {
     ramSize = sanitizeRamSize((ramSize));
     this->ramSize = ramSize;
 
@@ -84,11 +84,12 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, int gdbPor
     uart = pvUartInit(mem, UART_BASE);
     uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
     hypercallIface = pvHypercallInterfaceInit(cpu, ramSize);
-    display = pvDisplayInit(mem, ram, &bufferClut);
+    display = pvDisplayInit(mem, ram, &bufferClut, displayWidth, displayHeight, displayDensity);
+    keys = pvKeysInit(mem, ic);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
-    framebuffer = make_unique<uint32_t[]>((RESOLUTION_HEIGHT * RESOLUTION_WIDTH) >> 2);
+    framebuffer = make_unique<uint32_t[]>(displayWidth * displayHeight);
 
     powerOnState->Save(*this);
     SdEject();
@@ -129,7 +130,9 @@ uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     }
 }
 
-void SocPV::OnSetFramebufferDirty() {}
+void SocPV::OnSetFramebufferDirty() {
+    // NOP - we track that directly here
+}
 
 bool SocPV::OnSleep() { return false; }
 
@@ -147,7 +150,7 @@ void SocPV::OnSdEject() {}
 
 void SocPV::OnTouch(int x, int y) {}
 
-void SocPV::OnEngageKey(KeyId key, bool down) {}
+void SocPV::OnEngageKey(KeyId key, bool down) { pvKeysEngage(keys, key, down); }
 
 void SocPV::OnReset() {}
 
@@ -155,6 +158,7 @@ void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {
     pvIcLoad(ic, loader);
     pvTimerLoad(timer, loader);
     pvDisplayLoad(display, loader);
+    pvKeysLoad(keys, loader);
 }
 
 template <typename T>
@@ -162,6 +166,7 @@ void SocPV::OnSave(T &savestate) {
     pvIcSave(ic, savestate);
     pvTimerSave(timer, savestate);
     pvDisplaySave(display, savestate);
+    pvKeysSave(keys, savestate);
 }
 
 void SocPV::AllocateBuffers() {

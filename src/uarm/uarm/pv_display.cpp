@@ -18,10 +18,6 @@
 #define DISPLAY_OFFSET_CLUT 12
 #define DISPLAY_OFFSET_SPEC 16
 
-#define RESOLUTION_WIDTH 320
-#define RESOLUTION_HEIGHT 480
-#define RESOLUTION_DENSITY 144
-
 #define RAM_BASE 0x20000000
 
 #define SAVESTATE_VERSION 0
@@ -32,6 +28,10 @@ struct PvDisplay {
 
     uint8_t depth{0};
     bool dirty{true};
+
+    uint32_t width;
+    uint32_t height;
+    uint32_t density;
 
     MemoryBuffer* bufferClut{nullptr};
     ArmRam* ram{nullptr};
@@ -56,7 +56,7 @@ static uint32_t unpack_rgb16(uint16_t rgb16) {
 
 static void updateFramebufferLocation(PvDisplay* display) {
     if (display->base > RAM_BASE && display->stride > 0) {
-        ramSetFramebuffer(display->ram, display->base, display->stride * RESOLUTION_HEIGHT);
+        ramSetFramebuffer(display->ram, display->base, display->stride * display->height);
     } else {
         ramSetFramebuffer(display->ram, 0, 0);
     }
@@ -65,7 +65,7 @@ static void updateFramebufferLocation(PvDisplay* display) {
 static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
                                    void* buf) {
     if (size != 4) {
-        fprintf(stderr, "invalid access to display");
+        fprintf(stderr, "invalid access to display\n");
         return false;
     }
 
@@ -75,7 +75,7 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
     switch ((pa - DISPLAY_BASE) >> 2) {
         case DISPLAY_OFFSET_BASE >> 2:
             if (write) {
-                display->base = value;
+                display->base = value & ~0x03;
                 display->dirty = true;
                 updateFramebufferLocation(display);
             } else {
@@ -84,9 +84,9 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
 
             break;
 
-        case DISPLAY_OFFSET_STRIDE:
+        case (DISPLAY_OFFSET_STRIDE >> 2):
             if (write) {
-                display->stride = value;
+                display->stride = value & ~0x03;
                 display->dirty = true;
                 updateFramebufferLocation(display);
 
@@ -96,7 +96,7 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
 
             break;
 
-        case DISPLAY_OFFSET_DEPTH:
+        case (DISPLAY_OFFSET_DEPTH >> 2):
             if (write) {
                 if (value <= 4) {
                     display->depth = value;
@@ -111,7 +111,7 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
 
             break;
 
-        case DISPLAY_OFFSET_CLUT: {
+        case (DISPLAY_OFFSET_CLUT >> 2): {
             if (!write) return false;
 
             const uint8_t index = value >> 24;
@@ -123,12 +123,12 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
             break;
         }
 
-        case DISPLAY_OFFSET_SPEC:
+        case (DISPLAY_OFFSET_SPEC >> 2):
             if (write) return false;
 
-            value = (((RESOLUTION_WIDTH >> 2) - 1) & 0x1ff) |
-                    ((((RESOLUTION_HEIGHT >> 2) - 1) & 0x1ff) << 9) |
-                    (((RESOLUTION_DENSITY / 36 - 1) & 0x07) << 18);
+            value = (((display->width >> 2) - 1) & 0x1ff) |
+                    ((((display->height >> 2) - 1) & 0x1ff) << 9) |
+                    (((display->density / 36 - 1) & 0x07) << 18);
 
             break;
     }
@@ -136,8 +136,13 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
     return true;
 }
 
-PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut) {
+PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut, uint32_t width,
+                         uint32_t height, uint32_t density) {
     auto display = new PvDisplay();
+
+    display->width = width;
+    display->height = height;
+    display->density = density;
 
     display->ram = ram;
     display->bufferClut = bufferClut;
@@ -150,12 +155,12 @@ PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut) {
 template <int bpp>
 static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* target) {
     auto framebuffer = reinterpret_cast<uint8_t*>(
-        ramResolveAddress(display->ram, display->base, display->stride * RESOLUTION_HEIGHT));
+        ramResolveAddress(display->ram, display->base, display->stride * display->height));
     if (!framebuffer) return false;
 
     const auto clut = reinterpret_cast<uint32_t*>(display->bufferClut->buffer);
 
-    const uint32_t lineBytes = (RESOLUTION_WIDTH * bpp) / 8;
+    const uint32_t lineBytes = (display->width * bpp) / 8;
     if (lineBytes < display->stride) return false;
 
     const uint32_t pitchDelta = display->stride - lineBytes;
@@ -165,8 +170,8 @@ static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* targ
         nibbler.reset(framebuffer, 0);
     }
 
-    for (uint32_t y = 0; y < RESOLUTION_HEIGHT; y++) {
-        for (uint32_t x = 0; x < RESOLUTION_WIDTH; x++) {
+    for (uint32_t y = 0; y < display->height; y++) {
+        for (uint32_t x = 0; x < display->width; x++) {
             if constexpr (bpp != 8) {
                 *(target++) = clut[nibbler.nibble()];
             } else {
@@ -201,17 +206,17 @@ bool pvDisplayRenderFramebuffer(PvDisplay* display, uint32_t* target) {
             return pvDisplayRenderFramebufferIndexed<8>(display, target);
 
         case 4: {
-            const uint32_t lineBytes = RESOLUTION_WIDTH << 1;
+            const uint32_t lineBytes = display->width << 1;
             if (lineBytes < display->stride || display->stride & 0x01) return false;
 
             const uint32_t pitchDelta = (display->stride - lineBytes) >> 1;
 
-            auto framebuffer = reinterpret_cast<uint16_t*>(ramResolveAddress(
-                display->ram, display->base, display->stride * RESOLUTION_HEIGHT));
+            auto framebuffer = reinterpret_cast<uint16_t*>(
+                ramResolveAddress(display->ram, display->base, display->stride * display->height));
             if (!framebuffer) return false;
 
-            for (uint32_t y = 0; y < RESOLUTION_HEIGHT; y++) {
-                for (uint32_t x = 0; x < RESOLUTION_WIDTH; x++) {
+            for (uint32_t y = 0; y < display->height; y++) {
+                for (uint32_t x = 0; x < display->width; x++) {
                     *(target++) = unpack_rgb16(*(framebuffer++));
                 }
 

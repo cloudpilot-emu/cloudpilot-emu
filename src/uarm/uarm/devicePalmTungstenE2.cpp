@@ -6,6 +6,7 @@
 #include "cputil.h"
 #include "device.h"
 #include "device_type5.h"
+#include "display_configuration.h"
 #include "mmiodev_DirectNAND.h"
 #include "savestate/savestateAll.h"
 #include "uartdev_bcm2035.h"
@@ -212,8 +213,8 @@ struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
     sp->nand = directNandGetNand(dev->nand);
     bcm2035RegisterWithUart(dev->bcm2035, sp->btUart);
 
-    struct DeviceDisplayConfiguration displayConfiguration;
-    deviceGetDisplayConfiguration(type, &displayConfiguration);
+    struct DisplayConfiguration displayConfiguration;
+    displayConfigurationGet(type, &displayConfiguration);
 
     return dev;
 }
@@ -231,19 +232,6 @@ void deviceTouch(struct Device *dev, int x, int y) {
 
 void deviceKey(struct Device *dev, uint32_t key, bool down) {
     // nothing
-}
-
-void deviceGetDisplayConfiguration(enum DeviceType5 deviceType,
-                                   struct DeviceDisplayConfiguration *displayConfiguration) {
-    displayConfiguration->width = 320;
-
-    if (deviceType == deviceTypeFrankenE2 || deviceType == deviceTypePV) {
-        displayConfiguration->height = 480;
-        displayConfiguration->graffitiHeight = 0;
-    } else {
-        displayConfiguration->height = 320;
-        displayConfiguration->graffitiHeight = 120;
-    }
 }
 
 bool deviceTaskRequired(struct Device *dev, uint32_t tier) {

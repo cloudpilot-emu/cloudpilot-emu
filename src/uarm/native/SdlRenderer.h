@@ -6,6 +6,7 @@
 #include "Rotation.h"
 #include "SoC.h"
 #include "device.h"
+#include "display_configuration.h"
 
 class SdlRenderer {
    public:
@@ -31,7 +32,7 @@ class SdlRenderer {
 
     const int scale;
     Rotation rotation;
-    DeviceDisplayConfiguration displayConfiguration;
+    DisplayConfiguration displayConfiguration;
 
    private:
     SdlRenderer();
