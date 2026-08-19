@@ -1,5 +1,4 @@
 // clang-format off
-#include "pv_display.h"
 #include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
 
@@ -22,6 +21,7 @@
 #include "pv_hypercall_interface.h"
 #include "pv_ic.h"
 #include "pv_keys.h"
+#include "pv_rtc.h"
 #include "pv_timer.h"
 #include "pv_uart.h"
 #include "scheduler.h"
@@ -86,6 +86,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     hypercallIface = pvHypercallInterfaceInit(cpu, ramSize);
     display = pvDisplayInit(mem, ram, &bufferClut, displayWidth, displayHeight, displayDensity);
     keys = pvKeysInit(mem, ic);
+    rtc = pvRtcInit(mem, ic);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
@@ -123,6 +124,10 @@ uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
 
         case SCHEDULER_TASK_AUX_2:
             PumpEventQueues();
+            return 1;
+
+        case SCHEDULER_TASK_RTC:
+            pvRtcTick(rtc);
             return 1;
 
         default:
@@ -189,6 +194,9 @@ void SocPV::AllocateBuffers() {
 void SocPV::SetupScheduler() {
     // Timer: 1kHz;
     scheduler->ScheduleTask(SCHEDULER_TASK_TIMER, 1_sec / 1000ull, 1);
+
+    // RTC: 1Hz
+    scheduler->ScheduleTask(SCHEDULER_TASK_RTC, 1_sec, 1);
 
     // Pump event queues: 30 Hz
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30ull, 1);

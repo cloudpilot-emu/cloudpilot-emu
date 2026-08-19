@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <memory>
 
-#include "display_configuration.h"
 #include "memory_buffer.h"
 #include "pv_display.h"
 #include "soc_generic.h"
@@ -15,6 +14,7 @@ struct PvTimer;
 struct PvUart;
 struct PvHypercallInterface;
 struct PvDisplay;
+struct PvRtc;
 struct PvKeys;
 
 class SocPV : public SocGeneric<SocPV> {
@@ -74,6 +74,7 @@ class SocPV : public SocGeneric<SocPV> {
     PvHypercallInterface *hypercallIface{nullptr};
     PvDisplay *display{nullptr};
     PvKeys *keys{nullptr};
+    PvRtc *rtc{nullptr};
 
     std::unique_ptr<uint32_t[]> framebuffer;
 };
