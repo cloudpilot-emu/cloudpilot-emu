@@ -135,8 +135,7 @@ bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, 
                                      size_t size) {
     struct ArmCpu* cpu = sd->soc->GetCpu();
     MemcpyResult memcpyResult;
-    memcpy_hostToArm(dest, reinterpret_cast<const uint8_t*>(src), size, true, cpuGetMem(cpu),
-                     cpuGetMMU(cpu), &memcpyResult);
+    memcpy_hostToArm(dest, reinterpret_cast<const uint8_t*>(src), size, true, cpu, &memcpyResult);
 
     return memcpyResult.ok;
 }
@@ -145,8 +144,7 @@ bool syscallDispatch_memcpy_toHost(struct SyscallDispatch* sd, void* dest, uint3
                                    size_t size) {
     struct ArmCpu* cpu = sd->soc->GetCpu();
     MemcpyResult memcpyResult;
-    memcpy_armToHost(reinterpret_cast<uint8_t*>(dest), src, size, true, cpuGetMem(cpu),
-                     cpuGetMMU(cpu), &memcpyResult);
+    memcpy_armToHost(reinterpret_cast<uint8_t*>(dest), src, size, true, cpu, &memcpyResult);
 
     return memcpyResult.ok;
 }

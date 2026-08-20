@@ -125,6 +125,8 @@ struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
 struct ArmMpu *cpuGetMPU(struct ArmCpu *cpu);
 struct ArmMem *cpuGetMem(struct ArmCpu *cpu);
 
+uint32_t cpuGetMemorySystemKind(struct ArmCpu *cpu);
+
 template <int memorySystemKind>
 uint32_t cpuDecodeArm(uint32_t instr);
 

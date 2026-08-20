@@ -1,5 +1,6 @@
 #include "memcpy.h"
 
+#include "CPU.h"
 #include "MMU.h"
 #include "MPU.h"
 #include "mem.h"
@@ -164,10 +165,28 @@ void memcpy_armToHost(uint8_t* dest, uint32_t src, uint32_t size, bool privilege
     transfer<false>(dest, src, size, privileged, mem, msys, result);
 }
 
+void memcpy_armToHost(uint8_t* dest, uint32_t src, uint32_t size, bool privileged,
+                      struct ArmCpu* cpu, struct MemcpyResult* result) {
+    if (cpuGetMemorySystemKind(cpu) == ARM_MEMORY_SYSTEM_MMU) {
+        memcpy_armToHost(dest, src, size, privileged, cpuGetMem(cpu), cpuGetMMU(cpu), result);
+    } else {
+        memcpy_armToHost(dest, src, size, privileged, cpuGetMem(cpu), cpuGetMPU(cpu), result);
+    }
+}
+
 template <typename T>
 void memcpy_hostToArm(uint32_t dest, const uint8_t* src, uint32_t size, bool privileged,
                       struct ArmMem* mem, T* msys, MemcpyResult* result) {
     transfer<true>(const_cast<uint8_t*>(src), dest, size, privileged, mem, msys, result);
+}
+
+void memcpy_hostToArm(uint32_t dest, const uint8_t* src, uint32_t size, bool privileged,
+                      struct ArmCpu* cpu, struct MemcpyResult* result) {
+    if (cpuGetMemorySystemKind(cpu) == ARM_MEMORY_SYSTEM_MMU) {
+        memcpy_hostToArm(dest, src, size, privileged, cpuGetMem(cpu), cpuGetMMU(cpu), result);
+    } else {
+        memcpy_hostToArm(dest, src, size, privileged, cpuGetMem(cpu), cpuGetMPU(cpu), result);
+    }
 }
 
 template <typename T>
@@ -190,6 +209,15 @@ void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged
         size -= chunkSize;
         src += chunkSize;
         dest += chunkSize;
+    }
+}
+
+void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
+                     struct ArmCpu* cpu, struct MemcpyResult* result) {
+    if (cpuGetMemorySystemKind(cpu) == ARM_MEMORY_SYSTEM_MMU) {
+        memcpy_armToArm(dest, src, size, privileged, cpuGetMem(cpu), cpuGetMMU(cpu), result);
+    } else {
+        memcpy_armToArm(dest, src, size, privileged, cpuGetMem(cpu), cpuGetMPU(cpu), result);
     }
 }
 

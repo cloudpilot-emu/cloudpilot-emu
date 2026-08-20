@@ -3730,6 +3730,8 @@ struct ArmMpu *cpuGetMPU(struct ArmCpu *cpu) {
 
 struct ArmMem *cpuGetMem(struct ArmCpu *cpu) { return cpu->mem; }
 
+uint32_t cpuGetMemorySystemKind(struct ArmCpu *cpu) { return cpu->memorySystemKind; }
+
 void cpuAddM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address, M68kTrapHandler handler) {
     (*cpu->m68kTrap0Handlers)[address] = handler;
 }
