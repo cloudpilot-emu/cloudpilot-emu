@@ -24,6 +24,7 @@
 #include "pv_keys.h"
 #include "pv_rtc.h"
 #include "pv_timer.h"
+#include "pv_touch.h"
 #include "pv_uart.h"
 #include "scheduler.h"
 #include "syscall_dispatch.h"
@@ -71,7 +72,8 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     patchDispatchSetCpu(patchDispatch, cpu);
 
     syscallDispatch = initSyscallDispatch(this);
-    patchContext = registerPatches(patchDispatch, syscallDispatch, cpu, systemState);
+    patchContext = registerPatches(patchDispatch, syscallDispatch, cpu, systemState,
+                                   PATCH_FEATURE_ALL & ~PATCH_FEATURE_TOUCH_TRANSLATION);
 
     ram = ramInit(mem, this, RAM_BASE, ramSize, &bufferMemory, true);
     tinyRam = ramInit(mem, this, PV_TINYRAM_BASE, PV_TINYRAM_SIZE, &bufferTinyRam, false);
@@ -92,6 +94,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     keys = pvKeysInit(mem, ic);
     rtc = pvRtcInit(mem, ic);
     audio = pvAudioInit(mem, ram, ic);
+    touch = pvTouchInit(mem, ic);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
@@ -165,7 +168,7 @@ void SocPV::OnSdInsert() {}
 
 void SocPV::OnSdEject() {}
 
-void SocPV::OnTouch(int x, int y) {}
+void SocPV::OnTouch(int x, int y) { pvTouchUpdate(touch, x, y); }
 
 void SocPV::OnEngageKey(KeyId key, bool down) { pvKeysEngage(keys, key, down); }
 
@@ -177,6 +180,7 @@ void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {
     pvDisplayLoad(display, loader);
     pvKeysLoad(keys, loader);
     pvAudioLoad(audio, loader);
+    pvTouchLoad(touch, loader);
 }
 
 template <typename T>
@@ -186,6 +190,7 @@ void SocPV::OnSave(T &savestate) {
     pvDisplaySave(display, savestate);
     pvKeysSave(keys, savestate);
     pvAudioSave(audio, savestate);
+    pvTouchSave(touch, savestate);
 }
 
 void SocPV::AllocateBuffers() {

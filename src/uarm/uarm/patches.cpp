@@ -90,22 +90,26 @@ static void tailpatch_uiInitialize(void* ctx, uint32_t syscall,
 
 struct PatchContext* registerPatches(struct PatchDispatch* patchDispatch,
                                      struct SyscallDispatch* syscallDispatch, struct ArmCpu* cpu,
-                                     struct SystemState* systemState) {
+                                     struct SystemState* systemState, uint32_t features) {
     struct PatchContext* ctx = (struct PatchContext*)malloc(sizeof(struct PatchContext));
     ctx->cpu = cpu;
     ctx->sd = syscallDispatch;
     ctx->systemState = systemState;
 
-    patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SET_AUTO_OFF_TIME, headpatch_SysSetAutoOffTime,
-                          NULL, ctx);
+    if (features & PATCH_FEATURE_NO_SLEEP) {
+        patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SET_AUTO_OFF_TIME,
+                              headpatch_SysSetAutoOffTime, NULL, ctx);
 
-    patchDispatchAddPatch(patchDispatch, SYSCALL_HAL_PEN_RAW_TO_SCREEN, headpatch_PenRawToScreen,
-                          NULL, ctx);
+        patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SLEEP, headpatch_SysSleep, NULL, ctx);
+    }
 
-    patchDispatchAddPatch(patchDispatch, SYSCALL_HAL_PEN_SCREEN_TO_RAW, headpatch_PenScreenToRaw,
-                          NULL, ctx);
+    if (features & PATCH_FEATURE_TOUCH_TRANSLATION) {
+        patchDispatchAddPatch(patchDispatch, SYSCALL_HAL_PEN_RAW_TO_SCREEN,
+                              headpatch_PenRawToScreen, NULL, ctx);
 
-    patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SLEEP, headpatch_SysSleep, NULL, ctx);
+        patchDispatchAddPatch(patchDispatch, SYSCALL_HAL_PEN_SCREEN_TO_RAW,
+                              headpatch_PenScreenToRaw, NULL, ctx);
+    }
 
     patchDispatchAddPatch(patchDispatch, SYSCALL_UI_INITIALIZE, NULL, tailpatch_uiInitialize, ctx);
 

@@ -30,6 +30,7 @@ enum class ChunkType : uint32_t {
     pvDisplay = 0x1020,
     pvKeys = 0x1030,
     pvAudio = 0x1040,
+    pvTouch = 0x1050,
 
     scheduler = 0x10000,
     cpu = 0x10010,
