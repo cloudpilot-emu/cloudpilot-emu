@@ -2,13 +2,13 @@
 
 #include <cstdio>
 #include <functional>
-#include <iostream>
 
 #include "CPU.h"
 #include "Defer.h"
 #include "cputil.h"
 #include "pace.h"
 #include "palmos_errors.h"
+#include "patch_dispatch.h"
 #include "syscall_dispatch.h"
 
 using namespace std;
@@ -17,12 +17,13 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
     if (!syscallDispatchM68kSupport(sd)) return DB_INSTALL_RESULT_ERR_NOT_SUPPORTED;
     if (!syscallDispatchPrepare(sd)) return DB_INSTALL_RESULT_ERR_NOT_CURRENTLY_POSSIBLE;
 
-    const uint32_t scratch = syscall68k_MemPtrNew(sd, SC_EXECUTE_PURE, 5);
+    const uint32_t scratch = syscall68k_MemPtrNew(sd, SC_EXECUTE_PURE, 10);
     if (!scratch) return DB_INSTALL_RESULT_ERR_UNKNOWN;
 
     const uint32_t deleteProcP = scratch;
     const uint32_t readProcP = scratch + 2;
     const uint32_t needsResetP = scratch + 4;
+    const uint32_t dbIDP = scratch + 6;
     size_t bytesRead = 0;
     bool couldNotOverwrite = false;
 
@@ -72,7 +73,7 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
         syscallDispatchUnregisterM68kStub(sd, deleteProcP);
     });
 
-    uint16_t err = syscall68k_ExgDBRead(sd, SC_EXECUTE_FULL, readProcP, deleteProcP, 0, 0, 0,
+    uint16_t err = syscall68k_ExgDBRead(sd, SC_EXECUTE_FULL, readProcP, deleteProcP, 0, dbIDP, 0,
                                         needsResetP, true);
     bool needsReset = paceGet8(needsResetP);
 
