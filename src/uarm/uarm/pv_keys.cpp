@@ -16,8 +16,9 @@
 
 #define SAVESTATE_VERSION 0
 
+#define STATE_LEN 5
 struct PvKeys {
-    uint32_t state[5]{};
+    uint32_t state[STATE_LEN]{};
 
     PvIc* ic;
 
@@ -80,7 +81,10 @@ static bool pvKeysPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, 
         return false;
     }
 
-    *reinterpret_cast<uint32_t*>(buf) = keys->state[(pa - KEYS_BASE) >> 2];
+    const uint32_t index = (pa - KEYS_BASE) >> 2;
+    if (index >= STATE_LEN) return false;
+
+    *reinterpret_cast<uint32_t*>(buf) = keys->state[index];
 
     return true;
 }

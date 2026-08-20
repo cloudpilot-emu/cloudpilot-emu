@@ -48,6 +48,9 @@ static bool pvRtcPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, b
             }
 
             break;
+
+        default:
+            return false;
     }
 
     return true;

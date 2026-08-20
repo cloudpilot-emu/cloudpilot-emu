@@ -55,6 +55,7 @@ SOURCE_CXX =		 					\
 	uarm/pv_display.cpp					\
 	uarm/pv_keys.cpp					\
 	uarm/pv_rtc.cpp 					\
+	uarm/pv_audio.cpp 					\
 	uarm/display_configuration.cpp 		\
 	uarm/patch68k.cpp 					\
 	uarm/peephole.cpp					\

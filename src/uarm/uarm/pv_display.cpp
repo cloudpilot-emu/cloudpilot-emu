@@ -8,6 +8,7 @@
 #include "cputil.h"
 #include "mem.h"
 #include "memory_buffer.h"
+#include "miniz.h"
 #include "savestate/savestateAll.h"
 
 #define DISPLAY_BASE 0x30000200
@@ -131,6 +132,9 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
                     (((display->density / 36 - 1) & 0x07) << 18);
 
             break;
+
+        default:
+            return false;
     }
 
     return true;

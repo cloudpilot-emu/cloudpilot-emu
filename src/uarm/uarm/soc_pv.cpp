@@ -17,6 +17,7 @@
 #include "patch_dispatch.h"
 #include "patches.h"
 #include "peephole.h"
+#include "pv_audio.h"
 #include "pv_display.h"
 #include "pv_hypercall_interface.h"
 #include "pv_ic.h"
@@ -37,6 +38,9 @@
 
 #define UART_DEBUG_BASE 0x30000100
 #define UART_BASE 0x30000110
+
+#define PCM_HZ 44300
+#define PCM_SAMPLE_BATCH 128
 
 using namespace std;
 
@@ -87,6 +91,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     display = pvDisplayInit(mem, ram, &bufferClut, displayWidth, displayHeight, displayDensity);
     keys = pvKeysInit(mem, ic);
     rtc = pvRtcInit(mem, ic);
+    audio = pvAudioInit(mem, ram, ic);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
@@ -130,6 +135,10 @@ uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
             pvRtcTick(rtc);
             return 1;
 
+        case SCHEDULER_TASK_PCM:
+            pvAudioPullSamples(audio, batchedTicks);
+            return PCM_SAMPLE_BATCH;
+
         default:
             ERR("invalid client type\n");
     }
@@ -143,11 +152,14 @@ bool SocPV::OnSleep() { return false; }
 
 void SocPV::OnWakeup() {}
 
-void SocPV::OnSetAudioQueue(struct AudioQueue *audioQueue) {}
+void SocPV::OnSetAudioQueue(struct AudioQueue *audioQueue) { pvAudioSetQueue(audio, audioQueue); }
 
 void SocPV::OnSetPcmOutputEnabled() {}
 
-void SocPV::OnSetPcmSuspended() {}
+void SocPV::OnSetPcmSuspended() {
+    scheduler->RescheduleTask(SCHEDULER_TASK_PCM, pcmSuspended ? 0 : PCM_SAMPLE_BATCH);
+    if (!pcmSuspended) cpuSetSlowPath(cpu, SLOW_PATH_REASON_RESCHEDULE);
+}
 
 void SocPV::OnSdInsert() {}
 
@@ -164,6 +176,7 @@ void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {
     pvTimerLoad(timer, loader);
     pvDisplayLoad(display, loader);
     pvKeysLoad(keys, loader);
+    pvAudioLoad(audio, loader);
 }
 
 template <typename T>
@@ -172,6 +185,7 @@ void SocPV::OnSave(T &savestate) {
     pvTimerSave(timer, savestate);
     pvDisplaySave(display, savestate);
     pvKeysSave(keys, savestate);
+    pvAudioSave(audio, savestate);
 }
 
 void SocPV::AllocateBuffers() {
@@ -200,6 +214,8 @@ void SocPV::SetupScheduler() {
 
     // Pump event queues: 30 Hz
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30ull, 1);
+
+    scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / PCM_HZ, PCM_SAMPLE_BATCH);
 }
 
 template void SocGeneric<SocPV>::Save<Savestate<ChunkType>>(Savestate<ChunkType> &savestate);
