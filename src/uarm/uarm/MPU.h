@@ -31,6 +31,8 @@ uint8_t mpuGetBufferable(ArmMpu* mpu);
 uint16_t mpuGetAP(ArmMpu* mpu);
 uint32_t mpuGetRegionConfig(ArmMpu* mpu, uint8_t region);
 
+void mpuDump(ArmMpu* mpu);
+
 template <typename T>
 void mpuSave(struct ArmMpu* mpu, T& savestate);
 

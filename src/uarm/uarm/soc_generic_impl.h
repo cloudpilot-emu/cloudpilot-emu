@@ -7,6 +7,7 @@
 
 #include "CPU.h"
 #include "MMU.h"
+#include "MPU.h"
 #include "SoC.h"
 #include "cputil.h"
 #include "savestate/savestateAll.h"
@@ -84,6 +85,8 @@ template <class T>
 void SocGeneric<T>::DumpMMU() {
     if constexpr (T::MEMORY_SYSTEM_KIND == ARM_MEMORY_SYSTEM_MMU) {
         mmuDump(cpuGetMMU(cpu));
+    } else {
+        mpuDump(cpuGetMPU(cpu));
     }
 }
 

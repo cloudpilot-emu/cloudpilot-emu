@@ -13,6 +13,8 @@
 
 #define SAVESTATE_VERSION 0
 
+#define MPU_FORCE_CACHEABLE
+
 struct MpuRegion {
     bool enabled{false};
     uint32_t base{0};
@@ -42,7 +44,7 @@ struct ArmMpu {
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
-        chunkHelper.Do(typename T::Pack8() << cacheable << bufferable).Do16(ap);
+        chunkHelper.Do(typename T::Pack8() << cacheable << bufferable).Do16(ap).DoBool(enabled);
 
         for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) regions[i].DoSaveLoad(chunkHelper);
     }
@@ -73,6 +75,7 @@ void mpuReset(ArmMpu* mpu) {
 
 MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write) {
     if (!mpu->enabled) return 1;
+    return 3;
 
     // 4k pages, 8 regions per entry -> 12 + 3 = 15
     uint32_t regionIndex = mpu->regionCache[pa >> 15];
@@ -80,6 +83,11 @@ MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool wri
     regionIndex &= 0x0f;
 
     const MpuRegion& region = mpu->regions[regionIndex];
+#ifdef MPU_FORCE_CACHEABLE
+    const uint32_t cacheable = MPU_TEST_RESULT_BIT_CACHEABLE;
+#else
+    const uint32_t cacheable = region.cacheable;
+#endif
 
     if (!region.enabled) return 0;
 
@@ -88,13 +96,13 @@ MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool wri
             return 0;
 
         case 1:
-            return privileged | region.cacheable;
+            return privileged | cacheable;
 
         case 2:
-            return (privileged || !write) | region.cacheable;
+            return (privileged || !write) | cacheable;
 
         case 3:
-            return 1 | region.cacheable;
+            return 1 | cacheable;
 
         default:
             __builtin_unreachable();
@@ -124,7 +132,6 @@ void mpuSetAP(ArmMpu* mpu, uint16_t ap) {
 }
 
 void mpuSetRegionConfig(ArmMpu* mpu, uint8_t iRegion, uint32_t config) {
-    // if (iRegion == 7) return;
     // we order the regions internally from 0 to 8 (0 = highest priorty, 8 = fallback)
     iRegion = MPU_NUM_REGIONS - 1 - (iRegion & 0x07);
 
@@ -183,6 +190,18 @@ uint16_t mpuGetAP(ArmMpu* mpu) { return mpu->ap; }
 
 uint32_t mpuGetRegionConfig(ArmMpu* mpu, uint8_t region) { return mpu->regions[region].config; }
 
+void mpuDump(ArmMpu* mpu) {
+    printf("enabled %u AP 0x%04x cacheable 0x%02x\n", mpu->enabled, mpu->ap, mpu->cacheable);
+
+    for (int8_t i = MPU_NUM_REGIONS - 1; i >= 0; i--) {
+        const MpuRegion& region = mpu->regions[i];
+
+        printf("region %u config 0x%08x enabled %u base 0x%08x mask 0x%08x ap %u cacheable %u\n",
+               (MPU_NUM_REGIONS - 1 - i), region.config, region.enabled, region.base, region.mask,
+               region.ap, region.cacheable);
+    }
+}
+
 template <typename T>
 void mpuSave(struct ArmMpu* mpu, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::mpu, SAVESTATE_VERSION);
@@ -197,14 +216,24 @@ void mpuLoad(struct ArmMpu* mpu, T& loader) {
     auto chunk = loader.GetChunkOrFail(ChunkType::mpu, SAVESTATE_VERSION, "mpu");
     if (!chunk) return;
 
-    mpuReset(mpu);
+    uint32_t oldConfig[MPU_NUM_REGIONS];
+    for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) oldConfig[i] = mpu->regions[i].config;
 
     LoadChunkHelper helper(*chunk);
     mpu->DoSaveLoad(helper);
 
-    clearCache(mpu);
+    bool configChanged = false;
     for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
-        mpuSetRegionConfig(mpu, MPU_NUM_REGIONS - 1 - i, mpu->regions[i].config);
+        configChanged = configChanged || oldConfig[i] != mpu->regions[i].config;
+        if (configChanged) break;
+    }
+
+    if (configChanged) {
+        printf("restore cache\n");
+        clearCache(mpu);
+        for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
+            mpuSetRegionConfig(mpu, MPU_NUM_REGIONS - 1 - i, mpu->regions[i].config);
+        }
     }
 
     mpuSetAP(mpu, mpu->ap);
