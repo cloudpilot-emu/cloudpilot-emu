@@ -19,6 +19,7 @@ struct MpuRegion {
     bool enabled{false};
     uint32_t base{0};
     uint32_t mask{0};
+    uint8_t sizeTag{0};
 
     uint32_t config{0};
     uint8_t cacheable{0};
@@ -73,16 +74,20 @@ void mpuReset(ArmMpu* mpu) {
     for (MpuRegion& region : mpu->regions) region = MpuRegion{};
 }
 
-MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write) {
-    if (!mpu->enabled) return 1;
-    return 3;
-
+static FORCE_INLINE uint8_t getRegionIndex(ArmMpu* mpu, uint32_t pa) {
     // 4k pages, 8 regions per entry -> 12 + 3 = 15
     uint32_t regionIndex = mpu->regionCache[pa >> 15];
     regionIndex >>= ((regionIndex >> 12) & 0x07) << 2;
     regionIndex &= 0x0f;
 
-    const MpuRegion& region = mpu->regions[regionIndex];
+    return regionIndex;
+}
+
+MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write) {
+    if (!mpu->enabled) return 1;
+    return 3;
+
+    const MpuRegion& region = mpu->regions[getRegionIndex(mpu, pa)];
 #ifdef MPU_FORCE_CACHEABLE
     const uint32_t cacheable = MPU_TEST_RESULT_BIT_CACHEABLE;
 #else
@@ -132,27 +137,30 @@ void mpuSetAP(ArmMpu* mpu, uint16_t ap) {
 }
 
 void mpuSetRegionConfig(ArmMpu* mpu, uint8_t iRegion, uint32_t config) {
+    printf("configure MPU 0x%08x\n", config);
+
     // we order the regions internally from 0 to 8 (0 = highest priorty, 8 = fallback)
     iRegion = MPU_NUM_REGIONS - 1 - (iRegion & 0x07);
-
     MpuRegion& region = mpu->regions[iRegion];
-    const uint8_t sizeTag = (config >> 1) & 0x1f;
-    const bool wasEnabled = region.enabled;
+
+    const uint32_t oldSizeTag = region.sizeTag;
+    const uint32_t oldBase = region.base;
+    const bool oldEnabled = region.enabled;
 
     region.config = config;
     region.enabled = config & 0x01;
-
-    if (region.enabled) {
-        // if the region is disabled we retain the old mask and base
-        region.mask = sizeTag == 31 ? 0 : (0xffffffffu << (sizeTag + 1));
-        region.base = config & region.mask;
-    }
+    region.sizeTag = (config >> 1) & 0x1f;
+    region.mask = region.sizeTag == 31 ? 0 : (0xffffffffu << (region.sizeTag + 1));
+    region.base = config & region.mask;
 
     // no changes to the cache if the region was disabled and stays disabled
-    if (!region.enabled && !wasEnabled) return;
+    if (!region.enabled && !oldEnabled) return;
 
-    const uint32_t pages = 1 << (sizeTag - 11);
-    for (uint32_t page = region.base >> 12; page < pages + (region.base >> 12); page++) {
+    const uint32_t regionSizeTag = region.enabled ? region.sizeTag : oldSizeTag;
+    const uint32_t regionBase = region.enabled ? region.base : oldBase;
+    const uint32_t pages = 1 << (regionSizeTag - 11);
+
+    for (uint32_t page = regionBase >> 12; page < pages + (regionBase >> 12); page++) {
         const uint32_t shift = (page & 0x07) << 2;
         const uint32_t mask = ~(0x0f << shift);
         const uint32_t pageIndex = page >> 3;

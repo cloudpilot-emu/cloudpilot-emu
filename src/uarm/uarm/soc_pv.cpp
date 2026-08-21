@@ -1,4 +1,6 @@
 // clang-format off
+
+#include "pv_storage.h"
 #include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
 
@@ -23,6 +25,7 @@
 #include "pv_ic.h"
 #include "pv_keys.h"
 #include "pv_rtc.h"
+#include "pv_sysctl.h"
 #include "pv_timer.h"
 #include "pv_touch.h"
 #include "pv_uart.h"
@@ -95,6 +98,8 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     rtc = pvRtcInit(mem, ic);
     audio = pvAudioInit(mem, ram, ic);
     touch = pvTouchInit(mem, ic);
+    sysctl = pvSysctlInit(mem, this, ramSize);
+    storage = pvStorageInit(mem, ic);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
