@@ -88,7 +88,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     peepholeOptimize((uint32_t *)peepholeBuffer, romSize);
     patch68kInit(PATCH_68K_NVFS);
 
-    ic = pvIcInit(cpu, mem);
+    ic = pvIcInit(cpu, mem, this);
     timer = pvTimerInit(mem, ic);
     uart = pvUartInit(mem, UART_BASE);
     uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
@@ -132,7 +132,7 @@ bool SocPV::LcdEnabled() { return true; }
 uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     switch (clientType) {
         case SCHEDULER_TASK_TIMER:
-            pvTimerTick(timer);
+            pvTimerTick(timer, sleeping ? pvTimerTicksToNextInterrupt(timer) : 1);
             return 1;
 
         case SCHEDULER_TASK_AUX_2:
@@ -156,9 +156,19 @@ void SocPV::OnSetFramebufferDirty() {
     // NOP - we track that directly here
 }
 
-bool SocPV::OnSleep() { return false; }
+bool SocPV::OnSleep() {
+    if (cpuHasPendingInterrupt(cpu)) return false;
 
-void SocPV::OnWakeup() {}
+    scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, pvTimerTicksToNextInterrupt(timer));
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_RESCHEDULE);
+
+    return true;
+}
+
+void SocPV::OnWakeup() {
+    scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, 1);
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_RESCHEDULE);
+}
 
 void SocPV::OnSetAudioQueue(struct AudioQueue *audioQueue) { pvAudioSetQueue(audio, audioQueue); }
 

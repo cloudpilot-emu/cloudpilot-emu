@@ -95,12 +95,14 @@ PvTimer* pvTimerInit(ArmMem* mem, PvIc* ic) {
     return timer;
 }
 
-void pvTimerTick(PvTimer* timer) {
-    timer->timer++;
+void pvTimerTick(PvTimer* timer, uint32_t ticks) {
+    timer->timer += ticks;
 
     if (timer->alarm == 0) return;
 
-    if (--timer->alarm == 0) {
+    timer->alarm = (ticks > timer->alarm) ? 0 : (timer->alarm - ticks);
+
+    if (timer->alarm == 0) {
         timer->signalling = true;
         pvTimerUpdateInterrupt(timer);
     }
@@ -115,6 +117,8 @@ void pvTimerSuspendInterrupts(PvTimer* timer, bool suspend) {
 
     pvTimerUpdateInterrupt(timer);
 }
+
+uint32_t pvTimerTicksToNextInterrupt(PvTimer* timer) { return timer->alarm; }
 
 template <typename T>
 void pvTimerSave(struct PvTimer* timer, T& savestate) {

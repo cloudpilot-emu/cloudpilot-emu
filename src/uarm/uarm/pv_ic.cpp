@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "CPU.h"
+#include "SoC.h"
 #include "cputil.h"
 #include "mem.h"
 #include "savestate/savestateAll.h"
@@ -22,6 +23,7 @@ struct PvIc {
 
     ArmCpu* cpu{nullptr};
     ArmMem* mem{nullptr};
+    SoC* soc{nullptr};
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
@@ -29,12 +31,12 @@ struct PvIc {
     }
 };
 
-static void pvIcUpdate(PvIc* pv) {
-    const bool signalling = pv->state & pv->mask;
-    if (signalling == pv->signalling) return;
+static void pvIcUpdate(PvIc* ic) {
+    const bool signalling = ic->state & ic->mask;
+    if (signalling == ic->signalling) return;
 
-    cpuIrq(pv->cpu, false, signalling);
-    pv->signalling = signalling;
+    cpuIrq(ic->cpu, false, signalling);
+    ic->signalling = signalling;
 }
 
 static bool pvIcPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
@@ -74,11 +76,12 @@ static bool pvIcPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bo
     return true;
 }
 
-PvIc* pvIcInit(ArmCpu* cpu, ArmMem* mem) {
+PvIc* pvIcInit(ArmCpu* cpu, ArmMem* mem, SoC* soc) {
     auto ic = new PvIc();
 
     ic->cpu = cpu;
     ic->mem = mem;
+    ic->soc = soc;
 
     memRegionAdd(mem, IC_BASE, IC_SIZE, pvIcPrvMemAccessF, ic);
 
@@ -94,7 +97,10 @@ void pvIcInt(PvIc* ic, uint8_t intNo, bool raise) {
         ic->state &= ~(1 << intNo);
     }
 
+    const bool wasSignalling = ic->signalling;
     pvIcUpdate(ic);
+
+    if (ic->signalling && !wasSignalling) ic->soc->Wakeup(intNo);
 }
 
 template <typename T>

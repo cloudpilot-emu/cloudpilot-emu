@@ -272,11 +272,15 @@ bool SocPXA::OnSleep() {
     if (cpuHasPendingInterrupt(cpu)) return false;
 
     scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, pxaTimrTicksToNextInterrupt(tmr));
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_RESCHEDULE);
 
     return true;
 }
 
-void SocPXA::OnWakeup() { scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, 1); }
+void SocPXA::OnWakeup() {
+    scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, 1);
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_RESCHEDULE);
+}
 
 void SocPXA::OnSetAudioQueue(struct AudioQueue *audioQueue) {
     deviceSetAudioQueue(dev, audioQueue);

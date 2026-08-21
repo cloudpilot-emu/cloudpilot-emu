@@ -9,7 +9,7 @@ struct ArmMem;
 
 struct PvIc;
 
-PvIc* pvIcInit(ArmCpu* cpu, ArmMem* mem);
+PvIc* pvIcInit(ArmCpu* cpu, ArmMem* mem, SoC* soc);
 
 void pvIcInt(PvIc* ic, uint8_t intNo, bool raise);
 
