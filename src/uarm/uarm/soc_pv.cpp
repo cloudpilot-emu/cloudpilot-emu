@@ -132,8 +132,8 @@ bool SocPV::LcdEnabled() { return true; }
 uint32_t SocPV::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     switch (clientType) {
         case SCHEDULER_TASK_TIMER:
-            pvTimerTick(timer, sleeping ? pvTimerTicksToNextInterrupt(timer) : 1);
-            return 1;
+            pvTimerTick(timer, batchedTicks);
+            return sleeping ? pvTimerTicksToNextInterrupt(timer) : 1;
 
         case SCHEDULER_TASK_AUX_2:
             PumpEventQueues();
