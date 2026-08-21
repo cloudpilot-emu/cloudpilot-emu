@@ -169,7 +169,7 @@ static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* targ
 
     const uint32_t pitchDelta = display->stride - lineBytes;
 
-    Nibbler<bpp> nibbler;
+    Nibbler<bpp, false, true> nibbler;
     if constexpr (bpp != 8) {
         nibbler.reset(framebuffer, 0);
     }

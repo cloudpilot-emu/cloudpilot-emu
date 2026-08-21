@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-template <int bpp, bool wordswap = false>
+template <int bpp, bool wordswap = false, bool reverseOrder = false>
 class Nibbler {
    public:
     Nibbler() = default;
@@ -33,8 +33,15 @@ class Nibbler {
             nextNibble = 0;
         }
 
-        uint8_t value = (current & (0xff << (8 - bpp))) >> (8 - bpp);
-        current <<= bpp;
+        uint8_t value;
+        if constexpr (reverseOrder) {
+            value = current & (0xff >> (8 - bpp));
+            current >>= bpp;
+        } else {
+            value = current >> (8 - bpp);
+            current <<= bpp;
+        }
+
         nextNibble++;
 
         return value;
