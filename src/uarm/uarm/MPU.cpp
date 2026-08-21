@@ -85,7 +85,6 @@ static FORCE_INLINE uint8_t getRegionIndex(ArmMpu* mpu, uint32_t pa) {
 
 MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write) {
     if (!mpu->enabled) return 1;
-    return 3;
 
     const MpuRegion& region = mpu->regions[getRegionIndex(mpu, pa)];
 #ifdef MPU_FORCE_CACHEABLE
@@ -137,8 +136,6 @@ void mpuSetAP(ArmMpu* mpu, uint16_t ap) {
 }
 
 void mpuSetRegionConfig(ArmMpu* mpu, uint8_t iRegion, uint32_t config) {
-    printf("configure MPU 0x%08x\n", config);
-
     // we order the regions internally from 0 to 8 (0 = highest priorty, 8 = fallback)
     iRegion = MPU_NUM_REGIONS - 1 - (iRegion & 0x07);
     MpuRegion& region = mpu->regions[iRegion];
