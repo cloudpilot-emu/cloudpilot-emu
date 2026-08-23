@@ -99,7 +99,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     audio = pvAudioInit(mem, ram, ic);
     touch = pvTouchInit(mem, ic);
     sysctl = pvSysctlInit(mem, this, ramSize);
-    storage = pvStorageInit(mem, ic);
+    storage = pvStorageInit(mem, ic, ram);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
@@ -179,9 +179,9 @@ void SocPV::OnSetPcmSuspended() {
     if (!pcmSuspended) cpuSetSlowPath(cpu, SLOW_PATH_REASON_RESCHEDULE);
 }
 
-void SocPV::OnSdInsert() {}
+void SocPV::OnSdInsert() { pvStorageInsert(storage); }
 
-void SocPV::OnSdEject() {}
+void SocPV::OnSdEject() { pvStorageEject(storage); }
 
 void SocPV::OnTouch(int x, int y) { pvTouchUpdate(touch, x, y); }
 
@@ -196,6 +196,7 @@ void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {
     pvKeysLoad(keys, loader);
     pvAudioLoad(audio, loader);
     pvTouchLoad(touch, loader);
+    pvStorageLoad(storage, loader);
 }
 
 template <typename T>
@@ -206,6 +207,7 @@ void SocPV::OnSave(T &savestate) {
     pvKeysSave(keys, savestate);
     pvAudioSave(audio, savestate);
     pvTouchSave(touch, savestate);
+    pvStorageSave(storage, savestate);
 }
 
 void SocPV::AllocateBuffers() {
