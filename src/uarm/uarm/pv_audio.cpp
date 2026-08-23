@@ -38,7 +38,7 @@ struct PvAudio {
 
     uint32_t bufferBase{0};
     uint32_t bufferLength{0};
-    uint32_t offset{0};
+    uint32_t sampleIndex{0};
 
     PvIc* ic{nullptr};
     ArmRam* ram{nullptr};
@@ -46,7 +46,7 @@ struct PvAudio {
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
-        chunkHelper.DoBool(enabled).Do32(bufferBase).Do32(bufferLength).Do32(offset);
+        chunkHelper.DoBool(enabled).Do32(bufferBase).Do32(bufferLength).Do32(sampleIndex);
     }
 };
 
@@ -74,7 +74,7 @@ static bool pvAudioPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size,
             if (write) {
                 audio->bufferLength = value & ~0x07;
                 audio->enabled = audio->bufferLength != 0;
-                audio->offset = 0;
+                audio->sampleIndex = 0;
             } else {
                 value = audio->bufferLength;
             }
@@ -84,7 +84,7 @@ static bool pvAudioPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size,
         case (AUDIO_OFFSET_BUFFER_BASE >> 2):
             if (write) {
                 audio->bufferBase = value & ~0x07;
-                audio->offset = 0;
+                audio->sampleIndex = 0;
             } else {
                 return false;
             }
@@ -144,16 +144,16 @@ void pvAudioPullSamples(PvAudio* audio, uint32_t count) {
                        (sampleBuffer[audio->offset] << 16) | sampleBuffer[audio->offset]);
         audio->offset++;
 #else
-        audioQueuePush(audio->queue, sampleBuffer[audio->offset++]);
+        audioQueuePush(audio->queue, sampleBuffer[audio->sampleIndex++]);
 #endif
 
-        if (audio->offset == bufferLengthSamplesHalf) {
+        if (audio->sampleIndex == bufferLengthSamplesHalf) {
             pvIcInt(audio->ic, IRQ_NO_SOUND_HALF, true);
         }
 
-        if (audio->offset == bufferLengthSamples) {
+        if (audio->sampleIndex == bufferLengthSamples) {
             pvIcInt(audio->ic, IRQ_NO_SOUND_FULL, true);
-            audio->offset = 0;
+            audio->sampleIndex = 0;
         }
     }
 }
