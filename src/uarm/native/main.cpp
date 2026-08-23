@@ -1,5 +1,3 @@
-#include "device_type5.h"
-#include "soc_PXA.h"
 #pragma GCC diagnostic ignored "-Wmultichar"
 
 #include <SDL.h>
@@ -28,7 +26,8 @@
 #include "buffer.h"
 #include "cputil.h"
 #include "device.h"
-#include "display_configuration.h"
+#include "device_configuration.h"
+#include "device_type5.h"
 #include "md5.h"
 #include "rom_info5.h"
 #include "sdcard.h"
@@ -52,7 +51,6 @@ struct Options {
 
 namespace {
     constexpr size_t AUDIO_QUEUE_SIZE = 44100 / MAIN_LOOP_FPS * 10;
-    constexpr size_t NAND_SIZE = 34603008;
 
     int windowWidth(DisplayConfiguration& displayConfiguration, Rotation rotation) {
         switch (rotation) {
@@ -115,7 +113,7 @@ namespace {
     }
 
     bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
-                     Buffer& savestate, uint32_t& ramSize) {
+                     Buffer& savestate, uint32_t& ramSize, RomInfo5& romInfo) {
         SessionFile5 sessionFile;
 
         size_t norOrSessionLen{0};
@@ -134,16 +132,24 @@ namespace {
             copy(nand, sessionFile.GetNandSize(), sessionFile.GetNand());
             copy(ram, sessionFile.GetMemorySize(), sessionFile.GetMemory());
             copy(savestate, sessionFile.GetSavestateSize(), sessionFile.GetSavestate());
+
+            romInfo = RomInfo5(nor.data, nor.size);
         } else {
+            romInfo = RomInfo5(norOrSessionData.get(), norOrSessionLen);
+            if (!romInfo.IsValid()) {
+                cerr << "provided file is neither a support ROM nor a session image" << endl;
+                return false;
+            }
+
             size_t nandLen{0};
             unique_ptr<uint8_t[]> nandData;
 
             if (options.nand) {
                 if (!util::ReadFile(options.nand, nandData, nandLen)) return false;
             } else {
-                nandLen = NAND_SIZE;
-                nandData = make_unique<uint8_t[]>(NAND_SIZE);
-                memset(nandData.get(), 0xff, NAND_SIZE);
+                nandLen = deviceConfigurationGetNandSize(romInfo.GetDeviceType());
+                nandData = nandLen > 0 ? make_unique<uint8_t[]>(nandLen) : nullptr;
+                memset(nandData.get(), 0xff, nandLen);
             }
 
             ramSize = 0;
@@ -168,11 +174,10 @@ namespace {
         }
 
         Buffer nor, nand, memory, savestate;
+        RomInfo5 romInfo;
         uint32_t ramSize{0};
 
-        if (!readSession(options, nor, nand, memory, savestate, ramSize)) return false;
-
-        RomInfo5 romInfo(reinterpret_cast<uint8_t*>(nor.data), nor.size);
+        if (!readSession(options, nor, nand, memory, savestate, ramSize, romInfo)) return false;
         cerr << romInfo;
 
         if (!romInfo.IsValid() || romInfo.GetDeviceType() == DeviceType5::deviceTypeInvalid)
@@ -189,15 +194,16 @@ namespace {
 
         if (ramSize == 0) ramSize = romInfo.GetRecommendedRamSize();
 
-        if (!deviceSupportsRamSize(ramSize)) {
+        if (!deviceConfigurationSupportsRamSize(romInfo.GetDeviceType(), ramSize)) {
             cerr << "unsupported RAM size: " << ramSize << " bytes" << endl;
             return false;
         }
 
         cerr << "using RAM size: " << ramSize << " bytes" << endl << endl;
 
-        if (nand.size != NAND_SIZE) {
-            cerr << "invalid NAND size; expected " << NAND_SIZE << " bytes" << endl;
+        const uint32_t nandSize = deviceConfigurationGetNandSize(romInfo.GetDeviceType());
+        if (nand.size != nandSize) {
+            cerr << "invalid NAND size; expected " << nandSize << " bytes" << endl;
             return false;
         }
 
@@ -218,8 +224,8 @@ namespace {
         const DeviceType5 deviceType = romInfo.GetDeviceType();
         const int gdbPort = options.gdbPort.value_or(-1);
 
-        DisplayConfiguration displayConfiguration;
-        displayConfigurationGet(romInfo.GetDeviceType(), &displayConfiguration);
+        DisplayConfiguration displayConfiguration =
+            deviceConfigurationGetDsiplay(romInfo.GetDeviceType());
 
         SoC* soc = (deviceType == deviceTypePV)
                        ? static_cast<SoC*>(new SocPV(ramSize, nor.data, nor.size,

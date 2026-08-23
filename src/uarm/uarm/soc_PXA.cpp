@@ -12,7 +12,7 @@
 #include "ROM.h"
 #include "cputil.h"
 #include "device.h"
-#include "display_configuration.h"
+#include "device_configuration.h"
 #include "keys.h"
 #include "pace_patch.h"
 #include "patch68k.h"
@@ -71,8 +71,9 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
 
     this->socRev = socRev;
 
-    if (ramSize == 0) ramSize = deviceGetDefaultRamSize();
-    if (!deviceSupportsRamSize(ramSize)) ERR("unsupported RAM size %u\n", ramSize);
+    if (ramSize == 0) ramSize = 16 << 20;
+    if (!deviceConfigurationSupportsRamSize(deviceType, ramSize))
+        ERR("unsupported RAM size %u\n", ramSize);
 
     this->ramSize = ramSize;
     this->ramBase = ramBase;
@@ -186,8 +187,7 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
 
     mmc = pxaMmcInit(mem, ic, dma);
 
-    DisplayConfiguration displayConfiguration;
-    displayConfigurationGet(deviceType, &displayConfiguration);
+    DisplayConfiguration displayConfiguration = deviceConfigurationGetDsiplay(deviceType);
 
     lcd = pxaLcdInit(mem, this, ic, &bufferLcd, displayConfiguration.width,
                      displayConfiguration.height);

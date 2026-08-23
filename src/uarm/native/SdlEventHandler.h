@@ -3,7 +3,7 @@
 
 #include "Rotation.h"
 #include "SoC.h"
-#include "display_configuration.h"
+#include "device_configuration.h"
 
 class SdlEventHandler {
    public:

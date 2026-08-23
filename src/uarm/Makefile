@@ -59,7 +59,7 @@ SOURCE_CXX =		 					\
 	uarm/pv_touch.cpp 					\
 	uarm/pv_sysctl.cpp					\
 	uarm/pv_storage.cpp					\
-	uarm/display_configuration.cpp 		\
+	uarm/device_configuration.cpp 		\
 	uarm/patch68k.cpp 					\
 	uarm/peephole.cpp					\
 	uarm/pace_patch.cpp					\

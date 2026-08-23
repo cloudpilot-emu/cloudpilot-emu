@@ -12,6 +12,7 @@
 #include "db_backup.h"
 #include "db_installer.h"
 #include "device.h"
+#include "device_configuration.h"
 #include "encoding.h"
 #include "rom_info5.h"
 #include "sdcard.h"
@@ -79,7 +80,7 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
 
     if (sdSize > 0) sdCardInitializeWithData(sdSize / SD_SECTOR_SIZE, sdData, sdId.c_str());
 
-    if (ramSize != 0 && !deviceSupportsRamSize(ramSize)) {
+    if (ramSize != 0 && !deviceConfigurationSupportsRamSize(romInfo.GetDeviceType(), ramSize)) {
         cerr << "ignoring invalid RAM size " << ramSize << endl;
         ramSize = 0;
     }

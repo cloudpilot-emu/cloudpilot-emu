@@ -6,7 +6,6 @@
 #include "cputil.h"
 #include "device.h"
 #include "device_type5.h"
-#include "display_configuration.h"
 #include "mmiodev_DirectNAND.h"
 #include "savestate/savestateAll.h"
 #include "uartdev_bcm2035.h"
@@ -114,10 +113,6 @@ struct Device {
     enum DeviceType5 type;
 };
 
-uint32_t deviceGetDefaultRamSize(void) { return 16UL << 20; }
-
-bool deviceSupportsRamSize(uint32_t size) { return size == (16ul << 20) || size == (32ul << 20); }
-
 enum RamTermination deviceGetRamTerminationStyle(void) { return RamTerminationMirror; }
 
 uint_fast8_t deviceGetSocRev(void) {
@@ -212,9 +207,6 @@ struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
 
     sp->nand = directNandGetNand(dev->nand);
     bcm2035RegisterWithUart(dev->bcm2035, sp->btUart);
-
-    struct DisplayConfiguration displayConfiguration;
-    displayConfigurationGet(type, &displayConfiguration);
 
     return dev;
 }

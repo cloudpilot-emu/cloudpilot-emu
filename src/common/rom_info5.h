@@ -10,6 +10,7 @@
 
 class RomInfo5 {
    public:
+    RomInfo5() = default;
     RomInfo5(const void* buffer, size_t size);
 
     bool IsValid() const;
@@ -38,8 +39,8 @@ class RomInfo5 {
     std::string ReadString(size_t offset, uint8_t maxLen, bool& error) const;
 
    private:
-    const uint8_t* buffer;
-    size_t size;
+    const uint8_t* buffer{nullptr};
+    size_t size{0};
 
     bool isValid{false};
 

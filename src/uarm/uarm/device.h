@@ -60,8 +60,6 @@ struct Device;
 struct MemoryBuffer;
 
 // simple queries
-uint32_t deviceGetDefaultRamSize(void);
-bool deviceSupportsRamSize(uint32_t size);
 enum RamTermination deviceGetRamTerminationStyle(void);
 uint_fast8_t deviceGetSocRev(void);
 

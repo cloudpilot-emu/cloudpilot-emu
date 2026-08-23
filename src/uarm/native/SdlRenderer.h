@@ -5,8 +5,7 @@
 
 #include "Rotation.h"
 #include "SoC.h"
-#include "device.h"
-#include "display_configuration.h"
+#include "device_configuration.h"
 
 class SdlRenderer {
    public:

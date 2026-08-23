@@ -1,7 +1,6 @@
 #ifndef _ROM_INFO_H_
 #define _ROM_INFO_H_
 
-#include "EmCommon.h"
 #include "EmROMReader.h"
 
 class RomInfo {
