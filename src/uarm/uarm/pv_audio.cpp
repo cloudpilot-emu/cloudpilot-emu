@@ -21,8 +21,15 @@
 #define IRQ_NO_SOUND_HALF 6
 #define IRQ_NO_SOUND_FULL 7
 
-// stereo, 44100Hz
-#define AUDIO_CFG (0x80000000 | 44100)
+// #define MONO
+
+#ifdef MONO
+    // mono, 44100Hz
+    #define AUDIO_CFG (0x00000000 | 44100)
+#else
+    // stereo, 44100Hz
+    #define AUDIO_CFG (0x80000000 | 44100)
+#endif
 
 #define SAVESTATE_VERSION 0
 
@@ -107,20 +114,38 @@ void pvAudioSetQueue(PvAudio* audio, AudioQueue* queue) { audio->queue = queue; 
 void pvAudioPullSamples(PvAudio* audio, uint32_t count) {
     if (!audio->enabled && !audio->queue) return;
 
+#ifdef MONO
+    uint16_t* sampleBuffer = audio->enabled
+                                 ? reinterpret_cast<uint16_t*>(ramResolveAddress(
+                                       audio->ram, audio->bufferBase, audio->bufferLength))
+                                 : nullptr;
+#else
     uint32_t* sampleBuffer = audio->enabled
                                  ? reinterpret_cast<uint32_t*>(ramResolveAddress(
                                        audio->ram, audio->bufferBase, audio->bufferLength))
                                  : nullptr;
+#endif
+
     if (!sampleBuffer) {
         for (uint32_t i = 0; i < count; i++) audioQueuePush(audio->queue, 0);
         return;
     }
 
+#ifdef MONO
+    const uint32_t bufferLengthSamples = audio->bufferLength >> 1;
+#else
     const uint32_t bufferLengthSamples = audio->bufferLength >> 2;
+#endif
     const uint32_t bufferLengthSamplesHalf = bufferLengthSamples >> 1;
 
     for (uint32_t i = 0; i < count; i++) {
+#ifdef MONO
+        audioQueuePush(audio->queue,
+                       (sampleBuffer[audio->offset] << 16) | sampleBuffer[audio->offset]);
+        audio->offset++;
+#else
         audioQueuePush(audio->queue, sampleBuffer[audio->offset++]);
+#endif
 
         if (audio->offset == bufferLengthSamplesHalf) {
             pvIcInt(audio->ic, IRQ_NO_SOUND_HALF, true);
