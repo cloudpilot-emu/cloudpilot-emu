@@ -229,12 +229,11 @@ void mpuLoad(struct ArmMpu* mpu, T& loader) {
 
     bool configChanged = false;
     for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
-        configChanged = configChanged || oldConfig[i] != mpu->regions[i].config;
+        configChanged = oldConfig[i] != mpu->regions[i].config;
         if (configChanged) break;
     }
 
     if (configChanged) {
-        printf("restore cache\n");
         clearCache(mpu);
         for (uint8_t i = 0; i < MPU_NUM_REGIONS; i++) {
             mpuSetRegionConfig(mpu, MPU_NUM_REGIONS - 1 - i, mpu->regions[i].config);
@@ -242,7 +241,7 @@ void mpuLoad(struct ArmMpu* mpu, T& loader) {
     }
 
     mpuSetAP(mpu, mpu->ap);
-    mpuSetCacheable(mpu, mpu->bufferable);
+    mpuSetCacheable(mpu, mpu->cacheable);
 }
 
 template void mpuSave<Savestate<ChunkType>>(ArmMpu* mpu, Savestate<ChunkType>& savestate);
