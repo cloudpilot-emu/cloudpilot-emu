@@ -187,7 +187,7 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
 
     mmc = pxaMmcInit(mem, ic, dma);
 
-    DisplayConfiguration displayConfiguration =
+    displayConfiguration =
         deviceConfigurationDisplayConfigForMode(deviceConfigurationDefaultDisplayMode(deviceType));
 
     lcd = pxaLcdInit(mem, this, ic, &bufferLcd, displayConfiguration.width,

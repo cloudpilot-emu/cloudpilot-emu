@@ -40,8 +40,10 @@ void SoC::KeyDown(enum KeyId key) { keyEventQueue->Push(KeyEvent::KeyDown(key));
 void SoC::KeyUp(enum KeyId key) { keyEventQueue->Push(KeyEvent::KeyUp(key)); }
 
 void SoC::PenDown(int x, int y) {
-    penEventQueue->Push(PenEvent::PenDown(std::min<int>(std::max<int>(x, 0), 320),
-                                          std::min<int>(std::max<int>(y, 0), 480)));
+    penEventQueue->Push(PenEvent::PenDown(
+        std::min<int>(std::max<int>(x, 0), displayConfiguration.width),
+        std::min<int>(std::max<int>(y, 0),
+                      displayConfiguration.height + displayConfiguration.graffitiHeight)));
 }
 
 void SoC::PenUp() { penEventQueue->Push(PenEvent::PenUp()); }

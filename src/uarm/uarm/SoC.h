@@ -159,6 +159,8 @@ class SoC {
     bool pcmSuspended{false};
     uint64_t injectedTimeNsec{0};
 
+    DisplayConfiguration displayConfiguration{};
+
     uint64_t eventQueueTicks{0};
     uint64_t eventQueueTicksAtPenDown{0};
     KeyId jammedKey{keyInvalid};

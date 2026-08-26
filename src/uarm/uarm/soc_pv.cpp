@@ -89,8 +89,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, DisplayMod
     peepholeOptimize((uint32_t *)peepholeBuffer, romSize);
     patch68kInit(PATCH_68K_NVFS);
 
-    DisplayConfiguration displayConfiguration =
-        deviceConfigurationDisplayConfigForMode(displayMode);
+    displayConfiguration = deviceConfigurationDisplayConfigForMode(displayMode);
 
     ic = pvIcInit(cpu, mem, this);
     timer = pvTimerInit(mem, ic);
