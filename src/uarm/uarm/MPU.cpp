@@ -86,6 +86,10 @@ static FORCE_INLINE uint8_t getRegionIndex(ArmMpu* mpu, uint32_t pa) {
 MPUTestResult mpuTestAddress(ArmMpu* mpu, uint32_t pa, bool privileged, bool write) {
     if (!mpu->enabled) return 1;
 
+    // We skip the whole lookup chain for reads. This is safe on PalmOS and
+    // buys a few cycles.
+    if (!write) return 1 | MPU_TEST_RESULT_BIT_CACHEABLE;
+
     const MpuRegion& region = mpu->regions[getRegionIndex(mpu, pa)];
 #ifdef MPU_FORCE_CACHEABLE
     const uint32_t cacheable = MPU_TEST_RESULT_BIT_CACHEABLE;
