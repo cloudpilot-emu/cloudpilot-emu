@@ -5,7 +5,7 @@
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { identifySessionEngine } from '@common/helper/sessionfile';
 import { EngineType } from '@common/model/EngineType';
-import { DeviceType5 } from '@native-common/index';
+import { DeviceType5, DisplayMode } from '@native-common/index';
 import createModule, {
     CardSupportLevel,
     Cloudpilot as CloudpilotNative,
@@ -920,7 +920,7 @@ export class Cloudpilot {
         try {
             if (!nativeSession.Deserialize(length, data)) return undefined;
 
-            const deviceId = deviceTypeUarmToDeviceId(nativeSession.GetDeviceId());
+            const deviceId = deviceTypeUarmToDeviceId(nativeSession.GetDeviceType());
             if (deviceId === undefined) throw new Error(`unsupported uARM device ${deviceId}`);
 
             const rom = this.copyOut(nativeSession.GetNor(), nativeSession.GetNorSize());
@@ -1024,7 +1024,10 @@ export class Cloudpilot {
         const nativeImage = new this.module.SessionFile5();
 
         try {
-            nativeImage.SetDeviceId(deviceTypeUarmFromDeviceId(deviceId));
+            nativeImage.SetDeviceType(deviceTypeUarmFromDeviceId(deviceId));
+            nativeImage.SetDisplayMode(
+                deviceId === DeviceId.frankene2 ? DisplayMode.mode_320x480 : DisplayMode.mode_320x320,
+            );
             nativeImage.SetNor(romLength, rom);
             if (memory) nativeImage.SetMemory(memoryLength ?? 0, memory);
             if (nand) nativeImage.SetNand(nandLength ?? 0, nand);

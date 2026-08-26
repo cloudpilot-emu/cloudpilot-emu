@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 struct mz_stream_s;
 
@@ -13,8 +14,10 @@ class SessionFile5 {
 
     static bool IsSessionFile(size_t size, const void* data);
 
-    uint32_t GetDeviceId() const;
-    SessionFile5& SetDeviceId(uint32_t deviceId);
+    int32_t GetDeviceType() const;
+    int32_t GetDisplayMode() const;
+    SessionFile5& SetDeviceType(int32_t deviceId);
+    SessionFile5& SetDisplayMode(int32_t displayMode);
 
     const void* GetMetadata() const;
     size_t GetMetadataSize() const;
@@ -56,12 +59,13 @@ class SessionFile5 {
     bool Flush(mz_stream_s& stream);
 
     bool Deserialize_v0();
-    bool Deserialize_v1_v2_v3(uint32_t version);
+    bool Deserialize_v1_v2_v3_v4(uint32_t version);
 
     void MigrateV2Memory();
 
    private:
-    uint32_t deviceId{0};
+    int32_t deviceType{0};
+    int32_t displayMode{0};
 
     size_t metadataSize{0};
     const uint8_t* metadata{nullptr};

@@ -154,7 +154,8 @@ namespace {
         const Buffer savestate = ctx->soc->GetSavestate();
         const Buffer sd = sdCardData();
 
-        sessionFile.SetDeviceId(ctx->soc->GetDeviceType())
+        sessionFile.SetDeviceType(static_cast<int32_t>(ctx->soc->GetDeviceType()))
+            .SetDisplayMode(static_cast<int32_t>(ctx->soc->GetDisplayMode()))
             .SetRamSize(ctx->soc->GetRamSize())
             .SetNor(rom.size, reinterpret_cast<uint8_t*>(rom.data))
             .SetNand(nand.size, reinterpret_cast<uint8_t*>(nand.data))

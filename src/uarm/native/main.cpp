@@ -1,3 +1,4 @@
+#include <stdexcept>
 #pragma GCC diagnostic ignored "-Wmultichar"
 
 #include <SDL.h>
@@ -47,6 +48,7 @@ struct Options {
     optional<string> script;
     optional<unsigned int> ramSize;
     bool smallWindow;
+    optional<DisplayMode> displayMode;
 };
 
 namespace {
@@ -113,7 +115,8 @@ namespace {
     }
 
     bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
-                     Buffer& savestate, uint32_t& ramSize, RomInfo5& romInfo) {
+                     Buffer& savestate, uint32_t& ramSize, RomInfo5& romInfo,
+                     optional<DisplayMode>& displayMode) {
         SessionFile5 sessionFile;
 
         size_t norOrSessionLen{0};
@@ -128,6 +131,7 @@ namespace {
             }
 
             ramSize = sessionFile.GetRamSize();
+            displayMode = static_cast<DisplayMode>(sessionFile.GetDisplayMode());
             copy(nor, sessionFile.GetNorSize(), sessionFile.GetNor());
             copy(nand, sessionFile.GetNandSize(), sessionFile.GetNand());
             copy(ram, sessionFile.GetMemorySize(), sessionFile.GetMemory());
@@ -175,9 +179,11 @@ namespace {
 
         Buffer nor, nand, memory, savestate;
         RomInfo5 romInfo;
+        optional<DisplayMode> displayMode = nullopt;
         uint32_t ramSize{0};
 
-        if (!readSession(options, nor, nand, memory, savestate, ramSize, romInfo)) return false;
+        if (!readSession(options, nor, nand, memory, savestate, ramSize, romInfo, displayMode))
+            return false;
         cerr << romInfo;
 
         if (!romInfo.IsValid() || romInfo.GetDeviceType() == DeviceType5::deviceTypeInvalid)
@@ -200,6 +206,15 @@ namespace {
         }
 
         cerr << "using RAM size: " << ramSize << " bytes" << endl << endl;
+
+        if (!displayMode.has_value())
+            displayMode = options.displayMode.value_or(
+                deviceConfigurationDefaultDisplayMode(romInfo.GetDeviceType()));
+
+        if (!deviceConfigurationDeviceSupportsDisplayMode(romInfo.GetDeviceType(), *displayMode)) {
+            cerr << "unsupported display mode for device" << endl;
+            return false;
+        }
 
         const uint32_t nandSize = deviceConfigurationGetNandSize(romInfo.GetDeviceType());
         if (nand.size != nandSize) {
@@ -225,15 +240,14 @@ namespace {
         const int gdbPort = options.gdbPort.value_or(-1);
 
         DisplayConfiguration displayConfiguration =
-            deviceConfigurationGetDsiplay(romInfo.GetDeviceType());
+            deviceConfigurationDisplayConfigForMode(*displayMode);
 
-        SoC* soc = (deviceType == deviceTypePV)
-                       ? static_cast<SoC*>(new SocPV(ramSize, nor.data, nor.size,
-                                                     displayConfiguration.width,
-                                                     displayConfiguration.height, 144, gdbPort))
-                       : static_cast<SoC*>(new SocPXA(deviceType, ramSize, nor.data, nor.size,
-                                                      reinterpret_cast<uint8_t*>(nand.data),
-                                                      nand.size, gdbPort, deviceGetSocRev()));
+        SoC* soc =
+            (deviceType == DeviceType5::deviceTypePV)
+                ? static_cast<SoC*>(new SocPV(ramSize, nor.data, nor.size, *displayMode, gdbPort))
+                : static_cast<SoC*>(new SocPXA(deviceType, ramSize, nor.data, nor.size,
+                                               reinterpret_cast<uint8_t*>(nand.data), nand.size,
+                                               gdbPort, deviceGetSocRev()));
 
         if (memory.data && memory.size > soc->GetMemoryData().size) {
             cerr << "RAM size mismatch" << endl;
@@ -267,7 +281,15 @@ namespace {
         mainLoop.SetCyclesPerSecondLimit(options.mips * 1000000);
 
         Rotation rotation = Rotation::portrait_0;
-        const int scale = options.smallWindow ? 1 : 2;
+
+        int scale;
+        if (displayConfiguration.density > 200) {
+            scale = 1;
+        } else if (displayConfiguration.density > 100) {
+            scale = options.smallWindow ? 1 : 2;
+        } else {
+            scale = options.smallWindow ? 2 : 3;
+        }
 
         SDL_Window* window = initSdl(displayConfiguration, scale, rotation);
         if (!window) {
@@ -275,7 +297,8 @@ namespace {
             return false;
         }
 
-        auto sdlRenderer = make_unique<SdlRenderer>(window, soc, scale, rotation);
+        auto sdlRenderer =
+            make_unique<SdlRenderer>(window, soc, scale, displayConfiguration, rotation);
         SdlEventHandler sdlEventHandler(soc, scale, displayConfiguration, rotation);
 
         SdlAudioDriver audioDriver(soc, audioQueue);
@@ -327,7 +350,8 @@ namespace {
                 sdlRenderer.reset();
                 sdlResizeWindow(window, displayConfiguration, scale, rotation);
 
-                sdlRenderer = make_unique<SdlRenderer>(window, soc, scale, rotation);
+                sdlRenderer =
+                    make_unique<SdlRenderer>(window, soc, scale, displayConfiguration, rotation);
                 sdlEventHandler.SetRotation(rotation);
 
                 soc->SetFramebufferDirty();
@@ -382,6 +406,24 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
+    program.add_argument("--display")
+        .help(
+            "display mode (if supported); valid are 160x160, 160x240, 240x240, 240x320, "
+            "320x320, 320x480, 480x480, 480x720")
+        .metavar("<resolution>")
+        .action([](const string& value) {
+            if (value == "160x160") return DisplayMode::mode_160x160;
+            if (value == "160x220") return DisplayMode::mode_160x220;
+            if (value == "240x240") return DisplayMode::mode_240x240;
+            if (value == "240x320") return DisplayMode::mode_240x320;
+            if (value == "320x320") return DisplayMode::mode_320x320;
+            if (value == "320x480") return DisplayMode::mode_320x480;
+            if (value == "480x480") return DisplayMode::mode_480x480;
+            if (value == "480x720") return DisplayMode::mode_480x720;
+
+            throw runtime_error("invalid display mode");
+        });
+
     program.add_argument("--script").help("execute script on startup").metavar("<script file>");
 
     try {
@@ -406,7 +448,8 @@ int main(int argc, const char** argv) {
                        .disableAudio = program.get<bool>("--no-sound"),
                        .script = program.present("--script"),
                        .ramSize = program.present<unsigned int>("--ram-size"),
-                       .smallWindow = program.get<bool>("--small-window")};
+                       .smallWindow = program.get<bool>("--small-window"),
+                       .displayMode = program.present<DisplayMode>("--display")};
 
     logEnable();
 

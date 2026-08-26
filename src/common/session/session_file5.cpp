@@ -12,22 +12,33 @@
 
 using namespace std;
 
+#define DEVICE_TYPE_E3 1
+
+#define DISPLAY_MODE_320x320 5
+#define DISPLAY_MODE_320x480 6
+
 // Versions
 //
 // * V0: first RLE compressed version
 // * V1: Replace RLE with Gzip compression
 // * V2: Add RAM size to header
 // * V3: RAM page size change 512b -> 1k: migrate memory image
+// * V4: Add display mode
 
 namespace {
     constexpr uint32_t MAGIC = 0x19800819;
-    constexpr uint32_t CURRENT_VERSION = 3;
+    constexpr uint32_t CURRENT_VERSION = 4;
 
     constexpr size_t SIZE_HEADER = 12;  // 4 byte magic + 4 byte version + 4 byte device ID
     constexpr size_t SIZE_TOC = 5 * 4;
 
     constexpr size_t BUFFER_MAX_SIZE = 128 * 1024 * 1024;
     constexpr size_t BUFFER_MIN_SIZE = 1024;
+
+    int32_t fallbackDisplayMode(int32_t deviceType) {
+        // E3 = 320x480, and everything else is 320x320
+        return deviceType == DEVICE_TYPE_E3 ? DISPLAY_MODE_320x320 : DISPLAY_MODE_320x480;
+    }
 }  // namespace
 
 bool SessionFile5::IsSessionFile(size_t size, const void* data) {
@@ -44,10 +55,18 @@ bool SessionFile5::IsSessionFile(size_t size, const void* data) {
     return true;
 }
 
-uint32_t SessionFile5::GetDeviceId() const { return deviceId; }
+int32_t SessionFile5::GetDeviceType() const { return deviceType; }
 
-SessionFile5& SessionFile5::SetDeviceId(uint32_t deviceId) {
-    this->deviceId = deviceId;
+int32_t SessionFile5::GetDisplayMode() const { return displayMode; }
+
+SessionFile5& SessionFile5::SetDeviceType(int32_t deviceId) {
+    this->deviceType = deviceId;
+
+    return *this;
+}
+
+SessionFile5& SessionFile5::SetDisplayMode(int32_t displayMode) {
+    this->displayMode = displayMode;
 
     return *this;
 }
@@ -130,7 +149,8 @@ bool SessionFile5::Serialize() {
 
     success &= Write32(MAGIC);
     success &= Write32(CURRENT_VERSION);
-    success &= Write32(deviceId);
+    success &= Write32(deviceType);
+    success &= Write32(displayMode);
     success &= Write32(ramSize);
 
     success &= Write32(metadataSize);
@@ -228,7 +248,8 @@ bool SessionFile5::Deserialize(size_t size, const void* data) {
         case 1:
         case 2:
         case 3:
-            return Deserialize_v1_v2_v3(version);
+        case 4:
+            return Deserialize_v1_v2_v3_v4(version);
 
         default:
             cerr << "unsupported session version " << version << endl;
@@ -427,15 +448,17 @@ bool SessionFile5::Deserialize_v0() {
         return false;
     }
 
-    deviceId = info.GetDeviceType();
+    deviceType = static_cast<uint32_t>(info.GetDeviceType());
+    displayMode = DISPLAY_MODE_320x320;
 
     return true;
 }
 
-bool SessionFile5::Deserialize_v1_v2_v3(uint32_t sessionVersion) {
+bool SessionFile5::Deserialize_v1_v2_v3_v4(uint32_t sessionVersion) {
     bool success = true;
 
-    deviceId = Read32(success);
+    deviceType = Read32(success);
+    displayMode = sessionVersion > 3 ? Read32(success) : fallbackDisplayMode(deviceType);
     ramSize = sessionVersion > 1 ? Read32(success) : (16ul << 20);
 
     metadataSize = Read32(success);

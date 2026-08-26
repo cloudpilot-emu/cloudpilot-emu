@@ -1,5 +1,6 @@
 // clang-format off
 
+#include "device_configuration.h"
 #include "pv_storage.h"
 #include "soc_generic_impl.h" // IWYU pragma: keep
 // clang-format on
@@ -60,9 +61,9 @@ namespace {
     void uartDebugWriteF(uint8_t chr, void *ctx) { fprintf(stderr, "%c", chr); }
 }  // namespace
 
-SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t displayWidth,
-             uint32_t displayHeight, uint32_t displayDensity, int gdbPort)
-    : displayWidth(displayWidth), displayHeight(displayHeight), displayDensity(displayDensity) {
+SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, DisplayMode displayMode,
+             int gdbPort)
+    : displayMode(displayMode) {
     ramSize = sanitizeRamSize((ramSize));
     this->ramSize = ramSize;
 
@@ -88,12 +89,16 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
     peepholeOptimize((uint32_t *)peepholeBuffer, romSize);
     patch68kInit(PATCH_68K_NVFS);
 
+    DisplayConfiguration displayConfiguration =
+        deviceConfigurationDisplayConfigForMode(displayMode);
+
     ic = pvIcInit(cpu, mem, this);
     timer = pvTimerInit(mem, ic);
     uart = pvUartInit(mem, UART_BASE);
     uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
     hypercallIface = pvHypercallInterfaceInit(cpu, ramSize);
-    display = pvDisplayInit(mem, ram, &bufferClut, displayWidth, displayHeight, displayDensity);
+    display = pvDisplayInit(mem, ram, &bufferClut, displayConfiguration.width,
+                            displayConfiguration.height, displayConfiguration.density);
     keys = pvKeysInit(mem, ic);
     rtc = pvRtcInit(mem, ic);
     audio = pvAudioInit(mem, ram, ic);
@@ -103,7 +108,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, uint32_t d
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 
-    framebuffer = make_unique<uint32_t[]>(displayWidth * displayHeight);
+    framebuffer = make_unique<uint32_t[]>(displayConfiguration.width * displayConfiguration.height);
 
     powerOnState->Save(*this);
     SdEject();
@@ -121,7 +126,9 @@ void SocPV::ResetPendingFrame() {
     pvDisplayClearDirty(display);
 }
 
-enum DeviceType5 SocPV::GetDeviceType() { return deviceTypePV; }
+DeviceType5 SocPV::GetDeviceType() { return DeviceType5::deviceTypePV; }
+
+DisplayMode SocPV::GetDisplayMode() { return displayMode; }
 
 void SocPV::SuspendTimerInterrupts(bool suspendInterrupts) {
     pvTimerSuspendInterrupts(timer, suspendInterrupts);

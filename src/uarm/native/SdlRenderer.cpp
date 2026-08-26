@@ -17,10 +17,13 @@ namespace {
     }
 }  // namespace
 
-SdlRenderer::SdlRenderer(SDL_Window* window, SoC* soc, int scale, Rotation rotation)
-    : window(window), soc(soc), scale(scale), rotation(rotation) {
-    displayConfiguration = deviceConfigurationGetDsiplay(soc->GetDeviceType());
-
+SdlRenderer::SdlRenderer(SDL_Window* window, SoC* soc, int scale,
+                         DisplayConfiguration& displayConfiguration, Rotation rotation)
+    : window(window),
+      soc(soc),
+      scale(scale),
+      rotation(rotation),
+      displayConfiguration(displayConfiguration) {
     int windowHeight, windowWidth;
     SDL_GetWindowSize(window, &windowWidth, &windowHeight);
 

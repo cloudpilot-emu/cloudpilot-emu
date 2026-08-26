@@ -1,6 +1,5 @@
 #include "rom_info5.h"
 
-#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -33,13 +32,13 @@ namespace {
 
     const char* describeDeviceType(DeviceType5 deviceType) {
         switch (deviceType) {
-            case deviceTypePV:
+            case DeviceType5::deviceTypePV:
                 return "rePalm paravirtualized";
 
-            case deviceTypeE2:
+            case DeviceType5::deviceTypeE2:
                 return "Tungsten E2";
 
-            case deviceTypeFrankenE2:
+            case DeviceType5::deviceTypeFrankenE2:
                 return "Tungsten E3 / Dmitry's Frankenpilot";
 
             default:
@@ -81,21 +80,21 @@ uint32_t RomInfo5::GetRecommendedRamSize() const {
 }
 
 DeviceType5 RomInfo5::GetDeviceType() const {
-    if (!isValid) return deviceTypeInvalid;
+    if (!isValid) return DeviceType5::deviceTypeInvalid;
 
     if (halId == HAL_ID_PV) {
-        return deviceTypePV;
+        return DeviceType5::deviceTypePV;
     }
 
     if (companyId == COMPANY_ID_PALM && halId == HAL_ID_TUNGSTEN_E2) {
-        return deviceTypeE2;
+        return DeviceType5::deviceTypeE2;
     }
 
     if (companyId == COMPANY_ID_PALM && halId == HAL_ID_DMITRY_TUNGSTEN_E3) {
-        return deviceTypeFrankenE2;
+        return DeviceType5::deviceTypeFrankenE2;
     }
 
-    return deviceTypeInvalid;
+    return DeviceType5::deviceTypeInvalid;
 }
 
 bool RomInfo5::Parse() {

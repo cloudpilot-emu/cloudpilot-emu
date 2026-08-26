@@ -3,8 +3,10 @@ interface SessionFile5 {
 
     boolean IsSessionFile(long size, [Const] VoidPtr data);
 
-    long GetDeviceId();
-    [Ref] SessionFile5 SetDeviceId(long deviceId);
+    long GetDeviceType();
+    long GetDisplayMode();
+    [Ref] SessionFile5 SetDeviceType(long deviceType);
+    [Ref] SessionFile5 SetDisplayMode(long displayMode);
 
     [Const] VoidPtr GetMetadata();
     long GetMetadataSize();

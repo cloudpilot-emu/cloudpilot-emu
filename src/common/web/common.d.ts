@@ -23,6 +23,18 @@ export const enum DeviceType5 {
     deviceTypeInvalid = -1,
 }
 
+export const enum DisplayMode {
+    mode_default = 0,
+    mode_160x160 = 1,
+    mode_160x240 = 2,
+    mode_240x240 = 3,
+    mode_240x320 = 4,
+    mode_320x320 = 5,
+    mode_320x480 = 6,
+    mode_480x480 = 7,
+    mode_480x720 = 8,
+}
+
 export interface GunzipContext<VoidPtr> {
     GetState(): GunzipState;
     Continue(): GunzipState;
@@ -74,8 +86,10 @@ export interface ZipfileWalker<VoidPtr> {
 export interface SessionFile5<VoidPtr> {
     IsSessionFile(size: number, data: VoidPtr): boolean;
 
-    GetDeviceId(): DeviceType5;
-    SetDeviceId(deviceId: DeviceType5): SessionFile5<VoidPtr>;
+    GetDeviceType(): DeviceType5;
+    GetDisplayMode(): number;
+    SetDeviceType(deviceTyoe: DeviceType5): SessionFile5<VoidPtr>;
+    SetDisplayMode(displayMode: DisplayMode): SessionFile5<VoidPtr>;
 
     GetMetadata(): VoidPtr;
     GetMetadataSize(): number;

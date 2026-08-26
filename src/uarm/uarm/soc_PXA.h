@@ -45,7 +45,8 @@ class SocPXA : public SocGeneric<SocPXA> {
 
     uint32_t *GetPendingFrame() override;
     void ResetPendingFrame() override;
-    enum DeviceType5 GetDeviceType() override;
+    DeviceType5 GetDeviceType() override;
+    DisplayMode GetDisplayMode() override;
     void SuspendTimerInterrupts(bool suspendInterrupts) override;
     bool LcdEnabled() override;
 

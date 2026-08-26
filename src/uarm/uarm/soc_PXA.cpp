@@ -187,7 +187,8 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
 
     mmc = pxaMmcInit(mem, ic, dma);
 
-    DisplayConfiguration displayConfiguration = deviceConfigurationGetDsiplay(deviceType);
+    DisplayConfiguration displayConfiguration =
+        deviceConfigurationDisplayConfigForMode(deviceConfigurationDefaultDisplayMode(deviceType));
 
     lcd = pxaLcdInit(mem, this, ic, &bufferLcd, displayConfiguration.width,
                      displayConfiguration.height);
@@ -222,7 +223,11 @@ uint32_t *SocPXA::GetPendingFrame() { return pxaLcdGetPendingFrame(lcd); }
 
 void SocPXA::ResetPendingFrame() { return pxaLcdResetPendingFrame(lcd); }
 
-enum DeviceType5 SocPXA::GetDeviceType() { return deviceGetType(dev); }
+DeviceType5 SocPXA::GetDeviceType() { return deviceGetType(dev); }
+
+DisplayMode SocPXA::GetDisplayMode() {
+    return deviceConfigurationDefaultDisplayMode(deviceGetType(dev));
+}
 
 void SocPXA::SuspendTimerInterrupts(bool suspendInterrupts) {
     pxaTimrSuspendInterrupts(tmr, suspendInterrupts);

@@ -8,6 +8,7 @@
 
 #include "MainLoop.h"
 #include "device.h"
+#include "device_type5.h"
 
 class SoC;
 struct AudioQueue;
@@ -118,7 +119,7 @@ class Uarm {
     std::string sdId;
 
     uint32_t defaultMips{0};
-    DeviceType5 deviceType{deviceTypeInvalid};
+    DeviceType5 deviceType{DeviceType5::deviceTypeInvalid};
 
     SoC* soc{nullptr};
     AudioQueue* audioQueue{nullptr};

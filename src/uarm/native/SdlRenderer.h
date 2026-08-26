@@ -9,7 +9,8 @@
 
 class SdlRenderer {
    public:
-    SdlRenderer(SDL_Window* window, SoC* soc, int scale, Rotation rotation);
+    SdlRenderer(SDL_Window* window, SoC* soc, int scale, DisplayConfiguration& displayConfiguration,
+                Rotation rotation);
     ~SdlRenderer();
 
     void Draw(bool forceRedraw);

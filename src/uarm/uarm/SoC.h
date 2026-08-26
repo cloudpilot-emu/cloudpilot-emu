@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "buffer.h"
+#include "device_configuration.h"
 #include "device_type5.h"
 #include "keys.h"
 #include "memory_buffer.h"
@@ -91,7 +92,8 @@ class SoC {
     // care of in soc_generic.h
     virtual uint32_t *GetPendingFrame() = 0;
     virtual void ResetPendingFrame() = 0;
-    virtual enum DeviceType5 GetDeviceType() = 0;
+    virtual DeviceType5 GetDeviceType() = 0;
+    virtual DisplayMode GetDisplayMode() = 0;
     virtual void SuspendTimerInterrupts(bool suspendInterrupts) = 0;
     virtual bool LcdEnabled() = 0;
 
