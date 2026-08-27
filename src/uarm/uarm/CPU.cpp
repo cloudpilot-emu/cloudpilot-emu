@@ -2,6 +2,7 @@
 
 #include "CPU.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -877,6 +878,10 @@ static void cpuPrvHandlePaceMemoryFault(struct ArmCpu *cpu) {
 
     paceGetMemeryFault(&addr, &wasWrite, &fsr);
     cpuPrvHandleMemErr(cpu, addr, wasWrite, false, fsr);
+
+#ifndef __EMSCRIPTEN__
+    fprintf(stderr, "memory fault in PACE %s at 0x%08x\n", wasWrite ? "writing" : "reading", addr);
+#endif
 }
 
 template <int memorySystemKind, bool wasT>
