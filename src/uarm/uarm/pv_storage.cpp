@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "RAM.h"
+#include "ROM.h"
 #include "cputil.h"
 #include "mem.h"
 #include "pv_ic.h"
@@ -15,6 +16,7 @@ struct PvStorage {
     bool inserted{false};
 
     ArmRam* ram{nullptr};
+    ArmRom* rom{nullptr};
     PvIc* ic{nullptr};
 
     template <typename T>
@@ -57,6 +59,8 @@ static void pvStoragePrvRead(PvStorage* storage, uint32_t sec) {
 
 static void pvStoragePrvWrite(PvStorage* storage, uint32_t sec) {
     void* mappedBuffer = ramResolveAddress(storage->ram, storage->pa, SD_SECTOR_SIZE);
+    if (!mappedBuffer) mappedBuffer = romResolveAddress(storage->rom, storage->pa, SD_SECTOR_SIZE);
+
     if (!mappedBuffer) {
         storage->pa = ERR_BUS_WRITE;
         return;
@@ -122,11 +126,12 @@ static bool pvStoragePrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
     return true;
 }
 
-PvStorage* pvStorageInit(ArmMem* mem, PvIc* ic, ArmRam* ram) {
+PvStorage* pvStorageInit(ArmMem* mem, PvIc* ic, ArmRam* ram, ArmRom* rom) {
     auto storage = new PvStorage();
 
     storage->ic = ic;
     storage->ram = ram;
+    storage->rom = rom;
 
     memRegionAdd(mem, STORAGE_BASE, STORAGE_SIZE, pvStoragePrvMemAccessF, storage);
 

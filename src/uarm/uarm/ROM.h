@@ -25,4 +25,6 @@ uint32_t romGetSize(struct ArmRom *rom);
 
 void *romGetData(struct ArmRom *rom);
 
+void *romResolveAddress(struct ArmRom *rom, uint32_t pa, uint32_t size);
+
 #endif

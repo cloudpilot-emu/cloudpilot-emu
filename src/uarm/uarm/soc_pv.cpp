@@ -96,14 +96,14 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, DisplayMod
     uart = pvUartInit(mem, UART_BASE);
     uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
     hypercallIface = pvHypercallInterfaceInit(cpu, ramSize);
-    display = pvDisplayInit(mem, ram, &bufferClut, displayConfiguration.width,
+    display = pvDisplayInit(mem, ram, rom, &bufferClut, displayConfiguration.width,
                             displayConfiguration.height, displayConfiguration.density);
     keys = pvKeysInit(mem, ic);
     rtc = pvRtcInit(mem, ic);
-    audio = pvAudioInit(mem, ram, ic);
+    audio = pvAudioInit(mem, ram, rom, ic);
     touch = pvTouchInit(mem, ic);
     sysctl = pvSysctlInit(mem, this, ramSize);
-    storage = pvStorageInit(mem, ic, ram);
+    storage = pvStorageInit(mem, ic, ram, rom);
 
     pvUartSetWriteF(uartDebug, uartDebugWriteF, nullptr);
 

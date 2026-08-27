@@ -8,8 +8,9 @@ struct AudioQueue;
 struct PvIc;
 struct ArmMem;
 struct ArmRam;
+struct ArmRom;
 
-PvAudio* pvAudioInit(ArmMem* mem, ArmRam* ram, PvIc* ic);
+PvAudio* pvAudioInit(ArmMem* mem, ArmRam* ram, ArmRom* rom, PvIc* ic);
 
 void pvAudioSetQueue(PvAudio* audio, AudioQueue* queue);
 

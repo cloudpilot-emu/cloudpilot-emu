@@ -131,6 +131,12 @@ uint32_t romGetSize(struct ArmRom *rom) { return rom->size; }
 
 void *romGetData(struct ArmRom *rom) { return rom->data; }
 
+void *romResolveAddress(struct ArmRom *rom, uint32_t pa, uint32_t size) {
+    if (pa < rom->base || pa + size > rom->base + rom->size) return nullptr;
+
+    return reinterpret_cast<uint8_t *>(rom->data) + (pa - rom->base);
+}
+
 struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void *data, const uint32_t size) {
     struct ArmRom *rom = (struct ArmRom *)malloc(sizeof(*rom));
     if (!rom) ERR("cannot alloc ROM at 0x%08x", adr);

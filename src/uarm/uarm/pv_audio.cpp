@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include "RAM.h"
+#include "ROM.h"
 #include "audio_queue.h"
 #include "cputil.h"
 #include "mem.h"
@@ -42,6 +43,7 @@ struct PvAudio {
 
     PvIc* ic{nullptr};
     ArmRam* ram{nullptr};
+    ArmRom* rom{nullptr};
     AudioQueue* queue{nullptr};
 
     template <typename T>
@@ -98,11 +100,12 @@ static bool pvAudioPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size,
     return true;
 }
 
-PvAudio* pvAudioInit(ArmMem* mem, ArmRam* ram, PvIc* ic) {
+PvAudio* pvAudioInit(ArmMem* mem, ArmRam* ram, ArmRom* rom, PvIc* ic) {
     auto audio = new PvAudio();
 
     audio->ic = ic;
     audio->ram = ram;
+    audio->rom = rom;
 
     memRegionAdd(mem, AUDIO_BASE, AUDIO_SIZE, pvAudioPrvMemAccessF, audio);
 
@@ -115,16 +118,28 @@ void pvAudioPullSamples(PvAudio* audio, uint32_t count) {
     if (!audio->enabled && !audio->queue) return;
 
 #ifdef MONO
-    uint16_t* sampleBuffer = audio->enabled
-                                 ? reinterpret_cast<uint16_t*>(ramResolveAddress(
-                                       audio->ram, audio->bufferBase, audio->bufferLength))
-                                 : nullptr;
+    int16_t* sampleBuffer = nullptr;
 #else
-    uint32_t* sampleBuffer = audio->enabled
-                                 ? reinterpret_cast<uint32_t*>(ramResolveAddress(
-                                       audio->ram, audio->bufferBase, audio->bufferLength))
-                                 : nullptr;
+    uint32_t* sampleBuffer = nullptr;
 #endif
+
+    if (audio->enabled) {
+#ifdef MONO
+        sampleBuffer = reinterpret_cast<int16_t*>(
+            ramResolveAddress(audio->ram, audio->bufferBase, audio->bufferLength));
+
+        if (!sampleBuffer)
+            sampleBuffer = reinterpret_cast<int16_t*>(
+                romResolveAddress(audio->rom, audio->bufferBase, audio->bufferLength));
+#else
+        sampleBuffer = reinterpret_cast<uint32_t*>(
+            ramResolveAddress(audio->ram, audio->bufferBase, audio->bufferLength));
+
+        if (!sampleBuffer)
+            sampleBuffer = reinterpret_cast<uint32_t*>(
+                romResolveAddress(audio->rom, audio->bufferBase, audio->bufferLength));
+#endif
+    }
 
     if (!sampleBuffer) {
         for (uint32_t i = 0; i < count; i++) audioQueuePush(audio->queue, 0);
@@ -141,8 +156,8 @@ void pvAudioPullSamples(PvAudio* audio, uint32_t count) {
     for (uint32_t i = 0; i < count; i++) {
 #ifdef MONO
         audioQueuePush(audio->queue,
-                       (sampleBuffer[audio->offset] << 16) | sampleBuffer[audio->offset]);
-        audio->offset++;
+                       (sampleBuffer[audio->sampleIndex] << 16) | sampleBuffer[audio->sampleIndex]);
+        audio->sampleIndex++;
 #else
         audioQueuePush(audio->queue, sampleBuffer[audio->sampleIndex++]);
 #endif

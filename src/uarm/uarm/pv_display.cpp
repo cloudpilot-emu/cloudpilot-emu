@@ -5,10 +5,10 @@
 #include "CPEndian.h"
 #include "Nibbler.h"
 #include "RAM.h"
+#include "ROM.h"
 #include "cputil.h"
 #include "mem.h"
 #include "memory_buffer.h"
-#include "miniz.h"
 #include "savestate/savestateAll.h"
 
 #define DISPLAY_BASE 0x30000200
@@ -36,6 +36,7 @@ struct PvDisplay {
 
     MemoryBuffer* bufferClut{nullptr};
     ArmRam* ram{nullptr};
+    ArmRom* rom{nullptr};
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
@@ -140,8 +141,8 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
     return true;
 }
 
-PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut, uint32_t width,
-                         uint32_t height, uint32_t density) {
+PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, ArmRom* rom, MemoryBuffer* bufferClut,
+                         uint32_t width, uint32_t height, uint32_t density) {
     auto display = new PvDisplay();
 
     display->width = width;
@@ -149,6 +150,7 @@ PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut, uin
     display->density = density;
 
     display->ram = ram;
+    display->rom = rom;
     display->bufferClut = bufferClut;
 
     memRegionAdd(mem, DISPLAY_BASE, DISPLAY_SIZE, pvDisplayPrvMemAccessF, display);
@@ -158,8 +160,15 @@ PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, MemoryBuffer* bufferClut, uin
 
 template <int bpp>
 static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* target) {
-    auto framebuffer = reinterpret_cast<uint8_t*>(
-        ramResolveAddress(display->ram, display->base, display->stride * display->height));
+    const size_t framebufferSize = display->stride * display->height;
+
+    auto framebuffer =
+        reinterpret_cast<uint8_t*>(ramResolveAddress(display->ram, display->base, framebufferSize));
+
+    if (!framebuffer)
+        framebuffer = reinterpret_cast<uint8_t*>(
+            romResolveAddress(display->rom, display->base, framebufferSize));
+
     if (!framebuffer) return false;
 
     const auto clut = reinterpret_cast<uint32_t*>(display->bufferClut->buffer);
