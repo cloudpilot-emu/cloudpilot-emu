@@ -168,7 +168,7 @@ test: $(BINARY_TEST)
 emscripten: $(OPTIMIZED_BINARY_WASM)
 
 $(PROCESSED_BINARY_WASM): $(BINARY_EMCC)
-	if test -z "$(DEVELOP)"; then $(YARN) --cwd ./tools/build-jump-table && $(YARN) --cwd ./tools/build-jump-table build-jump-table "$$(pwd)/$^" "$$(pwd)/$@"; fi
+	if test -z "$(DEVELOP)"; then $(YARN) --cwd ./tools/build-jump-table && $(YARN) --cwd ./tools/build-jump-table build-jump-table "$$(pwd)/$^" "$$(pwd)/$@"; else cp $^ $@; fi
 
 $(OPTIMIZED_BINARY_WASM): $(PROCESSED_BINARY_WASM)
 	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS) -o $@ $^; fi
