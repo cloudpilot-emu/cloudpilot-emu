@@ -27,11 +27,17 @@ function getFunctionLikeOne(module: binaryen.Module, fragment: string): binaryen
 }
 
 function buildDispatcher(module: binaryen.Module, execFnHandles: Array<[string, number]>): binaryen.ExpressionRef {
+    const sortedHandles = execFnHandles.slice().sort(([, h1], [, h2]) => h1 - h2);
+
+    if (sortedHandles.length - 1 !== sortedHandles[sortedHandles.length - 1][1]) {
+        throw new Error('handle list has gaps!');
+    }
+
     let block = module.block(
         'invalid',
         [
             module.switch(
-                execFnHandles.map(([name, handle]) => `op${handle}`),
+                sortedHandles.map(([, handle]) => `op${handle}`),
                 'invalid',
                 module.local.get(0, binaryen.i32),
                 undefined,
@@ -42,13 +48,13 @@ function buildDispatcher(module: binaryen.Module, execFnHandles: Array<[string, 
 
     block = module.block('op0', [block, module.call('abort', [], binaryen.none), module.return()], undefined);
 
-    for (let i = 0; i < execFnHandles.length; i++) {
+    for (let i = 0; i < sortedHandles.length; i++) {
         block = module.block(
-            i < execFnHandles.length - 1 ? `op${i + 1}` : null,
+            i < sortedHandles.length - 1 ? `op${sortedHandles[i + 1][1]}` : null,
             [
                 block,
                 module.call(
-                    execFnHandles[i][0],
+                    sortedHandles[i][0],
                     [module.local.get(1, binaryen.i32), module.local.get(2, binaryen.i32)],
                     binaryen.none,
                 ),
