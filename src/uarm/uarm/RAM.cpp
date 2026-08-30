@@ -269,3 +269,12 @@ void* ramResolveAddress(struct ArmRam* ram, uint32_t pv, uint32_t size) {
 
     return ram->buf.buffer + (pv - ram->adr);
 }
+
+void ramMarkDirty(struct ArmRam* ram, uint32_t base, uint32_t size) {
+    const uint32_t last = base + size;
+    const uint32_t first = base < ram->adr ? ram->adr : base;
+
+    if (last <= first) return;
+
+    memoryBufferMarkRangeDirty(&ram->buf, first - ram->adr, last - first);
+}

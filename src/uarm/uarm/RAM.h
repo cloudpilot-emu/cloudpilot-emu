@@ -23,4 +23,6 @@ void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size);
 
 void* ramResolveAddress(struct ArmRam* ram, uint32_t pa, uint32_t size);
 
+void ramMarkDirty(struct ArmRam* ram, uint32_t base, uint32_t size);
+
 #endif

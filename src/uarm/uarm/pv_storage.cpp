@@ -54,6 +54,7 @@ static void pvStoragePrvRead(PvStorage* storage, uint32_t sec) {
         return;
     }
 
+    ramMarkDirty(storage->ram, storage->pa, SD_SECTOR_SIZE);
     storage->pa = sdCardRead(sec, mappedBuffer) ? ERR_NONE : ERR_READ_FAILED;
 }
 
