@@ -20,6 +20,7 @@ export const enum ZipfileWalkerState {
 export const enum DeviceType5 {
     deviceTypeE2 = 0,
     deviceTypeFrankenE2 = 1,
+    deviceTypePV = 2,
     deviceTypeInvalid = -1,
 }
 

@@ -13,10 +13,12 @@
 #include "db_installer.h"
 #include "device.h"
 #include "device_configuration.h"
+#include "device_type5.h"
 #include "encoding.h"
 #include "rom_info5.h"
 #include "sdcard.h"
 #include "soc_PXA.h"
+#include "soc_pv.h"
 #include "system_state.h"
 
 using namespace std;
@@ -28,6 +30,11 @@ namespace {
 
 Uarm& Uarm::SetRamSize(unsigned int size) {
     ramSize = size;
+    return *this;
+}
+
+Uarm& Uarm::SetDisplayMode(unsigned int displayMode) {
+    this->displayMode = static_cast<DisplayMode>(displayMode);
     return *this;
 }
 
@@ -77,10 +84,11 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
         cerr << "invalid NOR" << endl;
         return false;
     }
+    deviceType = romInfo.GetDeviceType();
 
     if (sdSize > 0) sdCardInitializeWithData(sdSize / SD_SECTOR_SIZE, sdData, sdId.c_str());
 
-    if (ramSize != 0 && !deviceConfigurationSupportsRamSize(romInfo.GetDeviceType(), ramSize)) {
+    if (ramSize != 0 && !deviceConfigurationSupportsRamSize(deviceType, ramSize)) {
         cerr << "ignoring invalid RAM size " << ramSize << endl;
         ramSize = 0;
     }
@@ -90,16 +98,26 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
     cout << romInfo << endl;
     cout << "using " << ramSize << " bytes of RAM" << endl;
 
-    deviceType = romInfo.GetDeviceType();
+    if (!displayMode.has_value()) displayMode = deviceConfigurationDefaultDisplayMode(deviceType);
+
+    if (!deviceConfigurationDeviceSupportsDisplayMode(deviceType, *displayMode)) {
+        cerr << "ignoring invalid display mode " << static_cast<int>(*displayMode) << endl;
+        displayMode = deviceConfigurationDefaultDisplayMode(deviceType);
+    }
 
     unique_ptr<uint8_t[]> nandStub;
-    if (!nandData) {
+    if (!nandData && deviceConfigurationGetNandSize(deviceType) > 0) {
         nandStub = make_unique<uint8_t[]>(NAND_SIZE);
         memset(nandStub.get(), 0xff, NAND_SIZE);
     }
 
-    soc = new SocPXA(deviceType, ramSize, romData, romSize, nandData ? nandData : nandStub.get(),
-                     nandData ? nandSize : NAND_SIZE, 0, deviceGetSocRev());
+    soc = deviceType == deviceTypePV
+              ? static_cast<SoC*>(new SocPV(ramSize, romData, romSize, *displayMode, 0))
+              :
+
+              static_cast<SoC*>(new SocPXA(deviceType, ramSize, romData, romSize,
+                                           nandData ? nandData : nandStub.get(),
+                                           nandData ? nandSize : NAND_SIZE, 0, deviceGetSocRev()));
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     soc->SetAudioQueue(audioQueue);

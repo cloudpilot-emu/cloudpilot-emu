@@ -39,4 +39,5 @@ export enum DeviceId {
     lp168 = 'Legend-P168',
     te2 = 'Tungsten-E2',
     frankene2 = 'Franken-E2',
+    repalmPV = 'rePalm paravirtualized',
 }

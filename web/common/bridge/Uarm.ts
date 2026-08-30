@@ -212,6 +212,9 @@ export class Uarm {
             case DeviceType5.deviceTypeFrankenE2:
                 return DeviceId.frankene2;
 
+            case DeviceType5.deviceTypePV:
+                return DeviceId.repalmPV;
+
             default:
                 throw new Error(`invalid device ID ${deviceType}`);
         }

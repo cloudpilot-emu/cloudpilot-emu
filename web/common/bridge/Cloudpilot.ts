@@ -169,6 +169,9 @@ function deviceTypeUarmToDeviceId(deviceType: DeviceType5): DeviceId | undefined
         case DeviceType5.deviceTypeFrankenE2:
             return DeviceId.frankene2;
 
+        case DeviceType5.deviceTypePV:
+            return DeviceId.repalmPV;
+
         default:
             return undefined;
     }
@@ -923,6 +926,11 @@ export class Cloudpilot {
             const deviceId = deviceTypeUarmToDeviceId(nativeSession.GetDeviceType());
             if (deviceId === undefined) throw new Error(`unsupported uARM device ${deviceId}`);
 
+            // CSTODO: resolution fudge
+            if (deviceId === DeviceId.repalmPV && nativeSession.GetDisplayMode() !== DisplayMode.mode_320x480) {
+                throw new Error(`rePalm PV resolutions other than 320x480 are currently unsupported`);
+            }
+
             const rom = this.copyOut(nativeSession.GetNor(), nativeSession.GetNorSize());
             const memory = this.copyOut(nativeSession.GetMemory(), nativeSession.GetMemorySize());
             const nand = this.copyOut(nativeSession.GetNand(), nativeSession.GetNandSize());
@@ -1025,8 +1033,11 @@ export class Cloudpilot {
 
         try {
             nativeImage.SetDeviceType(deviceTypeUarmFromDeviceId(deviceId));
+            // CSTODO: resolution fudge
             nativeImage.SetDisplayMode(
-                deviceId === DeviceId.frankene2 ? DisplayMode.mode_320x480 : DisplayMode.mode_320x320,
+                deviceId === DeviceId.frankene2 || deviceId === DeviceId.repalmPV
+                    ? DisplayMode.mode_320x480
+                    : DisplayMode.mode_320x320,
             );
             nativeImage.SetNor(romLength, rom);
             if (memory) nativeImage.SetMemory(memoryLength ?? 0, memory);

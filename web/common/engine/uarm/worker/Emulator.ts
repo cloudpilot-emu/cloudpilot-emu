@@ -34,7 +34,17 @@ const MAX_PCM_SUSPEND_MSEC = 500;
 const MAX_PCM_BUFFERS_IN_FLIGHT = 5;
 const MAX_PCM_WAIT_FOR_BUFFER_MSEC = 5000;
 
-type All<T> = { [P in keyof T]-?: T[P] };
+/*
+ * Determine RAM size in MB from memory size. This exploits the fact that RAM
+ * size is always a power-of-two multiple of 1MB, and memory size is only a
+ * a few (16) kilobtes of extra memory.
+ */
+function ramSizeFromMemorySize(memorySize: number): number | undefined {
+    if (memorySize === 0) return undefined;
+    const log2 = 31 - Math.clz32(memorySize);
+
+    return log2 > 20 ? log2 - 20 : undefined;
+}
 
 export class Emulator {
     constructor(
@@ -56,11 +66,15 @@ export class Emulator {
         state?: Uint8Array,
         card?: [Uint8Array, string],
     ): boolean {
-        // This is a slight hack, but I see no cleaner way to do this. If the session is new, then
-        // memory will be undefined, and the logic in the app will default to
-        // RomInfo5::GetRecommendedRamSize . The default in Uarm::launch is the same, which is
-        // why this works.
-        const ramSize = memory ? (memory.length >= 32 << 20 ? 32 << 20 : 16 << 20) : undefined;
+        let ramSize: number | undefined = undefined;
+        if (memory) {
+            ramSize = ramSizeFromMemorySize(memory.length);
+
+            if (ramSize === undefined) {
+                console.error(`unable to determine RAM size from memory size ${memory.length} bytes`);
+                return false;
+            }
+        }
 
         if (ramSize !== undefined) this.uarm.setRamSize(ramSize);
         if (nand) this.uarm.setNand(nand);
@@ -89,12 +103,15 @@ export class Emulator {
             },
         );
 
-        this.pageTrackerNand = new DirtyPageTracker(4224, (this.uarm.getNandSize() / 4224) | 0, 'nand', false, {
-            getData: () => this.uarm.getNandData(),
-            getDirtyPages: () => this.uarm.getNandDirtyPages(),
-            isDirty: () => this.uarm.isNandDirty(),
-            setDirty: (dirty) => this.uarm.setNandDirty(dirty),
-        });
+        const nandSize = this.uarm.getNandSize();
+        if (nandSize > 0) {
+            this.pageTrackerNand = new DirtyPageTracker(4224, (this.uarm.getNandSize() / 4224) | 0, 'nand', false, {
+                getData: () => this.uarm.getNandData(),
+                getDirtyPages: () => this.uarm.getNandDirtyPages(),
+                isDirty: () => this.uarm.isNandDirty(),
+                setDirty: (dirty) => this.uarm.setNandDirty(dirty),
+            });
+        }
 
         this.updatePageTrackerSd();
 
@@ -267,11 +284,11 @@ export class Emulator {
         return data ? new Uint32Array(data.buffer, data.byteOffset, data.byteLength).slice() : undefined;
     }
 
-    getFullState(): All<FullState> {
+    getFullState(): FullState {
         return {
             rom: this.uarm.getRomData().slice(),
             memory: this.uarm.getMemoryData().slice(),
-            nand: this.uarm.getNandData().slice(),
+            nand: this.uarm.getNandSize() > 0 ? this.uarm.getNandData().slice() : undefined,
             savestate: this.uarm.saveState().slice(),
         };
     }
@@ -306,10 +323,10 @@ export class Emulator {
         if (!this.savestate) this.savestate = savestate.slice();
         else this.savestate.set(savestate);
 
-        if (!this.pageTrackerMemory || !this.pageTrackerNand) throw new Error('unreachable');
+        if (!this.pageTrackerMemory) throw new Error('unreachable');
 
         const snapshotMemory = this.pageTrackerMemory.takeSnapshot();
-        const snapshotNand = this.pageTrackerNand.takeSnapshot();
+        const snapshotNand = this.pageTrackerNand?.takeSnapshot();
         const snapshotSd = this.pageTrackerSd?.takeSnapshot();
 
         const now = Date.now();
@@ -329,7 +346,7 @@ export class Emulator {
 
         const transferrables = [
             ...this.pageTrackerMemory.getTransferables(),
-            ...this.pageTrackerNand.getTransferables(),
+            ...(this.pageTrackerNand?.getTransferables() ?? []),
             ...(this.pageTrackerSd?.getTransferables() ?? []),
             this.savestate.buffer,
         ];
@@ -339,7 +356,7 @@ export class Emulator {
 
     private returnSnapshotUnguarded(snapshot: UarmSnapshot, success: boolean): void {
         this.pageTrackerMemory?.returnSnapshot(success, snapshot.memory);
-        this.pageTrackerNand?.returnSnapshot(success, snapshot.nand);
+        if (this.pageTrackerNand && snapshot.nand) this.pageTrackerNand.returnSnapshot(success, snapshot.nand);
         if (this.pageTrackerSd && snapshot.sd) this.pageTrackerSd.returnSnapshot(success, snapshot.sd.snapshot);
 
         this.savestate = new Uint8Array(snapshot.savestate);
@@ -484,7 +501,8 @@ export class Emulator {
     }
 
     private getFrame(): ArrayBuffer | undefined {
-        const frame = this.uarm.getFrame(this.deviceId === DeviceId.frankene2 ? 480 : 320);
+        // CSTODO: resolution fudge
+        const frame = this.uarm.getFrame(this.deviceId === DeviceId.te2 ? 320 : 480);
         if (!frame) return undefined;
 
         let buffer: ArrayBuffer;

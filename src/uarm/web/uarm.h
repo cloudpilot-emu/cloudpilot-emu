@@ -4,10 +4,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "MainLoop.h"
 #include "device.h"
+#include "device_configuration.h"
 #include "device_type5.h"
 
 class SoC;
@@ -19,6 +21,7 @@ class Uarm {
     explicit Uarm() = default;
 
     Uarm& SetRamSize(unsigned int size);
+    Uarm& SetDisplayMode(unsigned int displayMode);
     Uarm& SetNand(unsigned int size, void* data);
     Uarm& SetMemory(unsigned int size, void* data);
     Uarm& SetSavestate(unsigned int size, void* data);
@@ -104,6 +107,8 @@ class Uarm {
 
    private:
     size_t ramSize{0};
+
+    std::optional<DisplayMode> displayMode;
 
     size_t nandSize{0};
     uint8_t* nandData{nullptr};

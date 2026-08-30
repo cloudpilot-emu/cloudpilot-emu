@@ -13,6 +13,7 @@ export class NativeSupportService {
     async ramSizeForDevice(device: DeviceId, romData: Uint8Array): Promise<number> {
         switch (device) {
             case DeviceId.te2:
+            case DeviceId.repalmPV:
             case DeviceId.frankene2: {
                 const rominfo = (await this.cloudpilot).getRomInfo(romData);
 

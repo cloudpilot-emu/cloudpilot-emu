@@ -99,7 +99,11 @@ rpcClient
     .register('getFullState', (args, addTransferables) => {
         const state = unwrapEmulator().getFullState();
 
-        addTransferables([state.rom.buffer, state.memory.buffer, state.nand.buffer, state.savestate.buffer]);
+        addTransferables(
+            [state.rom.buffer, state.memory.buffer, state.nand?.buffer, state.savestate.buffer].filter(
+                (x) => x !== undefined,
+            ),
+        );
         return state;
     })
     .register('reset', (resetType) => unwrapEmulator().reset(resetType))

@@ -35,25 +35,27 @@ export class SnapshotContainerImpl implements SnapshotContainer {
             pageSize: 1024 >>> 2,
         };
 
-        const nandPages = (nandSize / 4224) | 0;
-        const offsetsNand = new Uint32Array(nandPages);
-        for (let i = 0; i < nandPages; i++) offsetsNand[i] = i * (4224 >>> 2);
+        if (nandSize > 0) {
+            const nandPages = (nandSize / 4224) | 0;
+            const offsetsNand = new Uint32Array(nandPages);
+            for (let i = 0; i < nandPages; i++) offsetsNand[i] = i * (4224 >>> 2);
 
-        this.snapshotNand = {
-            pageCount: 0,
-            pageCountTotal: nandPages,
-            offsets: offsetsNand,
-            pages: new Uint32Array(),
-            pageData: new Uint32Array(),
-            pageSize: 4224 >>> 2,
-        };
+            this.snapshotNand = {
+                pageCount: 0,
+                pageCountTotal: nandPages,
+                offsets: offsetsNand,
+                pages: new Uint32Array(),
+                pageData: new Uint32Array(),
+                pageSize: 4224 >>> 2,
+            };
+        }
     }
 
     schedule(uarmSnapshot: UarmSnapshot): this {
         if (this.uarmSnapshot) throw new Error('snapshot already pending');
 
         if (uarmSnapshot.memory) this.updateSnapshot(this.snapshotMemory, uarmSnapshot.memory);
-        if (uarmSnapshot.nand) this.updateSnapshot(this.snapshotNand, uarmSnapshot.nand);
+        if (uarmSnapshot.nand && this.snapshotNand) this.updateSnapshot(this.snapshotNand, uarmSnapshot.nand);
         this.updateSnapshotSd(uarmSnapshot);
 
         this.savestate = new Uint8Array(uarmSnapshot.savestate);
@@ -178,7 +180,7 @@ export class SnapshotContainerImpl implements SnapshotContainer {
     snapshotDoneEvent = new Event<SnapshotStatistics>();
 
     private snapshotMemory: Writeable<Snapshot>;
-    private snapshotNand: Writeable<Snapshot>;
+    private snapshotNand: Writeable<Snapshot> | undefined;
     private snapshotSd: Writeable<Snapshot> | undefined;
     private savestate: Uint8Array<ArrayBufferLike> = new Uint8Array();
     private sdSize = 0;

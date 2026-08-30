@@ -58,6 +58,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
 
         case DeviceId.pegNR70:
         case DeviceId.frankene2:
+        case DeviceId.repalmPV:
             return {
                 screenSize: ScreenSize.screen320x480,
                 width: 320,
@@ -161,6 +162,7 @@ export function cpuClock(deviceId: DeviceId): number {
 
         case DeviceId.te2:
         case DeviceId.frankene2:
+        case DeviceId.repalmPV:
             return 100;
     }
 }
@@ -278,6 +280,9 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.frankene2:
             return 'Tungsten E3';
 
+        case DeviceId.repalmPV:
+            return 'rePalm paravirtualized';
+
         default:
             throw new Error('bad device ID');
     }
@@ -303,6 +308,7 @@ export function quirkNoHotsync(deviceId: DeviceId) {
     switch (deviceId) {
         case DeviceId.frankene2:
         case DeviceId.te2:
+        case DeviceId.repalmPV:
             return true;
 
         default:
@@ -324,6 +330,7 @@ export function slotType(deviceId: DeviceId) {
         case DeviceId.handera330c:
         case DeviceId.te2:
         case DeviceId.frankene2:
+        case DeviceId.repalmPV:
             return SlotType.sdcard;
 
         case DeviceId.pegS300:
@@ -347,6 +354,7 @@ export function engineType(deviceId: DeviceId): EngineType {
     switch (deviceId) {
         case DeviceId.te2:
         case DeviceId.frankene2:
+        case DeviceId.repalmPV:
             return 'uarm';
 
         default:
@@ -355,14 +363,21 @@ export function engineType(deviceId: DeviceId): EngineType {
 }
 
 export function nandSize(deviceId: DeviceId): number | undefined {
-    // blocks * [pages / block] + [bytes / page]
-    return engineType(deviceId) === 'uarm' ? 2048 * (2 << 4) * 528 : undefined;
+    switch (deviceId) {
+        case DeviceId.te2:
+        case DeviceId.frankene2:
+            return 2048 * (2 << 4) * 528;
+
+        default:
+            return undefined;
+    }
 }
 
 export function hasDPad(deviceId: DeviceId): boolean {
     switch (deviceId) {
         case DeviceId.te2:
         case DeviceId.frankene2:
+        case DeviceId.repalmPV:
             return true;
 
         default:

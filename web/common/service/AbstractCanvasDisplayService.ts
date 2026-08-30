@@ -638,6 +638,7 @@ export abstract class AbstractCanvasDisplayService {
 
             case DeviceId.i710:
             case DeviceId.te2:
+            case DeviceId.repalmPV:
                 return SkinElement.SILKSCREEN_TUNGSTEN_W;
 
             case DeviceId.i705:
@@ -716,6 +717,7 @@ export abstract class AbstractCanvasDisplayService {
 
             case DeviceId.te2:
             case DeviceId.frankene2:
+            case DeviceId.repalmPV:
                 return SkinElement.HARD_BUTTONS_TUNGSTEN_E2;
 
             case DeviceId.iii:
