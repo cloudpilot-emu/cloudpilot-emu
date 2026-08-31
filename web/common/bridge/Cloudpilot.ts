@@ -185,6 +185,9 @@ function deviceTypeUarmFromDeviceId(deviceId: DeviceId): DeviceType5 {
         case DeviceId.frankene2:
             return DeviceType5.deviceTypeFrankenE2;
 
+        case DeviceId.repalmPV:
+            return DeviceType5.deviceTypePV;
+
         default:
             return DeviceType5.deviceTypeInvalid;
     }
