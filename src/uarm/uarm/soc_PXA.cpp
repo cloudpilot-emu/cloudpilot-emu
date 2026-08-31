@@ -99,6 +99,8 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
     peepholeOptimize((uint32_t *)peepholeBuffer, romSize);
     patch68kInit(romInfo.NeedsNandPatch() ? PATCH_68K_NVFS : 0);
 
+    vSD = vsdInit(sdCardRead, sdCardWrite, 0);
+
     switch (deviceGetRamTerminationStyle()) {
         case RamTerminationMirror:
 
@@ -301,11 +303,13 @@ void SocPXA::OnSetPcmSuspended() {
 }
 
 void SocPXA::OnSdInsert() {
+    vsdReset(vSD, sdCardSectorCount());
     pxaMmcInsert(mmc, vSD);
     deviceSetSdCardInserted(dev, true);
 }
 
 void SocPXA::OnSdEject() {
+    vsdReset(vSD, 0);
     pxaMmcInsert(mmc, nullptr);
     deviceSetSdCardInserted(dev, false);
 }
@@ -323,6 +327,8 @@ void SocPXA::OnReset() {
 }
 
 void SocPXA::OnLoad(SavestateLoader<ChunkType> &loader) {
+    vsdLoad(vSD, loader);
+
     pxaUartLoad(ffUart, loader, 0);
     if (socRev != 2) pxaUartLoad(hwUart, loader, 1);
     pxaUartLoad(stUart, loader, 2);
@@ -370,6 +376,8 @@ void SocPXA::OnLoad(SavestateLoader<ChunkType> &loader) {
 
 template <typename T>
 void SocPXA::OnSave(T &savestate) {
+    vsdSave(vSD, savestate);
+
     pxaUartSave(ffUart, savestate, 0);
     if (socRev != 2) pxaUartSave(hwUart, savestate, 1);
     pxaUartSave(stUart, savestate, 2);

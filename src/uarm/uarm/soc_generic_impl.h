@@ -12,7 +12,6 @@
 #include "cputil.h"
 #include "savestate/savestateAll.h"
 #include "system_state.h"
-#include "vSD.h"
 
 template <class T>
 SocGeneric<T>::SocGeneric() : scheduler(std::make_unique<Scheduler<T>>(static_cast<T&>(*this))) {}
@@ -118,7 +117,6 @@ template <class T>
 void SocGeneric<T>::Load(SavestateLoader<ChunkType>& loader) {
     cpuLoad(cpu, loader);
     scheduler->Load(loader);
-    vsdLoad(vSD, loader);
     systemStateLoad(systemState, loader);
 
     uint32_t version;
@@ -137,7 +135,6 @@ template <typename U>
 void SocGeneric<T>::Save(U& savestate) {
     cpuSave(cpu, savestate);
     scheduler->Save(savestate);
-    vsdSave(vSD, savestate);
     systemStateSave(systemState, savestate);
 
     auto* chunk = savestate.GetChunk(ChunkType::socGeneric, SOC_GENERIC_SAVESTATE_VERSION);

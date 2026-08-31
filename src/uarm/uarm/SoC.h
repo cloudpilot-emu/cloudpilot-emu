@@ -15,7 +15,6 @@
 #include "savestate/Savestate.h"
 #include "sdcard.h"
 
-struct VSD;
 struct ArmRam;
 struct ArmRom;
 struct ArmMem;
@@ -136,7 +135,6 @@ class SoC {
     ArmMem *mem{nullptr};
 
     NAND *nand{nullptr};
-    VSD *vSD{nullptr};
 
     SystemState *systemState{nullptr};
     SyscallDispatch *syscallDispatch{nullptr};

@@ -32,6 +32,7 @@ struct Pxa255dsp;
 struct Pxa255Udc;
 struct Device;
 struct Keypad;
+struct VSD;
 
 class SocPXA : public SocGeneric<SocPXA> {
     friend SocGeneric<SocPXA>;
@@ -106,6 +107,8 @@ class SocPXA : public SocGeneric<SocPXA> {
     ArmRam *ramMirror{nullptr};  // mirror for ram termination
     Device *dev{nullptr};
     Keypad *kp{nullptr};
+
+    VSD *vSD{nullptr};
 
     MemoryBuffer bufferNand{};
     MemoryBuffer bufferLcd{};

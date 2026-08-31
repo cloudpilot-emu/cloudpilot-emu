@@ -9,7 +9,6 @@
 #include "patch_dispatch.h"
 #include "sdcard.h"
 #include "system_state.h"
-#include "vSD.h"
 
 #define EVENT_QUEUE_CAPACITY 64
 
@@ -31,8 +30,6 @@ SoC::SoC()
 
     patchDispatch = initPatchDispatch();
     systemState = createSystemState();
-
-    vSD = vsdInit(sdCardRead, sdCardWrite, 0);
 }
 
 void SoC::KeyDown(enum KeyId key) { keyEventQueue->Push(KeyEvent::KeyDown(key)); }
@@ -140,8 +137,6 @@ void SoC::SdInsert() {
     if (cardInserted || !sdCardInitialized()) return;
     cardInserted = true;
 
-    vsdReset(vSD, sdCardSectorCount());
-
     OnSdInsert();
 }
 
@@ -150,6 +145,8 @@ bool SoC::SdRemount() {
 
     if (!sdCardInitialized() || strncmp(cardId, sdCardGetId(), SD_CARD_ID_MAX_LEN) != 0) {
         OnSdEject();
+        cardInserted = false;
+
         return false;
     } else {
         OnSdInsert();
@@ -161,8 +158,6 @@ bool SoC::SdRemount() {
 void SoC::SdEject() {
     if (!cardInserted) return;
     cardInserted = false;
-
-    vsdReset(vSD, 0);
 
     OnSdEject();
 }
