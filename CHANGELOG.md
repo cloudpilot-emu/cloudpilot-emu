@@ -3,6 +3,10 @@
 - Work around Webkit bug that may cause audio delay after resuming from
   background.
 
+# Version 2.2.3
+
+- Fix export of SD cards attached to a running uARM instance.
+
 # Version 2.2.2
 
 - Match an exotic edge case in ARM emulation to an actual PXA, courtesy to
