@@ -281,7 +281,7 @@ export class Emulator {
     getSdCardData(): Uint32Array | undefined {
         const data = this.uarm.getSdCardData();
 
-        return data ? new Uint32Array(data.buffer, data.byteOffset, data.byteLength).slice() : undefined;
+        return data ? new Uint32Array(data.buffer, data.byteOffset, data.byteLength >>> 2).slice() : undefined;
     }
 
     getFullState(): FullState {
