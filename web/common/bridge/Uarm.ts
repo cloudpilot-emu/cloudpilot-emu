@@ -4,12 +4,12 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { DeviceId } from '@common/model/DeviceId';
+import { ScreenSize } from '@common/model/Dimensions';
 import {
     BackupState,
     BackupType,
     Bridge,
     DbInstallResult as DbInstallResultUarm,
-    DeviceType5,
     KeyId,
     Module,
     Uarm as UarmNative,
@@ -18,6 +18,8 @@ import {
 } from '@native-uarm/index';
 import { DbInstallResult, PalmButton } from '@native/cloudpilot_web';
 import { Event } from 'microevent.ts';
+
+import { deviceTypeUarmToDeviceId, screenSizeToDisplayMode } from './mapping';
 
 export { BackupState } from '@native-uarm/index';
 
@@ -160,6 +162,11 @@ export class Uarm {
     }
 
     @guard()
+    setScreenSize(screenSize: ScreenSize): void {
+        this.uarm.SetDisplayMode(screenSizeToDisplayMode(screenSize));
+    }
+
+    @guard()
     launch(nor: Uint8Array): boolean {
         return this.uarm.Launch(nor.length, this.copyIn(nor));
     }
@@ -204,27 +211,20 @@ export class Uarm {
     @guard()
     getDevice(): DeviceId {
         const deviceType = this.uarm.GetDeviceType();
+        const deviceId = deviceTypeUarmToDeviceId(deviceType);
 
-        switch (deviceType) {
-            case DeviceType5.deviceTypeE2:
-                return DeviceId.te2;
+        if (deviceId === undefined) throw new Error(`invalid device ID ${deviceType}`);
 
-            case DeviceType5.deviceTypeFrankenE2:
-                return DeviceId.frankene2;
-
-            case DeviceType5.deviceTypePV:
-                return DeviceId.repalmPV;
-
-            default:
-                throw new Error(`invalid device ID ${deviceType}`);
-        }
+        return deviceId;
     }
 
     @guard()
-    getFrame(height: number): Uint32Array | undefined {
+    getFrame(): Uint32Array | undefined {
         const framePtr = this.module.getPointer(this.uarm.GetFrame()) >>> 2;
 
-        return framePtr === 0 ? undefined : this.module.HEAPU32.subarray(framePtr, framePtr + 320 * height);
+        return framePtr === 0
+            ? undefined
+            : this.module.HEAPU32.subarray(framePtr, framePtr + (this.uarm.GetFrameSize() >>> 2));
     }
 
     @guard()

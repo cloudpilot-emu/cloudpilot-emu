@@ -2,6 +2,7 @@ import { engineType } from '@common/helper/deviceProperties';
 import { loadImage, prerender } from '@common/helper/image';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { ScreenSize } from '@common/model/Dimensions';
 import { AbstractCanvasDisplayService } from '@common/service/AbstractCanvasDisplayService';
 import { PalmButton } from '@native/cloudpilot_web';
 import { Mutex } from 'async-mutex';
@@ -58,6 +59,10 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
 
     protected getDeviceId(): DeviceId {
         return this.deviceId;
+    }
+
+    protected getScreenSize(): ScreenSize | undefined {
+        return undefined;
     }
 
     protected getOrientation(): DeviceOrientation {

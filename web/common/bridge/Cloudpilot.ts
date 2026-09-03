@@ -3,9 +3,11 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
+import { deviceDimensions } from '@common/helper/deviceProperties';
 import { identifySessionEngine } from '@common/helper/sessionfile';
+import { ScreenSize } from '@common/model/Dimensions';
 import { EngineType } from '@common/model/EngineType';
-import { DeviceType5, DisplayMode } from '@native-common/index';
+import { DeviceType5 } from '@native-common/index';
 import createModule, {
     CardSupportLevel,
     Cloudpilot as CloudpilotNative,
@@ -28,6 +30,12 @@ import { Event, EventInterface } from 'microevent.ts';
 
 import { DeviceId } from '../model/DeviceId';
 import { ZipfileWalker, decorateZipfileWalker } from './ZipfileWalker';
+import {
+    deviceTypeUarmFromDeviceId,
+    deviceTypeUarmToDeviceId,
+    screenSizeFromDisplayMode,
+    screenSizeToDisplayMode,
+} from './mapping';
 import { dirtyPagesSize } from './util';
 
 let nextId = 0;
@@ -97,6 +105,7 @@ export interface SessionImage<T> {
     engine: EngineType;
     metadata?: T;
     deviceId: DeviceId;
+    screenSize: ScreenSize | undefined;
     rom: Uint8Array;
     memory?: Uint8Array;
     savestate?: Uint8Array;
@@ -161,37 +170,6 @@ function guard(): MethodDecorator {
     };
 }
 
-function deviceTypeUarmToDeviceId(deviceType: DeviceType5): DeviceId | undefined {
-    switch (deviceType) {
-        case DeviceType5.deviceTypeE2:
-            return DeviceId.te2;
-
-        case DeviceType5.deviceTypeFrankenE2:
-            return DeviceId.frankene2;
-
-        case DeviceType5.deviceTypePV:
-            return DeviceId.repalmPV;
-
-        default:
-            return undefined;
-    }
-}
-
-function deviceTypeUarmFromDeviceId(deviceId: DeviceId): DeviceType5 {
-    switch (deviceId) {
-        case DeviceId.te2:
-            return DeviceType5.deviceTypeE2;
-
-        case DeviceId.frankene2:
-            return DeviceType5.deviceTypeFrankenE2;
-
-        case DeviceId.repalmPV:
-            return DeviceType5.deviceTypePV;
-
-        default:
-            return DeviceType5.deviceTypeInvalid;
-    }
-}
 export class Cloudpilot {
     private constructor(private module: Module) {
         this.cloudpilot = new module.Cloudpilot();
@@ -647,6 +625,8 @@ export class Cloudpilot {
 
                 case 'uarm':
                     return this.serializeSessionImageUarm(sessionImage.deviceId, {
+                        screenSize:
+                            sessionImage.screenSize ?? deviceDimensions(sessionImage.deviceId, undefined).screenSize,
                         rom,
                         romLength: sessionImage.rom.length,
                         nand,
@@ -906,6 +886,7 @@ export class Cloudpilot {
 
             return {
                 engine: 'cloudpilot',
+                screenSize: undefined,
                 deviceId,
                 rom,
                 memory,
@@ -929,11 +910,6 @@ export class Cloudpilot {
             const deviceId = deviceTypeUarmToDeviceId(nativeSession.GetDeviceType());
             if (deviceId === undefined) throw new Error(`unsupported uARM device ${deviceId}`);
 
-            // CSTODO: resolution fudge
-            if (deviceId === DeviceId.repalmPV && nativeSession.GetDisplayMode() !== DisplayMode.mode_320x480) {
-                throw new Error(`rePalm PV resolutions other than 320x480 are currently unsupported`);
-            }
-
             const rom = this.copyOut(nativeSession.GetNor(), nativeSession.GetNorSize());
             const memory = this.copyOut(nativeSession.GetMemory(), nativeSession.GetMemorySize());
             const nand = this.copyOut(nativeSession.GetNand(), nativeSession.GetNandSize());
@@ -954,6 +930,7 @@ export class Cloudpilot {
 
             return {
                 engine: 'uarm',
+                screenSize: screenSizeFromDisplayMode(nativeSession.GetDisplayMode()),
                 deviceId,
                 rom,
                 memory,
@@ -1009,6 +986,7 @@ export class Cloudpilot {
     private serializeSessionImageUarm(
         deviceId: DeviceId,
         {
+            screenSize,
             rom,
             romLength,
             memory,
@@ -1020,6 +998,7 @@ export class Cloudpilot {
             metadata,
             metadataLength,
         }: {
+            screenSize: ScreenSize;
             rom: VoidPtr;
             romLength: number;
             memory?: VoidPtr;
@@ -1036,12 +1015,7 @@ export class Cloudpilot {
 
         try {
             nativeImage.SetDeviceType(deviceTypeUarmFromDeviceId(deviceId));
-            // CSTODO: resolution fudge
-            nativeImage.SetDisplayMode(
-                deviceId === DeviceId.frankene2 || deviceId === DeviceId.repalmPV
-                    ? DisplayMode.mode_320x480
-                    : DisplayMode.mode_320x320,
-            );
+            nativeImage.SetDisplayMode(screenSizeToDisplayMode(screenSize));
             nativeImage.SetNor(romLength, rom);
             if (memory) nativeImage.SetMemory(memoryLength ?? 0, memory);
             if (nand) nativeImage.SetNand(nandLength ?? 0, nand);

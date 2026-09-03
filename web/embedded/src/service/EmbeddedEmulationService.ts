@@ -35,7 +35,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                 this.session = undefined;
             }
 
-            if (await this.openSession(rom, device, nand)) {
+            if (await this.openSession(rom, device, undefined, nand)) {
                 this.setSession(session);
                 return true;
             }
@@ -54,6 +54,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                 await this.openSession(
                     sessionImage.rom,
                     sessionImage.deviceId,
+                    undefined,
                     sessionImage.nand,
                     sessionImage.memory,
                     sessionImage.savestate,

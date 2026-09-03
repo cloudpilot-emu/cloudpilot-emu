@@ -223,6 +223,7 @@ export class SessionService {
                 const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
                     engine: session.engine,
                     deviceId: session.device,
+                    screenSize: session.screenSize,
                     metadata: metadataForSession(session),
                     rom,
                     memory,
@@ -252,6 +253,7 @@ export class SessionService {
         const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
             engine: session.engine,
             deviceId: session.device,
+            screenSize: session.screenSize,
             metadata: metadataForSession(session),
             rom,
             memory,
@@ -280,6 +282,7 @@ export class SessionService {
             ...settings,
             id: -1,
             device: image.deviceId,
+            screenSize: image.screenSize,
             ram: await this.getRamSizeForSession(image),
             rom: '',
             osVersion: image?.metadata?.osVersion,

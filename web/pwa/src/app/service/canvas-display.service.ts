@@ -3,7 +3,7 @@ import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { deviceDimensions, hasDPad } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { ScreenSize } from '@common/model/Dimensions';
+import { ScreenSize, densityForScreenSize } from '@common/model/Dimensions';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { AbstractCanvasDisplayService, DEFAULT_DEVICE } from '@common/service/AbstractCanvasDisplayService';
@@ -15,23 +15,10 @@ import { Session } from '@pwa/model/Session';
 import { KvsService } from './kvs.service';
 import { TOKEN_CLOUDPILOT_INSTANCE } from './token';
 
-function fontScaleForScreenSize(screenSize: ScreenSize) {
-    switch (screenSize) {
-        case ScreenSize.screen320x320:
-        case ScreenSize.screen320x480:
-            return 2;
-
-        case ScreenSize.screen240x320:
-            return 1.5;
-
-        default:
-            return 1;
-    }
-}
-
 class ScreenshotDisplayService extends AbstractCanvasDisplayService {
     constructor(
         private deviceId: DeviceId,
+        private screenSize: ScreenSize | undefined,
         private orientation: DeviceOrientation,
         private _pixelRatio: number,
         skinLoader: SkinLoader,
@@ -45,6 +32,10 @@ class ScreenshotDisplayService extends AbstractCanvasDisplayService {
 
     protected override getDeviceId(): DeviceId {
         return this.deviceId;
+    }
+
+    protected override getScreenSize(): ScreenSize | undefined {
+        return this.screenSize;
     }
 
     protected override getOrientation(): DeviceOrientation {
@@ -110,6 +101,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
 
         const screenshotDisplayService = new ScreenshotDisplayService(
             this.getDeviceId(),
+            this.getScreenSize(),
             this.getOrientation(),
             pixelRatio,
             this.skinLoader,
@@ -129,6 +121,10 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
 
     protected getDeviceId(): DeviceId {
         return this.session?.device ?? DEFAULT_DEVICE;
+    }
+
+    protected override getScreenSize(): ScreenSize | undefined {
+        return this.session?.screenSize;
     }
 
     protected getOrientation(): DeviceOrientation {
@@ -167,8 +163,8 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
             'rgba(255,255,255,0.6)',
         );
 
-        const screenSize = deviceDimensions(this.session?.device ?? DEFAULT_DEVICE).screenSize;
-        const fontScale = fontScaleForScreenSize(screenSize);
+        const screenSize = deviceDimensions(this.session?.device ?? DEFAULT_DEVICE, this.getScreenSize()).screenSize;
+        const fontScale = densityForScreenSize(screenSize);
 
         this.ctx.font = `${this.layout.scale * 6 * fontScale}px monospace`;
         this.ctx.fillStyle = 'black';
@@ -212,7 +208,6 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
     statisticsVisible = false;
 
     private session: Session | undefined;
-    private initialized = false;
 
     private mutex = new Mutex();
 }

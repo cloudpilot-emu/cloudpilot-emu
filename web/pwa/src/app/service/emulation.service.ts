@@ -337,7 +337,17 @@ Sorry for the inconvenience.`,
                   }
                 : undefined;
 
-        if (!(await this.openSession(rom, session.device, nand, memory, savestate, storageCardProvider))) {
+        if (
+            !(await this.openSession(
+                rom,
+                session.device,
+                session.screenSize,
+                nand,
+                memory,
+                savestate,
+                storageCardProvider,
+            ))
+        ) {
             return false;
         }
 

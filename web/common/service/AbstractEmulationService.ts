@@ -8,7 +8,7 @@ import { deviceDimensions, engineType, isColor } from '@common/helper/deviceProp
 import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
-import { Dimensions } from '@common/model/Dimensions';
+import { Dimensions, ScreenSize } from '@common/model/Dimensions';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { EngineType } from '@common/model/EngineType';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
@@ -50,10 +50,8 @@ export abstract class AbstractEmulationService {
         if (ts - this.lastPenUpdate < PEN_MOVE_THROTTLE) return;
 
         if (isSilkscreen) {
-            const dimensions = deviceDimensions(this.deviceId());
-
-            x = this.transformSilkscreenX(x, dimensions);
-            y = this.transformSilkscreenY(y, dimensions);
+            x = this.transformSilkscreenX(x, this.dimensions);
+            y = this.transformSilkscreenY(y, this.dimensions);
         }
 
         this.engine.penDown(Math.floor(x), Math.floor(y));
@@ -189,6 +187,7 @@ export abstract class AbstractEmulationService {
     protected async openSession(
         rom: Uint8Array,
         deviceId: DeviceId,
+        screenSize: ScreenSize | undefined,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,
@@ -203,12 +202,13 @@ export abstract class AbstractEmulationService {
 
         engine.updateSettings(this.engineSettings);
 
-        if (!(await engine.openSession(rom, deviceId, nand, memory, state, card))) {
+        if (!(await engine.openSession(rom, deviceId, screenSize, nand, memory, state, card))) {
             return false;
         }
 
         this.bindEngineHandlers(engine);
         this.engine = engine;
+        this.dimensions = deviceDimensions(deviceId, screenSize);
 
         this.resetCanvas();
 
@@ -218,10 +218,8 @@ export abstract class AbstractEmulationService {
     }
 
     protected resetCanvas(): void {
-        const dimensions = deviceDimensions(this.deviceId());
-
-        this.canvas.width = dimensions.width;
-        this.canvas.height = dimensions.height;
+        this.canvas.width = this.dimensions.width;
+        this.canvas.height = this.dimensions.height;
 
         this.clearCanvas();
     }
@@ -414,6 +412,8 @@ export abstract class AbstractEmulationService {
 
     protected engine?: Engine;
     protected engineSettings: EngineSettings = { ...DEFAULT_ENGINE_SETTINGS };
+
+    protected dimensions: Dimensions = deviceDimensions(DeviceId.m515, undefined);
 
     private shouldRun = false;
     private blocked = false;

@@ -1,5 +1,6 @@
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { ScreenSize } from '@common/model/Dimensions';
 import { EngineType } from '@common/model/EngineType';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 
@@ -13,6 +14,7 @@ export interface SessionState {
     rom: string;
     device: DeviceId;
     ram: number;
+    screenSize?: ScreenSize;
     nand?: number;
     osVersion?: number;
     mountedCard?: number;

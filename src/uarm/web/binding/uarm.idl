@@ -2,6 +2,7 @@ interface Uarm {
     void Uarm();
 
     [Ref] Uarm SetRamSize(long size);
+    [Ref] Uarm SetDisplayMode(long displayMode);
     [Ref] Uarm SetNand(long size, VoidPtr data);
     [Ref] Uarm SetMemory(long size, VoidPtr data);
     [Ref] Uarm SetSavestate(long size, VoidPtr data);
@@ -13,6 +14,7 @@ interface Uarm {
     double Cycle(unsigned long long now);
 
     VoidPtr GetFrame();
+    long GetFrameSize();
     void ResetFrame();
 
     unsigned long GetTimesliceSizeUsec();

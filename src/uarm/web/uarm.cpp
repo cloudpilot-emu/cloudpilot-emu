@@ -156,6 +156,12 @@ double Uarm::Cycle(uint64_t now) { return mainLoop->Cycle(now); }
 
 void* Uarm::GetFrame() { return soc->GetPendingFrame(); }
 
+uint32_t Uarm::GetFrameSize() {
+    DisplayConfiguration display = deviceConfigurationDisplayConfigForMode(soc->GetDisplayMode());
+
+    return 4 * display.height * display.width;
+}
+
 void Uarm::ResetFrame() { soc->ResetPendingFrame(); }
 
 uint32_t Uarm::GetTimesliceSizeUsec() { return mainLoop->GetTimesliceSizeUsec(); }

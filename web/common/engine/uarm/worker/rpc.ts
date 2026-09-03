@@ -1,5 +1,6 @@
 import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
+import { ScreenSize } from '@common/model/Dimensions';
 import { DbInstallResult } from '@native/cloudpilot_web';
 
 import { ResetType } from './ResetType';
@@ -14,6 +15,7 @@ interface RpcSchema {
     openSession: {
         args: {
             rom: Uint8Array;
+            screenSize: ScreenSize;
             nand?: Uint8Array;
             memory?: Uint8Array;
             state?: Uint8Array;

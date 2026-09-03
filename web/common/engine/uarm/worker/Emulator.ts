@@ -3,6 +3,7 @@ import { BackupState, Uarm } from '@common/bridge/Uarm';
 import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
 import { DeviceId } from '@common/model/DeviceId';
+import { ScreenSize } from '@common/model/Dimensions';
 import {
     StreamMessageClient,
     StreamMessageClientType,
@@ -61,6 +62,7 @@ export class Emulator {
 
     openSession(
         rom: Uint8Array,
+        screenSize: ScreenSize,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,
@@ -76,6 +78,7 @@ export class Emulator {
             }
         }
 
+        this.uarm.setScreenSize(screenSize);
         if (ramSize !== undefined) this.uarm.setRamSize(ramSize);
         if (nand) this.uarm.setNand(nand);
         if (memory) this.uarm.setMemory(memory);
@@ -501,8 +504,7 @@ export class Emulator {
     }
 
     private getFrame(): ArrayBuffer | undefined {
-        // CSTODO: resolution fudge
-        const frame = this.uarm.getFrame(this.deviceId === DeviceId.te2 ? 320 : 480);
+        const frame = this.uarm.getFrame();
         if (!frame) return undefined;
 
         let buffer: ArrayBuffer;

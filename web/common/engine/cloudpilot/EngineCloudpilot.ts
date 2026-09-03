@@ -7,6 +7,7 @@ import { deviceDimensions } from '@common/helper/deviceProperties';
 import { GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
 import { AnimationFrameScheduler, Scheduler, SchedulerKind, TimeoutScheduler } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
+import { ScreenSize } from '@common/model/Dimensions';
 import { EmulationStatisticsCloudpilot } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { SerialPort } from '@common/serial/SerialPort';
@@ -134,6 +135,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
     async openSession(
         rom: Uint8Array,
         device: DeviceId,
+        screenSize: ScreenSize | undefined,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,
@@ -179,7 +181,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.powerOff = this.cloudpilotInstance.isPowerOff();
         this.uiInitialized = this.cloudpilotInstance.isUiInitialized();
 
-        const dimensions = deviceDimensions(device);
+        const dimensions = deviceDimensions(device, undefined);
         this.canvasTmp.width = dimensions.width;
         this.canvasTmp.height = dimensions.height;
 

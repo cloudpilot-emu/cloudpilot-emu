@@ -43,8 +43,20 @@ export const enum KeyId {
     keyIdPower = 10,
 }
 
+export const enum DisplayMode {
+    mode_160x160 = 1,
+    mode_160x220 = 2,
+    mode_240x240 = 3,
+    mode_240x320 = 4,
+    mode_320x320 = 5,
+    mode_320x480 = 6,
+    mode_480x480 = 7,
+    mode_480x720 = 8,
+}
+
 export interface Uarm {
     SetRamSize(size: number): Uarm;
+    SetDisplayMode(mode: DisplayMode): Uarm;
     SetNand(size: number, data: VoidPtr): Uarm;
     SetMemory(size: number, data: VoidPtr): Uarm;
     SetSavestate(size: number, data: VoidPtr): Uarm;
@@ -56,6 +68,7 @@ export interface Uarm {
     Cycle(now: bigint): number;
 
     GetFrame(): VoidPtr;
+    GetFrameSize(): number;
     ResetFrame(): void;
 
     GetTimesliceSizeUsec(): number;

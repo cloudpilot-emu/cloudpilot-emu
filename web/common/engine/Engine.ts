@@ -1,5 +1,6 @@
 import { PwmUpdate } from '@common/bridge/Cloudpilot';
 import { DeviceId } from '@common/model/DeviceId';
+import { ScreenSize } from '@common/model/Dimensions';
 import { EmulationStatisticsCloudpilot, EmulationStatisticsUarm } from '@common/model/EmulationStatistics';
 import { EngineType } from '@common/model/EngineType';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
@@ -56,6 +57,7 @@ export interface EngineCommon {
     openSession(
         rom: Uint8Array,
         device: DeviceId,
+        screenSize: ScreenSize | undefined,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,

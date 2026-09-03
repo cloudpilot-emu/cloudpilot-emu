@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { deviceDimensions } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
+import { Dimensions, ScreenSize } from '@common/model/Dimensions';
 import { EmulationStatisticsUarm } from '@common/model/EmulationStatistics';
 import { SnapshotStatistics } from '@common/model/SnapshotStatistics';
 import { Executor } from '@common/service/AbstractEmulationService';
@@ -197,6 +199,7 @@ export class EngineUarmImpl implements EngineUarm {
     async openSession(
         rom: Uint8Array,
         device: DeviceId,
+        screenSize: ScreenSize | undefined,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,
@@ -212,10 +215,12 @@ export class EngineUarmImpl implements EngineUarm {
                 ? [new Uint8Array(this.card.data.buffer), this.card.key]
                 : undefined;
 
+        this.dimensions = deviceDimensions(device, screenSize);
+
         if (
             !(await this.rpcHost.call(
                 'openSession',
-                { rom, nand, memory, state, card },
+                { rom, screenSize: this.dimensions.screenSize, nand, memory, state, card },
                 [
                     rom.buffer,
                     nand?.buffer,
@@ -275,9 +280,9 @@ export class EngineUarmImpl implements EngineUarm {
     }
 
     blitFrame(canvas: HTMLCanvasElement): void {
-        if (!this.pendingFrame) return;
+        if (!this.pendingFrame || !this.dimensions) return;
 
-        const imageData = new ImageData(new Uint8ClampedArray(this.pendingFrame), 320);
+        const imageData = new ImageData(new Uint8ClampedArray(this.pendingFrame), this.dimensions?.width);
 
         canvas.getContext('2d')?.putImageData(imageData, 0, 0);
 
@@ -466,6 +471,7 @@ export class EngineUarmImpl implements EngineUarm {
     snapshotDoneEvent = new Event<SnapshotStatistics>();
 
     private deviceId: DeviceId | undefined;
+    private dimensions: Dimensions | undefined;
     private running = false;
 
     private currentIps = 0;

@@ -48,8 +48,8 @@ rpcClient
             dispatchMessage({ type: ClientMessageType.systemStateChanged, ...systemState }),
         );
     })
-    .register('openSession', ({ rom, memory, nand, state, card }) =>
-        unwrapEmulator().openSession(rom, nand, memory, state, card),
+    .register('openSession', ({ rom, screenSize, memory, nand, state, card }) =>
+        unwrapEmulator().openSession(rom, screenSize, nand, memory, state, card),
     )
     .register('start', () => unwrapEmulator().start())
     .register('stop', () => unwrapEmulator().stop())

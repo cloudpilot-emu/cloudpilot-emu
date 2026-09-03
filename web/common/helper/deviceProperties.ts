@@ -1,18 +1,93 @@
 import { DeviceId } from '@common/model/DeviceId';
-import { Dimensions, ScreenSize } from '@common/model/Dimensions';
+import { Dimensions, ScreenSize, densityForScreenSize } from '@common/model/Dimensions';
 import { EngineType } from '@common/model/EngineType';
 
 import { SlotType } from '../model/SlotType';
 
-export function deviceDimensions(deviceId: DeviceId): Dimensions {
+function dimensionsForScreenSize(screenSize: ScreenSize): Pick<Dimensions, 'width' | 'height' | 'screenSize'> {
+    switch (screenSize) {
+        case ScreenSize.screen160x160:
+            return {
+                screenSize,
+                width: 160,
+                height: 160,
+            };
+
+        case ScreenSize.screen160x220:
+            return {
+                screenSize,
+                width: 160,
+                height: 220,
+            };
+
+        case ScreenSize.screen240x240:
+            return {
+                screenSize,
+                width: 240,
+                height: 240,
+            };
+
+        case ScreenSize.screen240x320:
+            return {
+                screenSize,
+                width: 240,
+                height: 320,
+            };
+
+        case ScreenSize.screen320x320:
+            return {
+                screenSize,
+                width: 320,
+                height: 320,
+            };
+
+        case ScreenSize.screen320x480:
+            return {
+                screenSize,
+                width: 320,
+                height: 480,
+            };
+
+        case ScreenSize.screen480x480:
+            return {
+                screenSize,
+                width: 480,
+                height: 480,
+            };
+
+        case ScreenSize.screen480x720:
+            return {
+                screenSize,
+                width: 480,
+                height: 720,
+            };
+
+        default:
+            screenSize satisfies never;
+            throw new Error('unreachable');
+    }
+}
+
+function usesDia(screenSize: ScreenSize): boolean {
+    switch (screenSize) {
+        case ScreenSize.screen160x160:
+        case ScreenSize.screen240x240:
+        case ScreenSize.screen320x320:
+        case ScreenSize.screen480x480:
+            return false;
+
+        default:
+            return true;
+    }
+}
+
+export function deviceDimensions(deviceId: DeviceId, screenSize: ScreenSize | undefined): Dimensions {
     switch (deviceId) {
         case DeviceId.i710:
         case DeviceId.m520:
         case DeviceId.te2:
             return {
-                screenSize: ScreenSize.screen320x320,
-                width: 320,
-                height: 320,
+                ...dimensionsForScreenSize(ScreenSize.screen320x320),
                 silkscreenHeight: 120,
             };
 
@@ -20,9 +95,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
         case DeviceId.handera330c:
         case DeviceId.lp168:
             return {
-                screenSize: ScreenSize.screen240x320,
-                width: 240,
-                height: 320,
+                ...dimensionsForScreenSize(ScreenSize.screen240x320),
                 silkscreenHeight: 0,
             };
 
@@ -30,9 +103,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
         case DeviceId.pegS320:
         case DeviceId.pegS500c:
             return {
-                screenSize: ScreenSize.screen160x160,
-                width: 160,
-                height: 160,
+                ...dimensionsForScreenSize(ScreenSize.screen160x160),
                 silkscreenHeight: 76,
             };
 
@@ -40,9 +111,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
         case DeviceId.pegT400:
         case DeviceId.pegT650c:
             return {
-                screenSize: ScreenSize.screen320x320,
-                width: 320,
-                height: 320,
+                ...dimensionsForScreenSize(ScreenSize.screen320x320),
                 silkscreenHeight: 140,
                 silkscreenOvershoot: 10,
             };
@@ -50,36 +119,36 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
         case DeviceId.pegN600c:
         case DeviceId.pegN700c:
             return {
-                screenSize: ScreenSize.screen320x320,
-                width: 320,
-                height: 320,
+                ...dimensionsForScreenSize(ScreenSize.screen320x320),
                 silkscreenHeight: 120,
             };
 
         case DeviceId.pegNR70:
         case DeviceId.frankene2:
-        case DeviceId.repalmPV:
             return {
-                screenSize: ScreenSize.screen320x480,
-                width: 320,
-                height: 480,
+                ...dimensionsForScreenSize(ScreenSize.screen320x480),
                 silkscreenHeight: 0,
             };
 
+        case DeviceId.repalmPV: {
+            const resolvedScreenSize = screenSize ?? ScreenSize.screen320x480;
+
+            return {
+                ...dimensionsForScreenSize(resolvedScreenSize),
+                silkscreenHeight: (usesDia(resolvedScreenSize) ? 0 : 60) * densityForScreenSize(resolvedScreenSize),
+            };
+        }
+
         case DeviceId.acerS11:
             return {
-                screenSize: ScreenSize.screen160x160,
-                width: 160,
-                height: 160,
+                ...dimensionsForScreenSize(ScreenSize.screen160x160),
                 silkscreenHeight: 60,
                 siklscreenShift: 8,
             };
 
         default:
             return {
-                screenSize: ScreenSize.screen160x160,
-                width: 160,
-                height: 160,
+                ...dimensionsForScreenSize(ScreenSize.screen160x160),
                 silkscreenHeight: 60,
             };
     }

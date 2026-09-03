@@ -33,6 +33,7 @@ class Uarm {
     double Cycle(uint64_t now);
 
     void* GetFrame();
+    uint32_t GetFrameSize();
     void ResetFrame();
 
     uint32_t GetTimesliceSizeUsec();
