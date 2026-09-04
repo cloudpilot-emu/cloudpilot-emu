@@ -1,6 +1,12 @@
 import { Component, Input, computed } from '@angular/core';
 import { PalmButton } from '@common/bridge/Cloudpilot';
-import { quirkNoHotsync, quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
+import {
+    deviceDimensions,
+    quirkNoHotsync,
+    quirkNoPoweroff,
+    selectableScreenSizes,
+    slotType,
+} from '@common/helper/deviceProperties';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { SlotType } from '@common/model/SlotType';
 import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
@@ -242,12 +248,15 @@ export class ContextMenuComponent {
 
         const settings = settingsFromSession(session);
         const oldSettings = { ...settings };
+        const screenSize = session.screenSize ?? deviceDimensions(session.device).screenSize;
 
         const modal = await this.modalController.create({
             component: SessionSettingsComponent,
             backdropDismiss: false,
             componentProps: {
                 settings,
+                screenSize,
+                availableScreenSizes: selectableScreenSizes(session.device) !== undefined ? [screenSize] : undefined,
                 availableDevices: [session.device],
                 device: session.device,
                 onSave: async () => {

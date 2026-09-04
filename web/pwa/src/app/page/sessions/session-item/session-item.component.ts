@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { deviceName } from '@common/helper/deviceProperties';
+import { deviceDimensions, deviceName, selectableScreenSizes } from '@common/helper/deviceProperties';
 import { IonItemSliding, PopoverController } from '@ionic/angular';
 
 import { decodeVersion } from '@pwa/model/OSVersion';
@@ -18,7 +18,12 @@ export class SessionItemComponent {
     constructor(private popoverController: PopoverController) {}
 
     get device(): string {
-        return this.session ? deviceName(this.session.device) : '';
+        if (!this.session) return '';
+
+        const screenSize = this.session.screenSize ?? deviceDimensions(this.session.device).screenSize;
+        const name = deviceName(this.session.device);
+
+        return selectableScreenSizes(this.session.device) !== undefined ? `${name} ${screenSize}` : name;
     }
 
     async onContextmenu(e: MouseEvent): Promise<void> {

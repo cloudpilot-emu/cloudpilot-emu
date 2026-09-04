@@ -413,7 +413,7 @@ export abstract class AbstractEmulationService {
     protected engine?: Engine;
     protected engineSettings: EngineSettings = { ...DEFAULT_ENGINE_SETTINGS };
 
-    protected dimensions: Dimensions = deviceDimensions(DeviceId.m515, undefined);
+    protected dimensions: Dimensions = deviceDimensions(DeviceId.m515);
 
     private shouldRun = false;
     private blocked = false;

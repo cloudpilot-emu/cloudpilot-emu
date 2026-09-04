@@ -3,6 +3,7 @@ import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { ScreenSize } from '@common/model/Dimensions';
 
 import { memoize } from '@pwa/helper/memoize';
 import {
@@ -72,6 +73,10 @@ export class SessionSettingsComponent implements OnInit {
         return this.formGroup.get('nand')!;
     }
 
+    get formControlScreenSize(): AbstractControl {
+        return this.formGroup.get('screenSize')!;
+    }
+
     get showHotsyncNameInput(): boolean {
         return this.formControlManageHotsyncName.value;
     }
@@ -105,7 +110,7 @@ export class SessionSettingsComponent implements OnInit {
         this.saveCloudpilot();
         this.saveUarm();
 
-        this.onSave(this.formControlDevice.value, this.nand);
+        this.onSave(this.formControlDevice.value, this.formControlScreenSize.value ?? undefined, this.nand);
     }
 
     onEnter(): void {
@@ -211,6 +216,10 @@ export class SessionSettingsComponent implements OnInit {
                 value: this.device,
                 disabled: this.availableDevices.length === 1,
             }),
+            screenSize: new UntypedFormControl({
+                value: this.screenSize,
+                disabled: this.availableScreenSizes === undefined || this.availableScreenSizes.length <= 1,
+            }),
             orientation: new UntypedFormControl(this.settings.deviceOrientation),
             manageHotsyncName: new UntypedFormControl(
                 this.settings.engine === 'cloudpilot' ? !this.settings.dontManageHotsyncName : false,
@@ -276,7 +285,7 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     @Input()
-    onSave: (device: DeviceId, nand?: Uint8Array) => void = () => undefined;
+    onSave: (device: DeviceId, screenSize: ScreenSize | undefined, nand?: Uint8Array) => void = () => undefined;
 
     @Input()
     onCancel: () => void = () => undefined;
@@ -288,7 +297,13 @@ export class SessionSettingsComponent implements OnInit {
     availableDevices!: Array<DeviceId>;
 
     @Input()
+    availableScreenSizes!: Array<ScreenSize>;
+
+    @Input()
     device!: DeviceId;
+
+    @Input()
+    screenSize: ScreenSize | undefined;
 
     @Input()
     selectNandSize: number | undefined;

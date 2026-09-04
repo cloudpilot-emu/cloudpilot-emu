@@ -181,7 +181,7 @@ export class EngineCloudpilotImpl implements EngineCloudpilot {
         this.powerOff = this.cloudpilotInstance.isPowerOff();
         this.uiInitialized = this.cloudpilotInstance.isUiInitialized();
 
-        const dimensions = deviceDimensions(device, undefined);
+        const dimensions = deviceDimensions(device);
         this.canvasTmp.width = dimensions.width;
         this.canvasTmp.height = dimensions.height;
 

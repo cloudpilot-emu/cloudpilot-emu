@@ -81,7 +81,7 @@ function usesDia(screenSize: ScreenSize): boolean {
     }
 }
 
-export function deviceDimensions(deviceId: DeviceId, screenSize: ScreenSize | undefined): Dimensions {
+export function deviceDimensions(deviceId: DeviceId, screenSize?: ScreenSize): Dimensions {
     switch (deviceId) {
         case DeviceId.i710:
         case DeviceId.m520:
@@ -452,4 +452,21 @@ export function hasDPad(deviceId: DeviceId): boolean {
         default:
             return false;
     }
+}
+
+export function selectableScreenSizes(deviceId: DeviceId): Array<ScreenSize> | undefined {
+    if (deviceId === DeviceId.repalmPV) {
+        return [
+            ScreenSize.screen160x160,
+            ScreenSize.screen160x220,
+            ScreenSize.screen240x240,
+            ScreenSize.screen240x320,
+            ScreenSize.screen320x320,
+            ScreenSize.screen320x480,
+            ScreenSize.screen480x480,
+            ScreenSize.screen480x720,
+        ];
+    }
+
+    return undefined;
 }

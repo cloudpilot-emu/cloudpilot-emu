@@ -35,6 +35,14 @@
             </ion-select>
         </ion-item>
 
+        <ion-item lines="none" *ngIf="availableScreenSizes !== undefined">
+            <ion-select label="Screen size" labelPlacement="stacked" formControlName="screenSize">
+                <ion-select-option *ngFor="let screenSize of availableScreenSizes" [value]="screenSize"
+                    >{{ screenSize }}
+                </ion-select-option>
+            </ion-select>
+        </ion-item>
+
         <ion-item lines="none">
             <ion-select label="Orientation" labelPlacement="stacked" formControlName="orientation">
                 <ion-select-option *ngFor="let orientation of orientations" [value]="orientation[0]"

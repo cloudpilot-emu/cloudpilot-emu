@@ -2,6 +2,7 @@ import { Injectable, Signal, signal } from '@angular/core';
 import { SessionImage } from '@common/bridge/Cloudpilot';
 import { engineType, nandSize } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
+import { ScreenSize } from '@common/model/Dimensions';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { ZipfileWalkerState } from '@native/cloudpilot_web';
 import { Mutex } from 'async-mutex';
@@ -126,6 +127,7 @@ export class SessionService {
     async addSessionFromRom(
         rom: Uint8Array,
         device: DeviceId,
+        screenSize: ScreenSize | undefined,
         settings: SessionSettings,
         nand?: Uint8Array,
     ): Promise<Session> {
@@ -138,6 +140,7 @@ export class SessionService {
             ...settings,
             id: -1,
             device,
+            screenSize,
             ram: (await this.nativeSupportService.ramSizeForDevice(device, rom)) >>> 20,
             rom: '',
             wasResetForcefully: false,

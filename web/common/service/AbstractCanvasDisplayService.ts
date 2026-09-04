@@ -49,13 +49,16 @@ function buttonHeightForScreenSize(screenSize: ScreenSize) {
     return 30 * densityForScreenSize(screenSize);
 }
 
-function scaleForDensity(density: number): number {
-    return density < 2 ? 3 : 2;
+function scaleForDensity(density: number, pixelRatio: number): number {
+    if (density < 2) return 3;
+    if (density < 3) return 2;
+
+    return pixelRatio >>> 1 > 0 && pixelRatio % 2 === 0 ? 1.5 : 2;
 }
 
 function calculateLayout(device: DeviceId, screenSize: ScreenSize | undefined, pixelRatio: number): Layout {
     const dimensions = deviceDimensions(device, screenSize);
-    const scale = scaleForDensity(densityForScreenSize(dimensions.screenSize)) * pixelRatio;
+    const scale = scaleForDensity(densityForScreenSize(dimensions.screenSize), pixelRatio) * pixelRatio;
     const borderWidth: FrameDependent = { frameDevice: 1, frameCanvas: scale };
 
     const dist = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: x * scale });

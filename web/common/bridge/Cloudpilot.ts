@@ -625,8 +625,7 @@ export class Cloudpilot {
 
                 case 'uarm':
                     return this.serializeSessionImageUarm(sessionImage.deviceId, {
-                        screenSize:
-                            sessionImage.screenSize ?? deviceDimensions(sessionImage.deviceId, undefined).screenSize,
+                        screenSize: sessionImage.screenSize ?? deviceDimensions(sessionImage.deviceId).screenSize,
                         rom,
                         romLength: sessionImage.rom.length,
                         nand,
