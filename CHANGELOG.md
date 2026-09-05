@@ -1,5 +1,8 @@
 # Next version
 
+- Support for the paravirtualized rePalm OS5 platform. ROMs for this platform
+  run about 40% faster than ROMs for real hardware.
+- Fix a fatal error when deleting a running session with an attached SD card.
 - Work around Webkit bug that may cause audio delay after resuming from
   background.
 

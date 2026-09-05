@@ -113,7 +113,13 @@ export class SessionsPage implements DragDropClient, OnInit {
 
         if (abort) return;
 
-        await this.loaderService.showWhile(() => this.sessionService.deleteSession(session), 'Deleting...');
+        await this.loaderService.showWhile(async () => {
+            if (this.emulationContext.session()?.id === session.id) {
+                await this.emulationService.stop();
+            }
+
+            await this.sessionService.deleteSession(session);
+        }, 'Deleting...');
     }
 
     @debounce()
