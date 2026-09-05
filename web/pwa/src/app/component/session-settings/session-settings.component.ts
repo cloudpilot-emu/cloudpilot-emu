@@ -2,7 +2,6 @@ import { Component, Input, OnInit } from '@angular/core';
 import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
-import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { ScreenSize } from '@common/model/Dimensions';
 
 import { memoize } from '@pwa/helper/memoize';
@@ -47,10 +46,6 @@ export class SessionSettingsComponent implements OnInit {
 
     get formControlSpeed(): AbstractControl {
         return this.formGroup.get('speed')!;
-    }
-
-    get formControlOrientation(): AbstractControl {
-        return this.formGroup.get('orientation')!;
     }
 
     get formControlTargetMips(): AbstractControl {
@@ -105,7 +100,6 @@ export class SessionSettingsComponent implements OnInit {
         if (this.formGroup.invalid) return;
 
         this.settings.name = this.formControlName.value;
-        this.settings.deviceOrientation = this.formControlOrientation.value;
 
         this.saveCloudpilot();
         this.saveUarm();
@@ -220,7 +214,6 @@ export class SessionSettingsComponent implements OnInit {
                 value: this.screenSize,
                 disabled: this.availableScreenSizes === undefined || this.availableScreenSizes.length <= 1,
             }),
-            orientation: new UntypedFormControl(this.settings.deviceOrientation),
             manageHotsyncName: new UntypedFormControl(
                 this.settings.engine === 'cloudpilot' ? !this.settings.dontManageHotsyncName : false,
             ),
@@ -316,12 +309,5 @@ export class SessionSettingsComponent implements OnInit {
     maxHostLoadTransient: number | undefined;
 
     nand: Uint8Array | undefined;
-
-    readonly orientations = [
-        [DeviceOrientation.portrait, 'Portrait'],
-        [DeviceOrientation.landscape90, 'Landscape 90°'],
-        [DeviceOrientation.landscape270, 'Landscape 270°'],
-        [DeviceOrientation.portrait180, 'Upside down'],
-    ];
 }
 export { SessionSettings };

@@ -43,14 +43,6 @@
             </ion-select>
         </ion-item>
 
-        <ion-item lines="none">
-            <ion-select label="Orientation" labelPlacement="stacked" formControlName="orientation">
-                <ion-select-option *ngFor="let orientation of orientations" [value]="orientation[0]"
-                    >{{ orientation[1] }}
-                </ion-select-option>
-            </ion-select>
-        </ion-item>
-
         @if (isUarm && selectNandSize !== undefined) {
             <ion-item lines="none">
                 <div class="nand-container">
