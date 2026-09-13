@@ -1,5 +1,6 @@
 #include "syscall_dispatch.h"
 
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -250,8 +251,7 @@ uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, u
     registers[0] = timeout;
     executeInjectedSyscall(sd, flags, SYSCALL_SYS_SET_AUTO_OFF_TIME);
 
-    uint16_t err = registers[0];
-
+    const uint16_t err = registers[0];
     popState(sd, nestLevel);
 
     return err;
@@ -264,8 +264,7 @@ uint16_t syscall_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t 
     registers[0] = size;
     executeInjectedSyscall(sd, flags, SYSCALL_MEM_PTR_NEW);
 
-    uint16_t err = registers[0];
-
+    const uint16_t err = registers[0];
     popState(sd, nestLevel);
 
     return err;
@@ -278,8 +277,7 @@ uint16_t syscall_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t
     registers[0] = ptr;
     executeInjectedSyscall(sd, flags, SYSCALL_MEM_CHUNK_FREE);
 
-    uint16_t err = registers[0];
-
+    const uint16_t err = registers[0];
     popState(sd, nestLevel);
 
     return err;
@@ -295,8 +293,23 @@ uint16_t syscall_FtrGet(struct SyscallDispatch* sd, uint32_t flags, uint32_t cre
     registers[2] = valueP;
     executeInjectedSyscall(sd, flags, SYSCALL_FTR_GET);
 
-    uint16_t err = registers[0];
+    const uint16_t err = registers[0];
+    popState(sd, nestLevel);
 
+    return err;
+}
+
+uint16_t syscall_FtrSet(struct SyscallDispatch* sd, uint32_t flags, uint32_t creator,
+                        uint16_t ftrNum, uint32_t value) {
+    const size_t nestLevel = pushState(sd, nativeCallPushType(flags));
+    uint32_t* registers = cpuGetRegisters(sd->soc->GetCpu());
+
+    registers[0] = creator;
+    registers[1] = ftrNum;
+    registers[2] = value;
+    executeInjectedSyscall(sd, flags, SYSCALL_FTR_SET);
+
+    const uint16_t err = registers[0];
     popState(sd, nestLevel);
 
     return err;

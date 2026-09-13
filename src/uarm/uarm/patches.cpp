@@ -5,6 +5,7 @@
 
 #include "CPU.h"
 #include "syscall.h"
+#include "syscall_dispatch.h"
 #include "system_state.h"
 
 #pragma GCC diagnostic ignored "-Wmultichar"
@@ -84,6 +85,16 @@ static void tailpatch_uiInitialize(void* ctx, uint32_t syscall,
             systemStateSetOsVersion(patchContext->systemState, version);
         }
     }
+
+    if (syscall_FtrSet(patchContext->sd, SC_EXECUTE_PURE, 'cldp', 0, 0x20150103) != 0) {
+        printf("failed to set feature cldp\n");
+    }
+
+    if (syscall_FtrSet(patchContext->sd, SC_EXECUTE_PURE, 'uarm', 0, 0x19800819) != 0) {
+        printf("failed to set feature uarm\n");
+    }
+
+    printf("UI initialized\n");
 
     registers[13] += 4;
 }

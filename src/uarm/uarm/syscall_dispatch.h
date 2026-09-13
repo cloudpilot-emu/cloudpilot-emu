@@ -34,6 +34,9 @@ uint16_t syscall_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t
 uint16_t syscall_FtrGet(struct SyscallDispatch* sd, uint32_t flags, uint32_t creator,
                         uint16_t ftrNum, uint32_t valueP);
 
+uint16_t syscall_FtrSet(struct SyscallDispatch* sd, uint32_t flags, uint32_t creator,
+                        uint16_t ftrNum, uint32_t value);
+
 uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd, uint32_t flags);
 uint32_t syscall68k_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t size);
 uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t memPtr);
