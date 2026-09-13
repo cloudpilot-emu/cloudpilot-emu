@@ -72,6 +72,10 @@ export class SessionSettingsComponent implements OnInit {
         return this.formGroup.get('screenSize')!;
     }
 
+    get formControlRamSize(): AbstractControl {
+        return this.formGroup.get('ramSize')!;
+    }
+
     get showHotsyncNameInput(): boolean {
         return this.formControlManageHotsyncName.value;
     }
@@ -104,7 +108,12 @@ export class SessionSettingsComponent implements OnInit {
         this.saveCloudpilot();
         this.saveUarm();
 
-        this.onSave(this.formControlDevice.value, this.formControlScreenSize.value ?? undefined, this.nand);
+        this.onSave(
+            this.formControlDevice.value,
+            this.formControlScreenSize.value ?? undefined,
+            this.formControlRamSize.value ?? this.ramSize,
+            this.nand,
+        );
     }
 
     onEnter(): void {
@@ -214,6 +223,10 @@ export class SessionSettingsComponent implements OnInit {
                 value: this.screenSize,
                 disabled: this.availableScreenSizes === undefined || this.availableScreenSizes.length <= 1,
             }),
+            ramSize: new UntypedFormControl({
+                value: this.ramSize,
+                disabled: this.availableRamSizes === undefined || this.availableRamSizes.length <= 1,
+            }),
             manageHotsyncName: new UntypedFormControl(
                 this.settings.engine === 'cloudpilot' ? !this.settings.dontManageHotsyncName : false,
             ),
@@ -278,7 +291,8 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     @Input()
-    onSave: (device: DeviceId, screenSize: ScreenSize | undefined, nand?: Uint8Array) => void = () => undefined;
+    onSave: (device: DeviceId, screenSize: ScreenSize | undefined, ramSize: number, nand?: Uint8Array) => void = () =>
+        undefined;
 
     @Input()
     onCancel: () => void = () => undefined;
@@ -290,13 +304,19 @@ export class SessionSettingsComponent implements OnInit {
     availableDevices!: Array<DeviceId>;
 
     @Input()
-    availableScreenSizes!: Array<ScreenSize>;
+    availableScreenSizes?: Array<ScreenSize>;
+
+    @Input()
+    availableRamSizes?: Array<number>;
 
     @Input()
     device!: DeviceId;
 
     @Input()
     screenSize: ScreenSize | undefined;
+
+    @Input()
+    ramSize!: number;
 
     @Input()
     selectNandSize: number | undefined;

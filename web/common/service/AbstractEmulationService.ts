@@ -188,6 +188,7 @@ export abstract class AbstractEmulationService {
         rom: Uint8Array,
         deviceId: DeviceId,
         screenSize: ScreenSize | undefined,
+        ramSize: number,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,
@@ -202,7 +203,7 @@ export abstract class AbstractEmulationService {
 
         engine.updateSettings(this.engineSettings);
 
-        if (!(await engine.openSession(rom, deviceId, screenSize, nand, memory, state, card))) {
+        if (!(await engine.openSession(rom, deviceId, screenSize, ramSize, nand, memory, state, card))) {
             return false;
         }
 

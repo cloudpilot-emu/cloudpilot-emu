@@ -128,6 +128,7 @@ export class SessionService {
         rom: Uint8Array,
         device: DeviceId,
         screenSize: ScreenSize | undefined,
+        ramSizeMB: number,
         settings: SessionSettings,
         nand?: Uint8Array,
     ): Promise<Session> {
@@ -141,7 +142,7 @@ export class SessionService {
             id: -1,
             device,
             screenSize,
-            ram: (await this.nativeSupportService.ramSizeForDevice(device, rom)) >>> 20,
+            ram: ramSizeMB,
             rom: '',
             wasResetForcefully: false,
             nand: nandSize(device),

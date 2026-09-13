@@ -16,6 +16,7 @@ interface RpcSchema {
         args: {
             rom: Uint8Array;
             screenSize: ScreenSize;
+            ramSize: number;
             nand?: Uint8Array;
             memory?: Uint8Array;
             state?: Uint8Array;

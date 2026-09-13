@@ -4,7 +4,6 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { deviceDimensions } from '@common/helper/deviceProperties';
-import { uarmRamSizeFromMemorySize } from '@common/helper/ramSize';
 import { identifySessionEngine } from '@common/helper/sessionfile';
 import { ScreenSize } from '@common/model/Dimensions';
 import { EngineType } from '@common/model/EngineType';
@@ -152,6 +151,15 @@ const SUPPORTED_DEVICES_CLOUDPILOT = [
     DeviceId.acerS11,
     DeviceId.lp168,
 ];
+
+/*
+ * Determine RAM size in MB from memory size. This exploits the fact that RAM
+ * size is always a power-of-two multiple of 1MB, and memory size is only a
+ * a few (64) kilobtes of extra memory.
+ */
+function uarmRamSizeFromMemorySize(memorySize: number): number {
+    return memorySize > 0 ? 1 << (31 - Math.clz32(memorySize)) : 0;
+}
 
 export interface SerialTransport extends Omit<EmSerialTransport, 'Receive' | 'Send'> {
     Receive(): Uint8Array;

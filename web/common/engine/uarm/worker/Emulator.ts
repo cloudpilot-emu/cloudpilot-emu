@@ -2,7 +2,6 @@ import { DbInstallResult, PalmButton } from '@common/bridge/Cloudpilot';
 import { BackupState, Uarm } from '@common/bridge/Uarm';
 import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
-import { uarmRamSizeFromMemorySize } from '@common/helper/ramSize';
 import { DeviceId } from '@common/model/DeviceId';
 import { ScreenSize } from '@common/model/Dimensions';
 import {
@@ -52,14 +51,12 @@ export class Emulator {
     openSession(
         rom: Uint8Array,
         screenSize: ScreenSize,
+        ramSize: number,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,
         card?: [Uint8Array, string],
     ): boolean {
-        let ramSize: number | undefined = undefined;
-        if (memory) ramSize = uarmRamSizeFromMemorySize(memory.length);
-
         this.uarm.setScreenSize(screenSize);
         if (ramSize !== undefined) this.uarm.setRamSize(ramSize);
         if (nand) this.uarm.setNand(nand);

@@ -58,6 +58,7 @@ export interface EngineCommon {
         rom: Uint8Array,
         device: DeviceId,
         screenSize: ScreenSize | undefined,
+        ramSize: number,
         nand?: Uint8Array,
         memory?: Uint8Array,
         state?: Uint8Array,

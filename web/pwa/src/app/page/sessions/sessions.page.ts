@@ -11,7 +11,7 @@ import {
 import { Router } from '@angular/router';
 import helpUrl from '@assets/doc/sessions.md';
 import { isIOS, isIOSNative } from '@common/helper/browser';
-import { deviceDimensions, nandSize, selectableScreenSizes } from '@common/helper/deviceProperties';
+import { deviceDimensions, nandSize, selectableRamSizes, selectableScreenSizes } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { ScreenSize } from '@common/model/Dimensions';
 import { SessionMetadata } from '@common/model/SessionMetadata';
@@ -132,8 +132,10 @@ export class SessionsPage implements DragDropClient, OnInit {
                 settings,
                 session.device,
                 screenSize,
+                session.ram,
                 undefined,
                 selectableScreenSizes(session.device) !== undefined ? [screenSize] : undefined,
+                selectableRamSizes(session.device) !== undefined ? [session.ram] : undefined,
             )) !== undefined
         ) {
             await this.sessionService.updateSession(mergeSettings(session, settings));
@@ -381,8 +383,10 @@ export class SessionsPage implements DragDropClient, OnInit {
                     settings,
                     sessionImage.deviceId,
                     screenSize,
+                    sessionImage.ramSize >>> 20,
                     undefined,
                     selectableScreenSizes(sessionImage.deviceId) !== undefined ? [screenSize] : undefined,
+                    selectableRamSizes(sessionImage.deviceId) !== undefined ? [sessionImage.ramSize >>> 20] : undefined,
                 )) !== undefined
             ) {
                 const session = await this.sessionService.addSessionFromImage(sessionImage, settings);
@@ -408,24 +412,30 @@ export class SessionsPage implements DragDropClient, OnInit {
             };
 
             const screenSizes = selectableScreenSizes(romInfo.supportedDevices[0]);
+            const ramSizes = selectableRamSizes(romInfo.supportedDevices[0]);
+            const ramSize = await this.nativeSupportService.ramSizeForDevice(romInfo.supportedDevices[0], content);
             const defaultDevice = romInfo.supportedDevices[0];
 
-            const [device, screenSize, nand] =
-                (await this.editSettings(
-                    settings,
-                    defaultDevice,
-                    screenSizes !== undefined ? deviceDimensions(defaultDevice).screenSize : undefined,
-                    romInfo.supportedDevices,
-                    screenSizes,
-                    nandSize(defaultDevice),
-                    romInfo.engine === 'uarm' ? romInfo.needsNand : false,
-                )) ?? [];
+            const editSettingsResult = await this.editSettings(
+                settings,
+                defaultDevice,
+                screenSizes !== undefined ? deviceDimensions(defaultDevice).screenSize : undefined,
+                ramSize >>> 20,
+                romInfo.supportedDevices,
+                screenSizes,
+                ramSizes,
+                nandSize(defaultDevice),
+                romInfo.engine === 'uarm' ? romInfo.needsNand : false,
+            );
 
-            if (device !== undefined) {
+            if (editSettingsResult !== undefined) {
+                const [device, screenSize, ramSizeMB, nand] = editSettingsResult;
+
                 const session = await this.sessionService.addSessionFromRom(
                     content,
                     device,
                     screenSize,
+                    ramSizeMB,
                     settings,
                     nand,
                 );
@@ -439,11 +449,13 @@ export class SessionsPage implements DragDropClient, OnInit {
         settings: SessionSettings,
         device: DeviceId,
         screenSize?: ScreenSize,
+        ramSize?: number,
         availableDevices = [device],
         availableScreenSizes?: Array<ScreenSize>,
+        availableRamSizes?: Array<number>,
         selectNandSize?: number,
         needsNand = false,
-    ): Promise<[DeviceId, ScreenSize | undefined, Uint8Array | undefined] | undefined> {
+    ): Promise<[DeviceId, ScreenSize | undefined, number, Uint8Array | undefined] | undefined> {
         return new Promise((resolve) => {
             let modal: HTMLIonModalElement;
 
@@ -458,9 +470,12 @@ export class SessionsPage implements DragDropClient, OnInit {
                         selectNandSize,
                         availableScreenSizes,
                         screenSize,
+                        availableRamSizes,
+                        ramSize,
                         onSave: async (
                             device: DeviceId,
                             screenSize: ScreenSize | undefined,
+                            ramSizeMB: number,
                             nand: Uint8Array | undefined,
                         ) => {
                             if (
@@ -473,7 +488,7 @@ export class SessionsPage implements DragDropClient, OnInit {
                             }
 
                             void modal.dismiss();
-                            resolve([device, screenSize, nand]);
+                            resolve([device, screenSize, ramSizeMB, nand]);
                         },
                         onCancel: () => {
                             void modal.dismiss();

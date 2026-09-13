@@ -35,13 +35,23 @@
             </ion-select>
         </ion-item>
 
-        <ion-item lines="none" *ngIf="availableScreenSizes !== undefined">
-            <ion-select label="Screen size" labelPlacement="stacked" formControlName="screenSize">
-                <ion-select-option *ngFor="let screenSize of availableScreenSizes" [value]="screenSize"
-                    >{{ screenSize }}
-                </ion-select-option>
-            </ion-select>
-        </ion-item>
+        <div class="horizontal-container" *ngIf="availableScreenSizes !== undefined || availableRamSizes !== undefined">
+            <ion-item lines="none" *ngIf="availableScreenSizes !== undefined">
+                <ion-select label="Screen size" labelPlacement="stacked" formControlName="screenSize">
+                    <ion-select-option *ngFor="let screenSize of availableScreenSizes" [value]="screenSize"
+                        >{{ screenSize }}
+                    </ion-select-option>
+                </ion-select>
+            </ion-item>
+
+            <ion-item lines="none" *ngIf="availableRamSizes !== undefined">
+                <ion-select label="RAM size" labelPlacement="stacked" formControlName="ramSize">
+                    <ion-select-option *ngFor="let ramSize of availableRamSizes" [value]="ramSize"
+                        >{{ ramSize }}MB
+                    </ion-select-option>
+                </ion-select>
+            </ion-item>
+        </div>
 
         @if (isUarm && selectNandSize !== undefined) {
             <ion-item lines="none">

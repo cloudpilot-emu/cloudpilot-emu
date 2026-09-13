@@ -1,6 +1,7 @@
 import { Cloudpilot, SessionImage } from '@common/bridge/Cloudpilot';
 import { Engine } from '@common/engine/Engine';
 import { SnapshotContainer } from '@common/engine/Snapshot';
+import { engineType } from '@common/helper/deviceProperties';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
 import { AbstractEmulationService, Executor } from '@common/service/AbstractEmulationService';
@@ -35,7 +36,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                 this.session = undefined;
             }
 
-            if (await this.openSession(rom, device, undefined, nand)) {
+            if (await this.openSession(rom, device, undefined, await this.ramSizeForRom(device, rom), nand)) {
                 this.setSession(session);
                 return true;
             }
@@ -55,6 +56,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                     sessionImage.rom,
                     sessionImage.deviceId,
                     undefined,
+                    sessionImage.ramSize,
                     sessionImage.nand,
                     sessionImage.memory,
                     sessionImage.savestate,
@@ -124,6 +126,21 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
     private setSession(session: Session) {
         this.session = session;
         this.syncSettings();
+    }
+
+    private async ramSizeForRom(device: DeviceId, rom: Uint8Array): Promise<number> {
+        const cloudpilot = await this.cloudpilotPromise;
+
+        if (engineType(device) === 'cloudpilot') {
+            return cloudpilot.minRamForDevice(device);
+        } else {
+            const romInfo = cloudpilot.getRomInfo(rom);
+            if (romInfo?.engine !== 'uarm') {
+                throw new Error(`invalid ROM for device ${this.deviceId}`);
+            }
+
+            return romInfo.recommendedRamSize;
+        }
     }
 
     private session: Session | undefined;

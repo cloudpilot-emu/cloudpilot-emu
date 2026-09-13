@@ -470,3 +470,11 @@ export function selectableScreenSizes(deviceId: DeviceId): Array<ScreenSize> | u
 
     return undefined;
 }
+
+export function selectableRamSizes(deviceId: DeviceId): Array<number> | undefined {
+    if (deviceId === DeviceId.repalmPV) {
+        return [16, 32, 64, 128];
+    }
+
+    return undefined;
+}

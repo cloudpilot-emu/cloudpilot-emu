@@ -38,3 +38,14 @@ ion-toggle {
 .input-nand ::ng-deep * {
     cursor: pointer !important;
 }
+
+.horizontal-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 1rem;
+
+    ion-item {
+        flex: 1;
+    }
+}

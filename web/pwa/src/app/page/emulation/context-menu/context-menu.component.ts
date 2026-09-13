@@ -4,6 +4,7 @@ import {
     deviceDimensions,
     quirkNoHotsync,
     quirkNoPoweroff,
+    selectableRamSizes,
     selectableScreenSizes,
     slotType,
 } from '@common/helper/deviceProperties';
@@ -256,7 +257,9 @@ export class ContextMenuComponent {
             componentProps: {
                 settings,
                 screenSize,
+                ramSize: session.ram,
                 availableScreenSizes: selectableScreenSizes(session.device) !== undefined ? [screenSize] : undefined,
+                availableRamSizes: selectableRamSizes(session.device) !== undefined ? [session.ram] : undefined,
                 availableDevices: [session.device],
                 device: session.device,
                 onSave: async () => {
