@@ -513,23 +513,21 @@ export class Emulator {
     }
 
     private onPcmPortMessage = (e: MessageEvent): void => {
-        if (!this.pcmStreaming || this.settings.disableAudio) return;
-
         const message: StreamMessageClient = e.data;
         switch (message.type) {
             case StreamMessageClientType.resumePcm:
-                this.suspendPcm(false);
+                if (this.pcmStreaming && !this.settings.disableAudio) this.suspendPcm(false);
 
                 break;
 
             case StreamMessageClientType.suspendPcm:
-                this.uarm.suspendPcm(true);
+                if (this.pcmStreaming && !this.settings.disableAudio) this.uarm.suspendPcm(true);
 
                 break;
 
             case StreamMessageClientType.returnBuffer:
                 this.sampleBufferPool.push(message.buffer);
-                this.pcmBuffersInFlight--;
+                if (this.pcmBuffersInFlight > 0) this.pcmBuffersInFlight--;
 
                 break;
 

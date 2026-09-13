@@ -102,7 +102,7 @@ class PcmProcessor extends AudioWorkletProcessor implements AudioWorkletProcesso
     }
 
     process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
-        if (outputs.length !== 1 || outputs[0].length !== 2) return false;
+        if (outputs.length !== 1 || outputs[0].length !== 2) return true;
         const len = outputs[0][0].length;
 
         if (this.buffering && this.sampleQueue.length > (44100 / 60) * 4) {
