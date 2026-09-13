@@ -8,6 +8,7 @@
 - Fix a fatal error when deleting a running session with an attached SD card.
 - Work around Webkit bug that may cause audio delay after resuming from
   background.
+- uARM now sets the 'cldp' and 'uarm' features on boot.
 
 # Version 2.2.3
 
