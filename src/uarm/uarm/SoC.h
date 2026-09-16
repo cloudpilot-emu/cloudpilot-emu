@@ -29,7 +29,7 @@ struct PatchContext;
 
 class SoC {
    public:
-    virtual void Reset() = 0;
+    virtual void Reset();
 
     virtual uint64_t Run(uint64_t maxCycles, uint64_t cyclesPerSecond) = 0;
     virtual bool RunToPaceSyscall(uint16_t syscall, uint64_t maxCycles,
@@ -44,7 +44,7 @@ class SoC {
     void PenDown(int x, int y);
     void PenUp();
 
-    void SetFramebufferDirty();
+    void SetFramebufferDirty(uint32_t pa = 0, uint32_t size = ~0u);
     bool SetFramebuffer(uint32_t start, uint32_t size);
     void ClearFramebufferDirty();
 
@@ -171,6 +171,9 @@ class SoC {
 
     uint32_t ramBase{0};
     uint32_t ramSize{0};
+
+    uint32_t framebufferAccessLowWatermark{0};
+    uint32_t framebufferAccessHighWatermark{~0u};
 
    private:
     SoC(const SoC &) = delete;

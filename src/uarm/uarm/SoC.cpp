@@ -47,7 +47,11 @@ void SoC::PenDown(int x, int y) {
 
 void SoC::PenUp() { penEventQueue->Push(PenEvent::PenUp()); }
 
-void SoC::SetFramebufferDirty() {
+void SoC::SetFramebufferDirty(uint32_t pa, uint32_t size) {
+    const uint32_t end = pa + size - 1;
+    if (pa < framebufferAccessLowWatermark) framebufferAccessLowWatermark = pa;
+    if (end > framebufferAccessHighWatermark) framebufferAccessHighWatermark = end;
+
     if (framebufferDirty) return;
 
     framebufferDirty = true;
@@ -65,7 +69,12 @@ bool SoC::SetFramebuffer(uint32_t start, uint32_t size) {
     return size != 0;
 }
 
-void SoC::ClearFramebufferDirty() { framebufferDirty = false; }
+void SoC::ClearFramebufferDirty() {
+    framebufferAccessLowWatermark = ~0u;
+    framebufferAccessHighWatermark = 0;
+
+    framebufferDirty = false;
+}
 
 void SoC::Sleep() {
     if (sleeping || !OnSleep()) return;
@@ -165,3 +174,8 @@ void SoC::SdEject() {
 }
 
 bool SoC::IsPacePatched() { return pacePatch->enterPace; }
+
+void SoC::Reset() {
+    framebufferAccessLowWatermark = 0;
+    framebufferAccessHighWatermark = ~0u;
+}

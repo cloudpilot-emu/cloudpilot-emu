@@ -58,6 +58,8 @@ bool SocGeneric<T>::ExecuteInjected(uint64_t maxCycles, uint64_t cyclesPerSecond
 
 template <class T>
 void SocGeneric<T>::Reset() {
+    SoC::Reset();
+
     const bool pcmOutputEnabled = pcmEnabled;
     const bool cardInserted = this->cardInserted;
     const uint64_t accumulatedTime = scheduler->GetTime();

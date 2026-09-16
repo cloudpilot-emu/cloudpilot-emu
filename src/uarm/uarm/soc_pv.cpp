@@ -96,7 +96,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, DisplayMod
     uart = pvUartInit(mem, UART_BASE);
     uartDebug = pvUartInit(mem, UART_DEBUG_BASE);
     hypercallIface = pvHypercallInterfaceInit(cpu, ramSize);
-    display = pvDisplayInit(mem, ram, rom, &bufferClut, displayConfiguration.width,
+    display = pvDisplayInit(mem, ram, rom, this, &bufferClut, displayConfiguration.width,
                             displayConfiguration.height, displayConfiguration.density);
     keys = pvKeysInit(mem, ic);
     rtc = pvRtcInit(mem, ic);
@@ -114,16 +114,18 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, DisplayMod
 }
 
 uint32_t *SocPV::GetPendingFrame() {
-    if (!framebufferDirty && !pvIsDirty(display)) return nullptr;
-    if (!pvDisplayRenderFramebuffer(display, framebuffer.get())) return nullptr;
+    uint32_t firstDirtyLine;
+    uint32_t lastDirtyLine;
+
+    if (!framebufferDirty) return nullptr;
+    if (!pvDisplayRenderFramebuffer(display, framebuffer.get(), framebufferAccessLowWatermark,
+                                    framebufferAccessHighWatermark, firstDirtyLine, lastDirtyLine))
+        return nullptr;
 
     return framebuffer.get();
 }
 
-void SocPV::ResetPendingFrame() {
-    ClearFramebufferDirty();
-    pvDisplayClearDirty(display);
-}
+void SocPV::ResetPendingFrame() { ClearFramebufferDirty(); }
 
 DeviceType5 SocPV::GetDeviceType() { return DeviceType5::deviceTypePV; }
 
