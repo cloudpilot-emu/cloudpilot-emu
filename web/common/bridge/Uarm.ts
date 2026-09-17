@@ -228,6 +228,16 @@ export class Uarm {
     }
 
     @guard()
+    getFirstDirtyLine(): number {
+        return this.uarm.GetFirstDirtyLine();
+    }
+
+    @guard()
+    getLastDirtyLine(): number {
+        return this.uarm.GetLastDirtyLine();
+    }
+
+    @guard()
     resetFrame(): void {
         this.uarm.ResetFrame();
     }

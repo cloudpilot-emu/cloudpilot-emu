@@ -29,6 +29,8 @@ export interface ClientMessageTimeslice {
     sizeSeconds: number;
     lcdEnabled: boolean;
     frame: ArrayBuffer | undefined;
+    firstDirtyLine: number;
+    lastDirtyLine: number;
 
     currentIps: number;
     currentIpsMax: number;

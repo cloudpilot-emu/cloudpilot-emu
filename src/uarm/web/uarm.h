@@ -33,6 +33,8 @@ class Uarm {
     double Cycle(uint64_t now);
 
     void* GetFrame();
+    uint32_t GetFirstDirtyLine();
+    uint32_t GetLastDirtyLine();
     uint32_t GetFrameSize();
     void ResetFrame();
 

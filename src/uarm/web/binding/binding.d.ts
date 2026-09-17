@@ -68,6 +68,8 @@ export interface Uarm {
     Cycle(now: bigint): number;
 
     GetFrame(): VoidPtr;
+    GetFirstDirtyLine(): number;
+    GetLastDirtyLine(): number;
     GetFrameSize(): number;
     ResetFrame(): void;
 

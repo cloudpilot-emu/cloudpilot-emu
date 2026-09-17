@@ -283,9 +283,19 @@ export class EngineUarmImpl implements EngineUarm {
     blitFrame(canvas: HTMLCanvasElement): void {
         if (!this.pendingFrame || !this.dimensions) return;
 
-        const imageData = new ImageData(new Uint8ClampedArray(this.pendingFrame), this.dimensions?.width);
+        const imageData = new ImageData(new Uint8ClampedArray(this.pendingFrame), this.dimensions.width);
 
-        canvas.getContext('2d')?.putImageData(imageData, 0, 0);
+        canvas
+            .getContext('2d')
+            ?.putImageData(
+                imageData,
+                0,
+                this.firstDirtyLine,
+                0,
+                0,
+                this.dimensions.width,
+                this.lastDirtyLine - this.firstDirtyLine + 1,
+            );
 
         this.returnPendingFrame();
     }
@@ -424,6 +434,8 @@ export class EngineUarmImpl implements EngineUarm {
                 if (message.frame && message.lcdEnabled) {
                     this.returnPendingFrame();
                     this.pendingFrame = message.frame;
+                    this.firstDirtyLine = message.firstDirtyLine;
+                    this.lastDirtyLine = message.lastDirtyLine;
 
                     this.newFrameEvent.dispatch();
                 } else if (!message.lcdEnabled && (lcdWasEnabled ?? true)) {
@@ -479,6 +491,8 @@ export class EngineUarmImpl implements EngineUarm {
     private currentIpsMax = 0;
 
     private pendingFrame: ArrayBuffer | undefined;
+    private firstDirtyLine = 0;
+    private lastDirtyLine = 0;
 
     private card: Card = { state: CardState.none };
 

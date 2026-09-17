@@ -2,8 +2,9 @@ import { DbInstallResult, PalmButton } from '@common/bridge/Cloudpilot';
 import { BackupState, Uarm } from '@common/bridge/Uarm';
 import { BackupResult, FullState } from '@common/engine/Engine';
 import { EngineSettings } from '@common/engine/EngineSettings';
+import { deviceDimensions } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
-import { ScreenSize } from '@common/model/Dimensions';
+import { Dimensions, ScreenSize } from '@common/model/Dimensions';
 import {
     StreamMessageClient,
     StreamMessageClientType,
@@ -21,6 +22,8 @@ interface TimesliceProperties {
     sizeSeconds: number;
     lcdEnabled: boolean;
     frame: ArrayBuffer | undefined;
+    firstDirtyLine: number;
+    lastDirtyLine: number;
 
     currentIps: number;
     currentIpsMax: number;
@@ -70,7 +73,7 @@ export class Emulator {
 
         if (!this.uarm.launch(rom)) return false;
 
-        this.deviceId = this.uarm.getDevice();
+        this.dimensions = deviceDimensions(this.uarm.getDevice(), screenSize);
 
         this.pageTrackerMemory = new DirtyPageTracker(
             1024,
@@ -408,10 +411,14 @@ export class Emulator {
         this.processSamples(sizeSeconds);
         this.updateSystemState();
 
+        const frame = this.getFrame();
+
         this.timesliceEvent.dispatch({
             sizeSeconds,
             lcdEnabled: this.uarm.isLcdEnabled(),
-            frame: this.backgrounded ? undefined : this.getFrame(),
+            frame,
+            firstDirtyLine: this.uarm.getFirstDirtyLine(),
+            lastDirtyLine: this.uarm.getLastDirtyLine(),
             currentIps: this.uarm.getCurrentIps(),
             currentIpsMax: this.uarm.getCurrentIpsMax(),
         });
@@ -484,18 +491,24 @@ export class Emulator {
 
     private getFrame(): ArrayBuffer | undefined {
         const frame = this.uarm.getFrame();
+
         if (!frame) return undefined;
 
+        const firstDirtyLine = this.uarm.getFirstDirtyLine();
+        const lastDirtyLine = this.uarm.getLastDirtyLine();
+
         let buffer: ArrayBuffer;
+        let array: Uint32Array;
 
         if (this.framePool.length === 0) {
-            buffer = frame.slice().buffer;
+            array = new Uint32Array(this.dimensions.width * this.dimensions.height);
+            buffer = array.buffer;
         } else {
-            const frameCopy = new Uint32Array(this.framePool.pop()!);
-            frameCopy.set(frame);
-
-            buffer = frameCopy.buffer;
+            buffer = this.framePool.pop()!;
+            array = new Uint32Array(buffer);
         }
+
+        array.set(frame.subarray(firstDirtyLine * this.dimensions.width, (lastDirtyLine + 1) * this.dimensions.width));
 
         this.uarm.resetFrame();
         return buffer;
@@ -548,7 +561,7 @@ export class Emulator {
     private immediateHandle: number | undefined;
 
     private framePool: Array<ArrayBuffer> = [];
-    private deviceId = DeviceId.te2;
+    private dimensions: Dimensions = deviceDimensions(DeviceId.te2);
 
     private pageTrackerMemory: DirtyPageTracker | undefined;
     private pageTrackerNand: DirtyPageTracker | undefined;
