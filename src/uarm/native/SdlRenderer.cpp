@@ -1,6 +1,7 @@
 #include "SdlRenderer.h"
 
 #include "SDL_image.h"
+#include "SDL_render.h"
 #include "Silkscreen.h"
 
 namespace {
@@ -40,7 +41,10 @@ SdlRenderer::SdlRenderer(SDL_Window* window, SoC* soc, int scale,
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
     SDL_RenderClear(renderer);
 
-    frameTexture =
+    frameTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET,
+                                     displayConfiguration.width, displayConfiguration.height);
+
+    intermediateTexture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
                           displayConfiguration.width, displayConfiguration.height);
 
@@ -64,25 +68,46 @@ void SdlRenderer::Draw(bool forceRedraw) {
     const bool wasLcdEnabled = lcdEnabled;
     lcdEnabled = soc->LcdEnabled();
 
-    const uint32_t* frame = soc->GetPendingFrame();
+    uint32_t firstDirtyLine, lastDirtyLine;
+    uint32_t* frame = soc->GetPendingFrame(firstDirtyLine, lastDirtyLine);
     if (!frame && !forceRedraw && lcdEnabled == wasLcdEnabled) return;
+
+    frame += firstDirtyLine * displayConfiguration.width;
 
     if (frame) {
         uint8_t* pixels;
         int pitch;
-        SDL_LockTexture(frameTexture, NULL, (void**)&pixels, &pitch);
+        SDL_LockTexture(intermediateTexture, NULL, (void**)&pixels, &pitch);
+
+        pixels += firstDirtyLine * pitch;
 
         if (pitch == 4 * displayConfiguration.width) {
-            memcpy(pixels, frame, 4 * displayConfiguration.width * displayConfiguration.height);
+            memcpy(pixels, frame,
+                   4 * displayConfiguration.width * (lastDirtyLine - firstDirtyLine + 1));
         } else {
-            for (int y = 0; y < displayConfiguration.height; y++) {
+            for (uint32_t y = firstDirtyLine; y < lastDirtyLine; y++) {
                 memcpy(pixels, frame, 4 * displayConfiguration.width);
                 frame += displayConfiguration.width;
                 pixels += pitch;
             }
         }
 
-        SDL_UnlockTexture(frameTexture);
+        SDL_UnlockTexture(intermediateTexture);
+
+        SDL_Rect rect = {.x = 0,
+                         .y = static_cast<int>(firstDirtyLine),
+                         .w = displayConfiguration.width,
+                         .h = static_cast<int>(lastDirtyLine - firstDirtyLine + 1)};
+
+        if (!frameTextureValid) {
+            SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
+            SDL_RenderClear(renderer);
+        }
+
+        SDL_SetRenderTarget(renderer, frameTexture);
+        SDL_RenderCopyEx(renderer, intermediateTexture, &rect, &rect, 0, nullptr, SDL_FLIP_NONE);
+        SDL_SetRenderTarget(renderer, nullptr);
+
         frameTextureValid = true;
     }
 

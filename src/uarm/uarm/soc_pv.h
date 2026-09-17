@@ -32,7 +32,7 @@ class SocPV : public SocGeneric<SocPV> {
     SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, DisplayMode displayMode,
           int gdbPort);
 
-    uint32_t *GetPendingFrame() override;
+    uint32_t *GetPendingFrame(uint32_t &firstDirtyLine, uint32_t &lastDirtyLine) override;
     void ResetPendingFrame() override;
     DeviceType5 GetDeviceType() override;
     DisplayMode GetDisplayMode() override;

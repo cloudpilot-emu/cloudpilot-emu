@@ -221,7 +221,12 @@ SocPXA::SocPXA(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, con
     SdEject();
 }
 
-uint32_t *SocPXA::GetPendingFrame() { return pxaLcdGetPendingFrame(lcd); }
+uint32_t *SocPXA::GetPendingFrame(uint32_t &firstDirtyLine, uint32_t &lastDirtyLine) {
+    firstDirtyLine = 0;
+    lastDirtyLine = displayConfiguration.height - 1;
+
+    return pxaLcdGetPendingFrame(lcd);
+}
 
 void SocPXA::ResetPendingFrame() { return pxaLcdResetPendingFrame(lcd); }
 

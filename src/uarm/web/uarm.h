@@ -124,6 +124,9 @@ class Uarm {
     uint8_t* sdData{nullptr};
     std::string sdId;
 
+    uint32_t firstDirtyLine{0};
+    uint32_t lastDirtyLine{0};
+
     uint32_t defaultMips{0};
     DeviceType5 deviceType{DeviceType5::deviceTypeInvalid};
 

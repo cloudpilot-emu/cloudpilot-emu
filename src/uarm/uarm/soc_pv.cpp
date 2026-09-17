@@ -113,10 +113,7 @@ SocPV::SocPV(uint32_t ramSize, void *romData, const uint32_t romSize, DisplayMod
     SdEject();
 }
 
-uint32_t *SocPV::GetPendingFrame() {
-    uint32_t firstDirtyLine;
-    uint32_t lastDirtyLine;
-
+uint32_t *SocPV::GetPendingFrame(uint32_t &firstDirtyLine, uint32_t &lastDirtyLine) {
     if (!framebufferDirty) return nullptr;
     if (!pvDisplayRenderFramebuffer(display, framebuffer.get(), framebufferAccessLowWatermark,
                                     framebufferAccessHighWatermark, firstDirtyLine, lastDirtyLine))

@@ -89,7 +89,7 @@ class SoC {
 
     // Actual SoC needs to implement those, the other virtuals are taken
     // care of in soc_generic.h
-    virtual uint32_t *GetPendingFrame() = 0;
+    virtual uint32_t *GetPendingFrame(uint32_t &firstDirtyLine, uint32_t &lastDirtyLine) = 0;
     virtual void ResetPendingFrame() = 0;
     virtual DeviceType5 GetDeviceType() = 0;
     virtual DisplayMode GetDisplayMode() = 0;

@@ -154,7 +154,7 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
 
 double Uarm::Cycle(uint64_t now) { return mainLoop->Cycle(now); }
 
-void* Uarm::GetFrame() { return soc->GetPendingFrame(); }
+void* Uarm::GetFrame() { return soc->GetPendingFrame(firstDirtyLine, lastDirtyLine); }
 
 uint32_t Uarm::GetFrameSize() {
     DisplayConfiguration display = deviceConfigurationDisplayConfigForMode(soc->GetDisplayMode());

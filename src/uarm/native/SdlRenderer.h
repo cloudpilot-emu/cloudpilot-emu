@@ -23,6 +23,7 @@ class SdlRenderer {
     SDL_Renderer* renderer{nullptr};
 
     SDL_Texture* frameTexture{nullptr};
+    SDL_Texture* intermediateTexture{nullptr};
     SDL_Texture* silkscreenTexture{nullptr};
 
     bool frameTextureValid{false};
