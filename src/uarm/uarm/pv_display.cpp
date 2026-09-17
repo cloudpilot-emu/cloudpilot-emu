@@ -152,6 +152,19 @@ static uint32_t pvDisplayLineForAddress(PvDisplay* display, uint32_t address) {
     return line < display->height ? line : display->height - 1;
 }
 
+static uint8_t* pvResolveFramebuffer(PvDisplay* display, uint32_t firstDirtyLine,
+                                     uint32_t lastDirtyLine) {
+    const uint32_t base = display->base + firstDirtyLine * display->stride;
+    const uint32_t size = (lastDirtyLine - firstDirtyLine + 1) * display->stride;
+
+    auto framebuffer = reinterpret_cast<uint8_t*>(ramResolveAddress(display->ram, base, size));
+
+    if (!framebuffer)
+        framebuffer = reinterpret_cast<uint8_t*>(romResolveAddress(display->rom, base, size));
+
+    return framebuffer;
+}
+
 PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, ArmRom* rom, SoC* soc, MemoryBuffer* bufferClut,
                          uint32_t width, uint32_t height, uint32_t density) {
     auto display = new PvDisplay();
@@ -173,19 +186,8 @@ PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, ArmRom* rom, SoC* soc, Memory
 template <int bpp>
 static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* target,
                                               uint32_t firstDirtyLine, uint32_t lastDirtyLine) {
-    const size_t framebufferSize = display->stride * display->height;
-
-    auto framebuffer = reinterpret_cast<uint8_t*>(
-        ramResolveAddress(display->ram, display->base + firstDirtyLine * display->stride,
-                          (lastDirtyLine - firstDirtyLine) * display->stride));
-
-    if (!framebuffer)
-        framebuffer = reinterpret_cast<uint8_t*>(
-            romResolveAddress(display->rom, display->base, framebufferSize));
-
+    auto framebuffer = pvResolveFramebuffer(display, firstDirtyLine, lastDirtyLine);
     if (!framebuffer) return false;
-
-    framebuffer += firstDirtyLine * display->stride;
 
     const auto clut = reinterpret_cast<uint32_t*>(display->bufferClut->buffer);
 
@@ -254,9 +256,8 @@ bool pvDisplayRenderFramebuffer(PvDisplay* display, uint32_t* target, uint32_t l
 
             const uint32_t pitchDelta = (display->stride - lineBytes) >> 1;
 
-            auto framebuffer = reinterpret_cast<uint16_t*>(reinterpret_cast<uint8_t*>(
-                ramResolveAddress(display->ram, firstDirtyLine * display->stride + display->base,
-                                  (lastDirtyLine - firstDirtyLine) * display->stride)));
+            auto framebuffer = reinterpret_cast<uint16_t*>(
+                pvResolveFramebuffer(display, firstDirtyLine, lastDirtyLine));
             if (!framebuffer) return false;
 
             for (uint32_t y = firstDirtyLine; y <= lastDirtyLine; y++) {
