@@ -144,6 +144,14 @@ static bool pvDisplayPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t siz
     return true;
 }
 
+static uint32_t pvDisplayLineForAddress(PvDisplay* display, uint32_t address) {
+    if (address < display->base) return 0;
+
+    const uint32_t line = (address - display->base) / display->stride;
+
+    return line < display->height ? line : display->height - 1;
+}
+
 PvDisplay* pvDisplayInit(ArmMem* mem, ArmRam* ram, ArmRom* rom, SoC* soc, MemoryBuffer* bufferClut,
                          uint32_t width, uint32_t height, uint32_t density) {
     auto display = new PvDisplay();
@@ -167,8 +175,9 @@ static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* targ
                                               uint32_t firstDirtyLine, uint32_t lastDirtyLine) {
     const size_t framebufferSize = display->stride * display->height;
 
-    auto framebuffer =
-        reinterpret_cast<uint8_t*>(ramResolveAddress(display->ram, display->base, framebufferSize));
+    auto framebuffer = reinterpret_cast<uint8_t*>(
+        ramResolveAddress(display->ram, display->base + firstDirtyLine * display->stride,
+                          (lastDirtyLine - firstDirtyLine) * display->stride));
 
     if (!framebuffer)
         framebuffer = reinterpret_cast<uint8_t*>(
@@ -212,22 +221,15 @@ static bool pvDisplayRenderFramebufferIndexed(PvDisplay* display, uint32_t* targ
 bool pvDisplayRenderFramebuffer(PvDisplay* display, uint32_t* target, uint32_t lowWatermark,
                                 uint32_t highWatermark, uint32_t& firstDirtyLine,
                                 uint32_t& lastDirtyLine) {
-    if (display->base == 0 || display->stride == 0 || lowWatermark > highWatermark) return false;
-
-    firstDirtyLine =
-        display->base < lowWatermark ? ((lowWatermark - display->base) / display->stride) : 0;
-
-    if (display->base < highWatermark) {
-        lastDirtyLine = (highWatermark - display->base) / display->stride;
-        if (lastDirtyLine >= display->height) lastDirtyLine = display->height - 1;
-    } else {
-        lastDirtyLine = display->height - 1;
+    if (display->base == 0 || display->stride == 0 || lowWatermark > highWatermark) {
+        firstDirtyLine = lastDirtyLine = 0;
+        return false;
     }
 
-    target += firstDirtyLine * display->width;
+    firstDirtyLine = pvDisplayLineForAddress(display, lowWatermark);
+    lastDirtyLine = pvDisplayLineForAddress(display, highWatermark);
 
-    printf("low 0x%08x high 0x%08x first %u last %u base 0x%08x stride %u\n", lowWatermark,
-           highWatermark, firstDirtyLine, lastDirtyLine, display->base, display->stride);
+    target += firstDirtyLine * display->width;
 
     switch (display->depth) {
         case 0:
@@ -252,10 +254,9 @@ bool pvDisplayRenderFramebuffer(PvDisplay* display, uint32_t* target, uint32_t l
 
             const uint32_t pitchDelta = (display->stride - lineBytes) >> 1;
 
-            auto framebuffer = reinterpret_cast<uint16_t*>(
-                reinterpret_cast<uint8_t*>(ramResolveAddress(display->ram, display->base,
-                                                             display->stride * display->height)) +
-                firstDirtyLine * display->stride);
+            auto framebuffer = reinterpret_cast<uint16_t*>(reinterpret_cast<uint8_t*>(
+                ramResolveAddress(display->ram, firstDirtyLine * display->stride + display->base,
+                                  (lastDirtyLine - firstDirtyLine) * display->stride)));
             if (!framebuffer) return false;
 
             for (uint32_t y = firstDirtyLine; y <= lastDirtyLine; y++) {
