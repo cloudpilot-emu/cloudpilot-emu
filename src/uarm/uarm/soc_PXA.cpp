@@ -379,6 +379,7 @@ void SocPXA::OnLoad(SavestateLoader<ChunkType> &loader) {
     SchedulePcmTask();
     keypadReset(kp);
     SetFramebufferDirty();
+    UpdateSchedulePcm();
 }
 
 template <typename T>
@@ -475,11 +476,7 @@ void SocPXA::SetupScheduler() {
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30, 1);
 }
 
-void SocPXA::SchedulePcmTask() {
-    scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
-                            1_sec / (pcmEnabled ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
-                            pcmSuspended ? 0 : 1);
-}
+void SocPXA::SchedulePcmTask() { UpdateSchedulePcm(); }
 
 void SocPXA::CycleBatch0() {
     pxaDmaPeriodic(dma);
@@ -510,6 +507,12 @@ bool SocPXA::Batch0Required() {
     if (hwUart && pxaUartTaskRequired(hwUart)) return true;
 
     return false;
+}
+
+void SocPXA::UpdateSchedulePcm() {
+    scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
+                            1_sec / (pcmEnabled ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
+                            pcmSuspended ? 0 : 1);
 }
 
 void SocPXA::RescheduleCB(void *ctx, uint32_t task) {

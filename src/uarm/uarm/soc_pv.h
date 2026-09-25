@@ -65,6 +65,8 @@ class SocPV : public SocGeneric<SocPV> {
     void AllocateBuffers();
     void SetupScheduler();
 
+    void UpdateSchedulePcm();
+
    private:
     MemoryBuffer bufferTinyRam;
     MemoryBuffer bufferClut;

@@ -44,7 +44,9 @@
 #define UART_DEBUG_BASE 0x30000100
 #define UART_BASE 0x30000110
 
-#define PCM_HZ 44300
+#define PCM_HZ_ENABLED 44300
+#define PCM_HZ_DISABLED (44100 / 3)
+
 #define PCM_SAMPLE_BATCH 128
 
 using namespace std;
@@ -177,7 +179,7 @@ void SocPV::OnWakeup() {
 
 void SocPV::OnSetAudioQueue(struct AudioQueue *audioQueue) { pvAudioSetQueue(audio, audioQueue); }
 
-void SocPV::OnSetPcmOutputEnabled() {}
+void SocPV::OnSetPcmOutputEnabled() { UpdateSchedulePcm(); }
 
 void SocPV::OnSetPcmSuspended() {
     scheduler->RescheduleTask(SCHEDULER_TASK_PCM, pcmSuspended ? 0 : PCM_SAMPLE_BATCH);
@@ -204,6 +206,8 @@ void SocPV::OnLoad(SavestateLoader<ChunkType> &loader) {
     pvAudioLoad(audio, loader);
     pvTouchLoad(touch, loader);
     pvStorageLoad(storage, loader);
+
+    UpdateSchedulePcm();
 }
 
 template <typename T>
@@ -244,7 +248,13 @@ void SocPV::SetupScheduler() {
     // Pump event queues: 30 Hz
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30ull, 1);
 
-    scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / PCM_HZ, PCM_SAMPLE_BATCH);
+    UpdateSchedulePcm();
+}
+
+void SocPV::UpdateSchedulePcm() {
+    scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
+                            1_sec / (pcmEnabled ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
+                            pcmSuspended ? 0 : PCM_SAMPLE_BATCH);
 }
 
 template void SocGeneric<SocPV>::Save<Savestate<ChunkType>>(Savestate<ChunkType> &savestate);

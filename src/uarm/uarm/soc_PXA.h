@@ -81,6 +81,8 @@ class SocPXA : public SocGeneric<SocPXA> {
     void CycleBatch0();
     bool Batch0Required();
 
+    void UpdateSchedulePcm();
+
     static void RescheduleCB(void *ctx, uint32_t task);
     static uint64_t GetTimeCB(void *ctx);
 
