@@ -97,10 +97,13 @@ export class FileService {
             return;
         }
 
+        const name = urlParsed.pathname.replace(/.*\//, '');
+        if (name.endsWith('.gz')) response = new Response(response.body?.pipeThrough(new DecompressionStream('gzip')));
+
         const contentPromise = response.arrayBuffer().then((buffer) => new Uint8Array(buffer));
 
         handler({
-            name: urlParsed.pathname.replace(/.*\//, ''),
+            name: name.replace(/\.gz$/, ''),
             getContent: (loaderOptions?: LoaderOptions) =>
                 this.loaderService.showWhile(() => contentPromise, 'Loading...', CONTENT_LOADER_DELAY, loaderOptions),
         });
@@ -197,33 +200,23 @@ export class FileService {
     }
 
     private readFile(file: File): FileDescriptor {
-        let contentPromise: Promise<Uint8Array> | undefined;
-
         const content = (loaderOptions?: LoaderOptions): Promise<Uint8Array> =>
             this.loaderService.showWhile(
-                () => {
-                    if (contentPromise) return contentPromise;
+                async () => {
+                    const stream = file.name.endsWith('.gz')
+                        ? file.stream().pipeThrough(new DecompressionStream('gzip'))
+                        : file.stream();
 
-                    contentPromise = new Promise((resolve, reject) => {
-                        const reader = new FileReader();
+                    const buffer = await new Response(stream).arrayBuffer();
 
-                        reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
-                        reader.onerror = () => {
-                            console.warn(reader.error);
-                            reject(reader.error);
-                        };
-
-                        reader.readAsArrayBuffer(file);
-                    });
-
-                    return contentPromise;
+                    return new Uint8Array(buffer);
                 },
                 'Loading...',
                 CONTENT_LOADER_DELAY,
                 loaderOptions,
             );
 
-        return { name: file.name, getContent: content };
+        return { name: file.name.replace(/\.gz$/, ''), getContent: content };
     }
 
     private input: HTMLInputElement | undefined;
