@@ -3,6 +3,8 @@
 
 #include <SDL.h>
 
+#include <cstdint>
+
 #include "Rotation.h"
 #include "SoC.h"
 #include "device_configuration.h"
@@ -28,6 +30,8 @@ class SdlRenderer {
 
     bool frameTextureValid{false};
     bool lcdEnabled{true};
+
+    uint32_t flushPipelineCounter{0};
 
     SoC* soc{nullptr};
 

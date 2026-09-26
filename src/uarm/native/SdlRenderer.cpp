@@ -1,10 +1,15 @@
 #include "SdlRenderer.h"
 
+#include <cstdint>
+#include <cstdio>
+
 #include "SDL_image.h"
 #include "SDL_render.h"
 #include "Silkscreen.h"
 
 namespace {
+    constexpr uint32_t FLUSH_PIPELNE_FRAMES = 3;
+
     SDL_Texture* loadSilkscreen(SDL_Renderer* renderer) {
         SDL_RWops* rwops = SDL_RWFromConstMem((const void*)silkscreenPng_data, silkscreenPng_len);
         SDL_Surface* surface = IMG_LoadPNG_RW(rwops);
@@ -70,7 +75,11 @@ void SdlRenderer::Draw(bool forceRedraw) {
 
     uint32_t firstDirtyLine, lastDirtyLine;
     uint32_t* frame = soc->GetPendingFrame(firstDirtyLine, lastDirtyLine);
-    if (!frame && !forceRedraw && lcdEnabled == wasLcdEnabled) return;
+
+    if (!frame && !forceRedraw && lcdEnabled == wasLcdEnabled &&
+        flushPipelineCounter++ >= FLUSH_PIPELNE_FRAMES)
+        return;
+    if (frame || forceRedraw || lcdEnabled != wasLcdEnabled) flushPipelineCounter = 0;
 
     frame += firstDirtyLine * displayConfiguration.width;
 

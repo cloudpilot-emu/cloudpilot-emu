@@ -15,6 +15,7 @@ constexpr uint32 BACKGROUND_HUE = 0xd2;
 constexpr uint32 FOREGROUND_COLOR = 0xff000000;
 constexpr uint32 BACKGROUND_COLOR =
     0xff000000 | BACKGROUND_HUE | (BACKGROUND_HUE << 8) | (BACKGROUND_HUE << 16);
+constexpr uint32 FLUSH_PIPELNE_FRAMES = 3;
 
 constexpr uint32 PALETTE_GRAYSCALE_16[] = {
     0xffd2d2d2, 0xffc4c4c4, 0xffb6b6b6, 0xffa8a8a8, 0xff9a9a9a, 0xff8c8c8c, 0xff7e7e7e, 0xff707070,
@@ -75,11 +76,16 @@ void MainLoop::Cycle() {
     }
 
     const bool screenUpdateRequired = eventHandler.HandleEvents(millis);
-    if (gSystemState.IsScreenDirty() || screenUpdateRequired) {
+    if (gSystemState.IsScreenDirty() || screenUpdateRequired ||
+        flushPipelineCounter++ < FLUSH_PIPELNE_FRAMES) {
+        if (gSystemState.IsScreenDirty() || screenUpdateRequired) flushPipelineCounter = 0;
+
         UpdateScreen(false);
         gSystemState.MarkScreenClean();
-    } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped() && !gDebugger.IsStepping())
+    } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped() &&
+               !gDebugger.IsStepping()) {
         SDL_Delay(16);
+    }
 }
 
 void MainLoop::LoadSilkscreen() {

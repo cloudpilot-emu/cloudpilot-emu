@@ -4,6 +4,7 @@
 #include <SDL.h>
 
 #include "ButtonEvent.h"
+#include "EmTypes.h"
 #include "EventHandler.h"
 #include "Frame.h"
 #include "Platform.h"
@@ -32,6 +33,7 @@ class MainLoop {
     SDL_Texture* silkscreenTexture{nullptr};
 
     int scale{1};
+    uint32 flushPipelineCounter{0};
     ScreenDimensions screenDimensions;
     Frame frame{320 * 480 * 4};
 
