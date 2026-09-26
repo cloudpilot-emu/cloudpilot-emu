@@ -66,7 +66,7 @@ void MainLoop::Cycle() {
             long cyclesPassed = 0;
 
             while (cyclesPassed < cycles && !gDebugger.IsStopped())
-                cyclesPassed += gSession->RunEmulation(cycles);
+                cyclesPassed += gSession->RunEmulation(cycles - cyclesPassed);
             clockEmu +=
                 static_cast<double>(cyclesPassed) / (static_cast<double>(clocksPerSecond) / 1000.);
         }
