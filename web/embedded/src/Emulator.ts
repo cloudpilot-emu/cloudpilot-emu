@@ -467,13 +467,22 @@ export class EmulatorImpl implements Emulator {
             this.session = { ...DEFAULT_SESSION, deviceId };
             this.audioService.setSession(this.session);
 
-            if (!(await this.emulationService.initWithRom(rom.slice(), nand?.slice(), deviceId, this.session))) {
+            if (
+                !(await this.emulationService.initWithRom(
+                    rom.slice(),
+                    nand?.slice(),
+                    deviceId,
+                    this.session,
+                    ramSizeMb ? ramSizeMb << 20 : undefined,
+                    screenSize,
+                ))
+            ) {
                 throw new Error('failed to initialize session');
             }
 
             this.eventHandlingService.setDpadEnabled(this.enableDpad());
             this.canvasDisplayService.setDpadEnabled(this.enableDpad());
-            await this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
+            await this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation, screenSize);
         });
     }
 

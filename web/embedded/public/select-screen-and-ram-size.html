@@ -54,6 +54,14 @@
             a {
                 margin: 0 0.5em;
             }
+
+            label {
+                display: block;
+            }
+
+            select {
+                min-width: 10em;
+            }
         </style>
     </head>
 
@@ -63,9 +71,28 @@
             <div id="canvas-wrapper"><canvas tabindex="1"></canvas></div>
             <div id="control-container" class="hidden">
                 <div>
-                    <div><button type="button" id="launch-rom-button" disabled>Load ROM</button></div>
-                    <div><button type="button" id="load-session-button-1" disabled>Load session 1</button></div>
-                    <div><button type="button" id="load-session-button-2" disabled>Load session 2</button></div>
+                    <label for="select-ram">RAM size:</label>
+                    <select id="select-ram">
+                        <option value="8">8MB</option>
+                        <option value="16">16MB</option>
+                        <option value="32" selected>32MB</option>
+                        <option value="64">64MB</option>
+                        <option value="128">128MB</option>
+                    </select>
+                </div>
+                <br>
+                <div>
+                    <label for="select-screen-size">Screen size:</label>
+                    <select id="select-screen-size">
+                        <option value="160x160">160x160</option>
+                        <option value="160x220">160x220</option>
+                        <option value="240x240">240x240</option>
+                        <option value="240x320">240x320</option>
+                        <option value="320x320" selected>320x320</option>
+                        <option value="320x480">320x480</option>
+                        <option value="480x480">480x480</option>
+                        <option value="480x720">480x720</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -84,38 +111,18 @@
             (async function () {
                 const emulator = await cloudpilot.createEmulator({preloadUarm: true});
 
-                const image1Response = await fetch('session_os5.img');
-                if (!image1Response.ok) {
-                    throw new Error('could not download session image');
+                const romResponse = await fetch('repalm_pv.bin.gz');
+                if (!romResponse.ok) {
+                    throw new Error('could not download rom image');
                 }
 
-                const image2Response = await fetch('session_repalm_pv.img');
-                if (!image1Response.ok) {
-                    throw new Error('could not download session image');
-                }
-
-                const [norResponse, nandResponse] = await Promise.all([fetch('e2-nor.bin'), fetch('e2-nand.bin')]);
-                if (!(norResponse.ok && nandResponse)) {
-                    throw new Error('could not download rom');
-                }
-
-                const nor = await norResponse.arrayBuffer();
-                const nand = await nandResponse.arrayBuffer();
-                const image1 = await image1Response.arrayBuffer();
-                const image2 = await image2Response.arrayBuffer();
-
+                const rom = new Uint8Array(
+                    await new Response(romResponse.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
+                );
                 const canvas = document.getElementsByTagName('canvas')[0];
 
-                const launchRomButton = document.getElementById('launch-rom-button');
-                const loadSession1Button = document.getElementById('load-session-button-1');
-                const loadSession2Button = document.getElementById('load-session-button-2');
-
-                emulator.setCanvas(canvas);
-                emulator.bindInput(canvas);
-
-                launchRomButton.disabled = false;
-                loadSession1Button.disabled = false;
-                loadSession2Button.disabled = false;
+                const selectRam = document.getElementById('select-ram');
+                const selectScreenSize = document.getElementById('select-screen-size');
 
                 const enableAudio = document.getElementById('enable-audio');
                 const enableAudioLink = document.getElementById('enable-audio-link');
@@ -127,29 +134,23 @@
 
                 enableAudioLink.addEventListener('click', handler);
 
-                launchRomButton.addEventListener('click', () =>
-                    emulator
-                        .loadRom(new Uint8Array(nor), new Uint8Array(nand))
-                        .then(() => emulator.resume())
-                        .then(() => canvas.style.visibility = 'visible')
-                        .catch(e => console.error(e))
-                );
+                emulator.setCanvas(canvas);
+                emulator.bindInput(canvas);
 
-                loadSession1Button.addEventListener('click', () =>
-                    emulator
-                        .loadSession(new Uint8Array(image1))
-                        .then(() => emulator.resume())
-                        .then(() => canvas.style.visibility = 'visible')
-                        .catch(e => console.error(e))
-                );
+                function switchSession() {
+                    const screenSize = selectScreenSize.value;
+                    const ramSize = parseInt(selectRam.value, 10);
 
-                loadSession2Button.addEventListener('click', () =>
                     emulator
-                        .loadSession(new Uint8Array(image2))
+                        .loadRom(rom, undefined, undefined, ramSize, screenSize)
                         .then(() => emulator.resume())
                         .then(() => canvas.style.visibility = 'visible')
-                        .catch(e => console.error(e))
-                );
+                        .catch(e => console.error(e));
+                }
+
+                [selectRam, selectScreenSize].forEach(elt => elt.addEventListener('change', switchSession));
+
+                switchSession();
             })().catch((e) => console.error(e));
         </script>
     </body>
