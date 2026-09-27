@@ -1,4 +1,4 @@
-export const enum ScreenSize {
+export enum ScreenSize {
     screen160x160 = '160x160',
     screen160x220 = '160x220',
     screen240x240 = '240x240',

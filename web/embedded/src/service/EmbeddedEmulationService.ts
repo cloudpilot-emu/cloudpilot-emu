@@ -4,6 +4,7 @@ import { SnapshotContainer } from '@common/engine/Snapshot';
 import { engineType } from '@common/helper/deviceProperties';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
+import { ScreenSize } from '@common/model/Dimensions';
 import { AbstractEmulationService, Executor } from '@common/service/AbstractEmulationService';
 import { Session } from '@embedded/model/Session';
 import { Mutex } from 'async-mutex';
@@ -29,6 +30,8 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
         nand: Uint8Array | undefined,
         device: DeviceId,
         session: Session,
+        ramSize?: number,
+        screenSize?: ScreenSize,
     ): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
             if (this.isRunning()) {
@@ -36,7 +39,15 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                 this.session = undefined;
             }
 
-            if (await this.openSession(rom, device, undefined, await this.ramSizeForRom(device, rom), nand)) {
+            if (
+                await this.openSession(
+                    rom,
+                    device,
+                    screenSize,
+                    ramSize ?? (await this.ramSizeForRom(device, rom)),
+                    nand,
+                )
+            ) {
                 this.setSession(session);
                 return true;
             }
@@ -55,7 +66,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                 await this.openSession(
                     sessionImage.rom,
                     sessionImage.deviceId,
-                    undefined,
+                    sessionImage.screenSize,
                     sessionImage.ramSize,
                     sessionImage.nand,
                     sessionImage.memory,

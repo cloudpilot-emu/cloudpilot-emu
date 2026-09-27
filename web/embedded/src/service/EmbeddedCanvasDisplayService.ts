@@ -19,8 +19,12 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
         this.dpadEnabled = dpad;
     }
 
-    initialize = (canvas?: HTMLCanvasElement, deviceId?: DeviceId, orientation?: DeviceOrientation) =>
-        this.mutex.runExclusive(() => this.initializeUnguarded(canvas, deviceId, orientation));
+    initialize = (
+        canvas?: HTMLCanvasElement,
+        deviceId?: DeviceId,
+        orientation?: DeviceOrientation,
+        screenSize?: ScreenSize,
+    ) => this.mutex.runExclusive(() => this.initializeUnguarded(canvas, deviceId, orientation, screenSize));
 
     updateOrientation(orientation: DeviceOrientation) {
         this.orientation = orientation;
@@ -62,7 +66,7 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
     }
 
     protected getScreenSize(): ScreenSize | undefined {
-        return undefined;
+        return this.screenSize;
     }
 
     protected getOrientation(): DeviceOrientation {
@@ -106,9 +110,11 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
         canvas?: HTMLCanvasElement,
         deviceId = this.deviceId,
         orientation = this.orientation,
+        screenSize = this.screenSize,
     ) {
         this.deviceId = deviceId;
         this.orientation = orientation;
+        this.screenSize = screenSize;
 
         const theCanvas = canvas || this.ctx?.canvas;
         if (theCanvas) {
@@ -128,6 +134,8 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
     private gameModeIndicatorEnabled = true;
     private gameModeActive = false;
     private lastActiveButtons: Array<PalmButton> | undefined = undefined;
+
+    private screenSize: ScreenSize | undefined;
 
     private mutex = new Mutex();
 }

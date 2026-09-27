@@ -1,9 +1,10 @@
-import { Cloudpilot } from '@common/bridge/Cloudpilot';
+import { Cloudpilot, RomInfo } from '@common/bridge/Cloudpilot';
 import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
 import { Engine } from '@common/engine/Engine';
-import { hasDPad } from '@common/helper/deviceProperties';
+import { deviceDimensions, hasDPad, selectableRamSizes, selectableScreenSizes } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { ScreenSize } from '@common/model/Dimensions';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { EmulatorEventTarget } from '@common/service/GenericEventHandlingService';
@@ -38,9 +39,6 @@ function assertEngineInitialized(engine: Engine | undefined): asserts engine is 
     if (!engine) throw new Error('session not initialized');
 }
 
-// TODO: D-Pad
-// TODO: uARM
-
 /**
  * The main emulator interface. Most methods that interact with the emulator are async and
  * should be awaited.
@@ -52,8 +50,16 @@ export interface Emulator {
      * @param rom Device ROM
      * @param nand Device NAND. OS5 devices only.
      * @param deviceId Optional: device ID, autodetected if not specified
+     * @param ramSizeMb Optional: device RAM size (in MB) (currently supported for rePalm paravirtualized devices)
+     * @param screenSize Optional: screen size (currently supported for rePalm paravirtualized devices)
      */
-    loadRom(rom: Uint8Array, nand?: Uint8Array, deviceId?: DeviceId): Promise<void>;
+    loadRom(
+        rom: Uint8Array,
+        nand?: Uint8Array,
+        deviceId?: DeviceId,
+        ramSizeMb?: number,
+        screenSize?: ScreenSize,
+    ): Promise<void>;
 
     /**
      * Load a Cloudpilot session and put the emulator in paused state.
@@ -433,16 +439,31 @@ export class EmulatorImpl implements Emulator {
         return this.emulationService.getStatistics();
     }
 
-    async loadRom(rom: Uint8Array, nand?: Uint8Array, deviceId?: DeviceId): Promise<void> {
+    async loadRom(
+        rom: Uint8Array,
+        nand?: Uint8Array,
+        deviceId?: DeviceId,
+        ramSizeMb?: number,
+        screenSize?: ScreenSize,
+    ): Promise<void> {
         await this.mutex.runExclusive(async () => {
-            if (deviceId === undefined) {
-                const rominfo = this.cloudpilot.getRomInfo(rom);
-                if (!rominfo || rominfo.supportedDevices.length === 0) {
-                    throw new Error('unsupported device');
-                }
+            const rominfo = this.cloudpilot.getRomInfo(rom);
+            if (!rominfo || rominfo.supportedDevices.length === 0) {
+                throw new Error('unsupported device');
+            }
 
+            if (deviceId === undefined) {
                 deviceId = rominfo.supportedDevices[0];
             }
+
+            if (ramSizeMb !== undefined && !this.isRamSizeMbValid(deviceId, rominfo, ramSizeMb)) {
+                throw new Error(`invalid or unsupported RAM size ${ramSizeMb} MB`);
+            }
+
+            if (screenSize !== undefined && !this.isScreenSizeValid(deviceId, screenSize)) {
+                throw new Error(`invalid or unsupported screen size ${screenSize}`);
+            }
+
             this.session = { ...DEFAULT_SESSION, deviceId };
             this.audioService.setSession(this.session);
 
@@ -479,7 +500,12 @@ export class EmulatorImpl implements Emulator {
 
             this.eventHandlingService.setDpadEnabled(this.enableDpad());
             this.canvasDisplayService.setDpadEnabled(this.enableDpad());
-            await this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
+            await this.canvasDisplayService.initialize(
+                undefined,
+                sessionImage.deviceId,
+                this.session.orientation,
+                sessionImage.screenSize,
+            );
         });
     }
 
@@ -808,6 +834,31 @@ export class EmulatorImpl implements Emulator {
 
     private enableDpad(): boolean {
         return !this.session.disableDpad && hasDPad(this.session.deviceId);
+    }
+
+    private isScreenSizeValid(deviceId: DeviceId, screenSize: ScreenSize): boolean {
+        const selectableSizes = selectableScreenSizes(deviceId);
+
+        return selectableSizes
+            ? selectableSizes.includes(screenSize)
+            : deviceDimensions(deviceId).screenSize === screenSize;
+    }
+
+    private isRamSizeMbValid(deviceId: DeviceId, romInfo: RomInfo, ramSizeMb: number): boolean {
+        const selectableSizes = selectableRamSizes(deviceId);
+        if (selectableSizes) return selectableSizes.includes(ramSizeMb);
+
+        switch (romInfo.engine) {
+            case 'cloudpilot':
+                return ramSizeMb << 20 === this.cloudpilot.minRamForDevice(deviceId);
+
+            case 'uarm':
+                return ramSizeMb << 20 === romInfo.recommendedRamSize;
+
+            default:
+                romInfo satisfies never;
+                throw new Error('unreachable');
+        }
     }
 
     readonly audioInitializedEvent = new EventImpl<void>();

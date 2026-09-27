@@ -4,6 +4,7 @@ import { cachedInstantiate, loadAndCompileModule } from '@common/helper/wasm';
 import { Emulator, EmulatorImpl } from './Emulator';
 
 export { DeviceId } from '@common/model/DeviceId';
+export { ScreenSize } from '@common/model/Dimensions';
 export { Button } from './button';
 export { DeviceOrientation } from '@common/model/DeviceOrientation';
 export { Emulator } from './Emulator';
