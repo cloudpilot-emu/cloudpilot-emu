@@ -13,7 +13,7 @@ namespace Platform {
 
     void* AllocateMemoryClear(size_t count);
 
-    long GetMilliseconds();
+    uint64 GetMilliseconds();
 
     void GetTime(uint32& hour, uint32& min, uint32& sec);
 

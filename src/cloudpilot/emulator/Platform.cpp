@@ -4,23 +4,13 @@
 #include <cstring>
 #include <ctime>
 
-namespace {
-    chrono::milliseconds::rep getMillisecondsBare() {
-        return chrono::duration_cast<chrono::milliseconds>(
-                   chrono::system_clock::now().time_since_epoch())
-            .count();
-    }
+#include "EmTypes.h"
 
-    struct TimestampReference {
-        TimestampReference() { timestamp = getMillisecondsBare(); }
-
-        chrono::milliseconds::rep timestamp;
-    };
-
-    TimestampReference timestampReferece;
-}  // namespace
-
-long Platform::GetMilliseconds() { return getMillisecondsBare() - timestampReferece.timestamp; }
+uint64 Platform::GetMilliseconds() {
+    return chrono::duration_cast<chrono::milliseconds>(
+               chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
 
 void Platform::GetTime(uint32& hour, uint32& min, uint32& sec) {
     time_t time = chrono::system_clock::to_time_t(chrono::system_clock::now());

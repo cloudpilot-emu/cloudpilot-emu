@@ -11,7 +11,7 @@ EventHandler::EventHandler(int scale) : scale(scale) {}
 
 bool EventHandler::IsQuit() const { return quit; }
 
-bool EventHandler::HandleEvents(long millis) {
+bool EventHandler::HandleEvents(uint64 millis) {
     SDL_Event event;
     bool redraw = false;
 
