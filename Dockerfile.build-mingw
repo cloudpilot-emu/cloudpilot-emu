@@ -12,22 +12,28 @@ FROM toolchain AS deps
 ARG MSYS2_PACKAGES_REF=d94046575b21a230bd6948830771e5011e7a2571
 ENV MSYS2_PACKAGES_REF=${MSYS2_PACKAGES_REF}
 
+ARG BUILD_X86=true
+ARG BUILD_X64=true
+
 COPY tools/mingw/build-deps.sh /opt/build-deps.sh
 
-RUN /opt/build-deps.sh i686-w64-mingw32
-RUN /opt/build-deps.sh x86_64-w64-mingw32
+RUN test "$BUILD_X86" != "true" || /opt/build-deps.sh i686-w64-mingw32
+RUN test "$BUILD_X64" != "true" || /opt/build-deps.sh x86_64-w64-mingw32
 
 FROM deps AS build
 
-RUN mkdir /work
+ARG BUILD_X86
+ARG BUILD_X64
+
+RUN mkdir /work /out
 WORKDIR /work
 
 COPY Makefile /work/
 COPY src /work/src
 COPY tools/mingw/build.sh /work/build.sh
 
-RUN ./build.sh i686-w64-mingw32 /out/x86
-RUN ./build.sh x86_64-w64-mingw32 /out/x64
+RUN test "$BUILD_X86" != "true" || ./build.sh i686-w64-mingw32 /out/x86
+RUN test "$BUILD_X64" != "true" || ./build.sh x86_64-w64-mingw32 /out/x64
 
 RUN file /out/*/*.exe
 

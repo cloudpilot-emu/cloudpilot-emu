@@ -1,0 +1,23 @@
+name: Compile Windows binaries (MinGW)
+on:
+  push:
+    branches:
+      - '*'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build MinGW binaries (x64 only)
+        run: >
+          docker buildx build -f Dockerfile.build-mingw --target artifacts
+          --build-arg BUILD_X86=false
+          --output type=local,dest=out
+          --cache-from type=gha --cache-to type=gha,mode=max .
+      - name: List artifacts
+        run: ls -lR out
