@@ -58,30 +58,32 @@ networking with CloudpilotEmu.
 
 The following devices are currently emulated:
 
--   Pilot, Palm Pilot
--   Palm III
--   Palm IIIxe, Palm IIIx, Palm IIIe
--   Palm IIIc
--   Palm Vx, Palm V
--   Palm VII, Palm VII EZ, Palm VIIx
--   Palm m500, Palm m505, Palm m515
--   Palm m520 (an unreleased prototype of a highres 5xx)
--   Palm m100, Palm m105, Palm m125, Palm m130
--   Palm i705
--   Tungsten W (silkscreen version)
--   Tungsten E2, E3 (a widescreen version of the E2 created specifically for emulation by
-    Dmitry Grinberg)
--   Handera 330, 330c (the lost color version of the 330c)
--   Sony PEG-S300, PEG-S320
--   Sony PEG-S500C series
--   Sony PEG-T400 series
--   Sony PEG-N600C series
--   Sony PEG-T600C series
--   Sony PEG-N700C series
--   Sony PEG-T650C series
--   Sony PEG-NR70 series
--   Acer S1x
--   Legend P168 (no SD card support)
+- Pilot, Palm Pilot
+- Palm III
+- Palm IIIxe, Palm IIIx, Palm IIIe
+- Palm IIIc
+- Palm Vx, Palm V
+- Palm VII, Palm VII EZ, Palm VIIx
+- Palm m500, Palm m505, Palm m515
+- Palm m520 (an unreleased prototype of a highres 5xx)
+- Palm m100, Palm m105, Palm m125, Palm m130
+- Palm i705
+- Tungsten W (silkscreen version)
+- Tungsten E2, E3 (a widescreen version of the E2 created specifically for emulation by
+  Dmitry Grinberg)
+- rePalm paravirualized (a paravirtualized version of PalmOS created by Dmitry Grinberg
+  that offers substantial performance improvements over emulated read hardware)
+- Handera 330, 330c (the lost color version of the 330c)
+- Sony PEG-S300, PEG-S320
+- Sony PEG-S500C series
+- Sony PEG-T400 series
+- Sony PEG-N600C series
+- Sony PEG-T600C series
+- Sony PEG-N700C series
+- Sony PEG-T650C series
+- Sony PEG-NR70 series
+- Acer S1x
+- Legend P168 (no SD card support)
 
 ## Other versions
 
@@ -97,24 +99,24 @@ straightforward port, though, as the original code has been adapted and partly
 rewritten to fit well with a browser environment. In addition, it contains
 bug fixes and many new features. In particular:
 
--   The codebase has been updated to build and run on both 32bit and 64bit
-    little endian systems. Big endian systems should work, but I cannot test
-    this (are there even any relevant big endian systems left?).
--   POSE was built as a tool for debugging and profiling PalmOS applications.
-    Most of this functionality has been removed in CloudpilotEmu.
--   All UI parts and in particular threading were removed from the source.
--   Dispatch and timing have been partly rewritten, timing should now be pretty
-    close to the original device.
--   Adjusting the grayscale in 2bpp mode works.
--   All 16MB of the Palm m515 are usable.
--   A few conditions that can cause interrupt storms have been fixed.
--   Savestate code has been rewritten to work with a fixed buffer without
-    allocations.
--   Event injection works without generating null events.
--   Reminders and alarms trigger propely.
--   Clié devices use full MQ11xx video acceleration.
--   SD card and Memory Stick emulation.
--   A GDB stub for debugging PalmOS and apps written with a suitable toolchain.
+- The codebase has been updated to build and run on both 32bit and 64bit
+  little endian systems. Big endian systems should work, but I cannot test
+  this (are there even any relevant big endian systems left?).
+- POSE was built as a tool for debugging and profiling PalmOS applications.
+  Most of this functionality has been removed in CloudpilotEmu.
+- All UI parts and in particular threading were removed from the source.
+- Dispatch and timing have been partly rewritten, timing should now be pretty
+  close to the original device.
+- Adjusting the grayscale in 2bpp mode works.
+- All 16MB of the Palm m515 are usable.
+- A few conditions that can cause interrupt storms have been fixed.
+- Savestate code has been rewritten to work with a fixed buffer without
+  allocations.
+- Event injection works without generating null events.
+- Reminders and alarms trigger propely.
+- Clié devices use full MQ11xx video acceleration.
+- SD card and Memory Stick emulation.
+- A GDB stub for debugging PalmOS and apps written with a suitable toolchain.
 
 # Notes on OS5 emulation
 
@@ -124,14 +126,14 @@ OS5 emulation is based on Dmitry Grinberg's [uARM](https://github.com/uARM-Palm/
 emulator. However, CloudpilotEmu is not a straightforward port, but a fork that trails behind
 Dmitry's original sources and adds the following of features:
 
--   Optimizations that give a significant performance boost at the expense of RAM and
-    portability.
--   PACE replaced with direct m68k emulation on the host, using the same m68k core as POSE.
--   Accurate timing.
--   Audio emulation.
--   Savestates.
--   Power off (which crashes the emulator) is disabled.
--   Database installation and export.
+- Optimizations that give a significant performance boost at the expense of RAM and
+  portability.
+- PACE replaced with direct m68k emulation on the host, using the same m68k core as POSE.
+- Accurate timing.
+- Audio emulation.
+- Savestates.
+- Power off (which crashes the emulator) is disabled.
+- Database installation and export.
 
 ## Performance
 
@@ -146,6 +148,19 @@ and recent iOS devices (iPhone 13 or later) run even demanding ARM apps at
 decent or even faster-than-real speeds, and the same goes for fast x86 desktops,
 but older and slower devices (which includes most Android devices) may struggle.
 Many apps still work fine, but your mileage may vary.
+
+## Paravirtualization
+
+CloudpilotEmu supports a paravirtualized version of rePalm created by Dmitry
+Grinberg. Instead of real hardware, this platform implements a minimal interface
+between host and guest and runs about 40% fastern than an emulated E2.
+
+In addition, rePalm paravirtualized supports a range of resolutions and
+RAM sizes that you can choose from when creating a session.
+
+You can download a suitable ROM from the
+[CloudpilotEmu website](https://cloudpilot-emu.github.io)
+and from [PalmDB](https://palmdb.net/app/palm-roms-complete).
 
 # Native app
 
@@ -187,30 +202,30 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
 
 # Known issues and limitations
 
--   iOS: changing device orientation between portrait and landscape may mess
-    up the layout of the app. This is an iOS bug that can be worked around by
-    rotating the device by 180° in portrait and rotating back.
--   Audio timing is not perfect and processed at the refresh rate of the emulator
-    (usually the same as the screen refresh rate of the host device). Sound
-    effects that rely on quickly modulating the audio signal may not be
-    reproduced correctly.
--   On rare occasions installing files or changing the hotsync name can catch
-    PalmOS on the wrong foot and crash the emulator. In particular, this happens
-    if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
-    launcher is active and the category menu is open.
--   Tungsten W, i705, PEG-T650C and PEG-NR70 cannot enter and exit sleep correctly,
-    and the corresponding functionality has been disabled.
--   On Clié devices, audio is not emulated beyond the usual beeps.
--   The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
-    framebuffer support, 2D acceleration is not available.
--   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
-    locks up PalmOS.
--   On OS5, keyboard input, clipboard and network integration are not
-    currently available.
--   The emulated Tungsten|W does not provide a full 5-way D-pad, even though
-    the skin suggests otherwise.
--   There is no support for changing the hotsync user name on OS5. Please use
-    MultiUserHack or a similar application for that.
+- iOS: changing device orientation between portrait and landscape may mess
+  up the layout of the app. This is an iOS bug that can be worked around by
+  rotating the device by 180° in portrait and rotating back.
+- Audio timing is not perfect and processed at the refresh rate of the emulator
+  (usually the same as the screen refresh rate of the host device). Sound
+  effects that rely on quickly modulating the audio signal may not be
+  reproduced correctly.
+- On rare occasions installing files or changing the hotsync name can catch
+  PalmOS on the wrong foot and crash the emulator. In particular, this happens
+  if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
+  launcher is active and the category menu is open.
+- Tungsten W, i705, PEG-T650C and PEG-NR70 cannot enter and exit sleep correctly,
+  and the corresponding functionality has been disabled.
+- On Clié devices, audio is not emulated beyond the usual beeps.
+- The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
+  framebuffer support, 2D acceleration is not available.
+- Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
+  locks up PalmOS.
+- On OS5, keyboard input, clipboard and network integration are not
+  currently available.
+- The emulated Tungsten|W does not provide a full 5-way D-pad, even though
+  the skin suggests otherwise.
+- There is no support for changing the hotsync user name on OS5. Please use
+  MultiUserHack or a similar application for that.
 
 # Building
 
@@ -272,6 +287,8 @@ on `http://localhost:4200` by running
 
 ## Native build
 
+### MacOS / Linux
+
 Building the native version of CloudpilotEmu requires SDL2, sdl2-image and libcurl.
 
 Note that for network support via proxy to actually work, libcurl must be at
@@ -301,25 +318,37 @@ The build is accomplished with
 
 and you will up with `src/cloudpilot/cloudpilot-emu` and `src/uarm/cp-uarm` binaries.
 
+### Windows
+
+Windows binaries can be cross built with MinGW using the provided dockerfile
+
+```
+    $ docker buildx build --out ./out -f Dockerfile.build-mingw .
+```
+
+This will build binaries for x64 and x64 and place the in the `out` folder. Native builds
+on Windows are also possible, but no build infrastructure is provided.
+
 # Credits
 
--   Artwork for CloudpilotEmu was done by Paolo Lazatin.
--   SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
-    [Mu](https://github.com/meepingsnesroms/Mu).
--   Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
--   Protobuf (de)serialization in C++ is done using the awesome
-    [NanoPB](https://github.com/nanopb/nanopb) library.
--   The native build uses [argparse](https://github.com/p-ranav/argparse) and
-    [uri-library](https://github.com/ben-zen/uri-library).
--   Stacktraces in the native
-    build are based on Farooq Melas [gist](https://gist.github.com/fmela/591333).
--   HTTP and Websocket I/O in the native build use
-    [libcurl](https://curl.se/libcurl/c/libcurl-ws.html).
--   FAT support
-    is built on [dosfstools](https://github.com/dosfstools/dosfstools) and
-    [FatFs](http://elm-chan.org/fsw/ff).
--   Parts of the GDB stub are taken from
-    [uARM](https://github.com/uARM-Palm/uARM).
+- Artwork for CloudpilotEmu was done by Paolo Lazatin.
+- SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
+  [Mu](https://github.com/meepingsnesroms/Mu).
+- Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
+- Protobuf (de)serialization in C++ is done using the awesome
+  [NanoPB](https://github.com/nanopb/nanopb) library.
+- The native build uses [argparse](https://github.com/p-ranav/argparse) and
+  [uri-library](https://github.com/ben-zen/uri-library).
+- Stacktraces in the native
+  build are based on Farooq Melas [gist](https://gist.github.com/fmela/591333).
+- HTTP and Websocket I/O in the native build use
+  [libcurl](https://curl.se/libcurl/c/libcurl-ws.html).
+- FAT support
+  is built on [dosfstools](https://github.com/dosfstools/dosfstools) and
+  [FatFs](http://elm-chan.org/fsw/ff).
+- Parts of the GDB stub are taken from
+  [uARM](https://github.com/uARM-Palm/uARM).
+- Dmitry Grinberg for lots of support and PalmOS wisdom, uARM and rePalm
 
 # LICENSE
 

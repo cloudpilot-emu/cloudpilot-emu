@@ -178,6 +178,19 @@ vary.
 Note that mobiles may throttle under high load. You can try to counter this by limiting
 speed and host utilization in the session settings.
 
+## Paravirtualization
+
+CloudpilotEmu supports a paravirtualized version of rePalm created by Dmitry
+Grinberg. Instead of real hardware, this platform implements a minimal interface
+between host and guest and runs about 40% fastern than an emulated E2.
+
+In addition, rePalm paravirtualized supports a range of resolutions and
+RAM sizes that you can choose from when creating a session.
+
+You can download a suitable ROM from the
+[CloudpilotEmu website](https://cloudpilot-emu.github.io)
+and from [PalmDB](https://palmdb.net/app/palm-roms-complete).
+
 # Known issues and limitations
 
 :::div{.feature-ios-or-safari}
