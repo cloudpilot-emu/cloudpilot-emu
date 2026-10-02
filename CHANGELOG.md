@@ -1,4 +1,4 @@
-# Next version
+# Version 2.3.0
 
 - Support for a paravirtualized rePalm PalmOS 5 build created by Dmitry
   Grinberg. ROMs for this platform run about 40% faster than ROMs for real
