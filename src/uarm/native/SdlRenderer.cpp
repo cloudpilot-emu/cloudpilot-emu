@@ -81,13 +81,12 @@ void SdlRenderer::Draw(bool forceRedraw) {
         return;
     if (frame || forceRedraw || lcdEnabled != wasLcdEnabled) flushPipelineCounter = 0;
 
-    frame += firstDirtyLine * displayConfiguration.width;
-
     if (frame) {
         uint8_t* pixels;
         int pitch;
         SDL_LockTexture(intermediateTexture, NULL, (void**)&pixels, &pitch);
 
+        frame += firstDirtyLine * displayConfiguration.width;
         pixels += firstDirtyLine * pitch;
 
         if (pitch == 4 * displayConfiguration.width) {
