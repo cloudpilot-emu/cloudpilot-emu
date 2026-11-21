@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
-uint64_t timestampUsec();
-void uarmAbort();
+uint64_t timestampUsec(void);
+void uarmAbort(void);
 
 #ifdef __cplusplus
 }

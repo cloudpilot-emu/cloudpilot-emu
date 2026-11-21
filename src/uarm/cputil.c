@@ -9,14 +9,14 @@
 EM_JS(void, __emscripten_abort, (), { throw new Error("emulator terminated"); })
 #endif
 
-uint64_t timestampUsec() {
+uint64_t timestampUsec(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
 
-void uarmAbort() {
+void uarmAbort(void) {
 #ifdef __EMSCRIPTEN__
     __emscripten_abort();
 #else

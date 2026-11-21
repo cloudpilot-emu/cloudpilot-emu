@@ -54,7 +54,7 @@ typedef struct _change {
 static CHANGE *changes, *last;
 static int did_change = 0;
 
-void fs_open() {
+void fs_open(void) {
     if (!card_open()) die("failed to open card");
 
     changes = last = NULL;

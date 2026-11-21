@@ -20,12 +20,12 @@ uae_u32 get_disp_ea_000(uae_u32 base, uae_u32 dp) {
   return base + (uae_s8)dp + regd;
 }
 
-void MakeSR() {
+void MakeSR(void) {
   regs.sr = (regs.sr & 0xff00) | (GET_XFLG << 4) | (GET_NFLG << 3) |
             (GET_ZFLG << 2) | (GET_VFLG << 1) | GET_CFLG;
 }
 
-void MakeFromSR() {
+void MakeFromSR(void) {
   SET_XFLG((regs.sr >> 4) & 1);
   SET_NFLG((regs.sr >> 3) & 1);
   SET_ZFLG((regs.sr >> 2) & 1);

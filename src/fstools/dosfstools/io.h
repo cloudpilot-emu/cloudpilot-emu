@@ -27,7 +27,7 @@
 #ifndef _IO_H
 #define _IO_H
 
-void fs_open();
+void fs_open(void);
 
 /* Opens the filesystem PATH. If RW is zero, the filesystem is opened
    read-only, otherwise, it is opened read-write. */
